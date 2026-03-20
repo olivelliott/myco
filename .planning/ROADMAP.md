@@ -29,7 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. The SQLite database contains all schema tables (entities, relationships, observations, episodes, vec_embeddings, approval_queue) with WAL mode enabled
   3. A TypeScript import of `packages/core` in either the MCP server or API server resolves without errors
   4. Every knowledge record written to the database includes provenance fields (session ID, agent ID, timestamp, confidence)
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Monorepo scaffold + Core library (db bootstrap, schema, provenance, types)
+- [ ] 01-02-PLAN.md — MCP server with remember/recall/query tools
 
 ### Phase 2: MCP Server + Memory
 **Goal**: Claude Code agents can write episodes and retrieve relevant knowledge from the brain using natural language
@@ -82,7 +86,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Storage Foundation | 0/TBD | Not started | - |
+| 1. Storage Foundation | 0/2 | Planning complete | - |
 | 2. MCP Server + Memory | 0/TBD | Not started | - |
 | 3. Consolidation + Approval | 0/TBD | Not started | - |
 | 4. REST API + PWA | 0/TBD | Not started | - |
