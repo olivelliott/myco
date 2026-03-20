@@ -12,7 +12,7 @@ Build a local-first persistent memory system for Claude Code agents in five phas
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Storage Foundation** - Monorepo scaffold, SQLite schema with WAL mode, shared Core library
+- [x] **Phase 1: Storage Foundation** - Monorepo scaffold, SQLite schema with WAL mode, shared Core library (completed 2026-03-20)
 - [ ] **Phase 2: MCP Server + Memory** - MCP tools, episode logging with provenance, semantic search via Ollama
 - [ ] **Phase 3: Consolidation + Approval** - Deep sleep pipeline, LLM extraction, confidence scoring, human approval queue
 - [ ] **Phase 4: REST API + PWA** - Hono API server, cron scheduler, React PWA with approval queue and graph explorer
@@ -29,11 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. The SQLite database contains all schema tables (entities, relationships, observations, episodes, vec_embeddings, approval_queue) with WAL mode enabled
   3. A TypeScript import of `packages/core` in either the MCP server or API server resolves without errors
   4. Every knowledge record written to the database includes provenance fields (session ID, agent ID, timestamp, confidence)
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 01-01-PLAN.md — Monorepo scaffold + Core library (db bootstrap, schema, provenance, types)
-- [ ] 01-02-PLAN.md — MCP server with remember/recall/query tools
+- [x] 01-02-PLAN.md — MCP server with remember/recall/query tools
 
 ### Phase 2: MCP Server + Memory
 **Goal**: Claude Code agents can write episodes and retrieve relevant knowledge from the brain using natural language
@@ -86,7 +86,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Storage Foundation | 1/2 | In Progress|  |
+| 1. Storage Foundation | 2/2 | Complete   | 2026-03-20 |
 | 2. MCP Server + Memory | 0/TBD | Not started | - |
 | 3. Consolidation + Approval | 0/TBD | Not started | - |
 | 4. REST API + PWA | 0/TBD | Not started | - |
