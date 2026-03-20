@@ -8,9 +8,9 @@
 ### Memory Core
 
 - [ ] **CORE-01**: MCP server exposes `remember`, `recall`, and `query` tools to any Claude Code session
-- [ ] **CORE-02**: All knowledge persists across sessions in a local SQLite database (WAL mode)
-- [ ] **CORE-03**: Open-schema knowledge graph stores entities with types, observations, and inter-entity relations
-- [ ] **CORE-04**: Every piece of knowledge includes provenance metadata (source session, agent ID, timestamp, confidence)
+- [x] **CORE-02**: All knowledge persists across sessions in a local SQLite database (WAL mode)
+- [x] **CORE-03**: Open-schema knowledge graph stores entities with types, observations, and inter-entity relations
+- [x] **CORE-04**: Every piece of knowledge includes provenance metadata (source session, agent ID, timestamp, confidence)
 - [ ] **CORE-05**: Agents can write new entities, observations, and relations via MCP tools during a session
 
 ### Semantic Search
@@ -86,9 +86,9 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CORE-01 | Phase 1 | Pending |
-| CORE-02 | Phase 1 | Pending |
-| CORE-03 | Phase 1 | Pending |
-| CORE-04 | Phase 1 | Pending |
+| CORE-02 | Phase 1 | Complete |
+| CORE-03 | Phase 1 | Complete |
+| CORE-04 | Phase 1 | Complete |
 | CORE-05 | Phase 1 | Pending |
 | SRCH-01 | Phase 2 | Pending |
 | SRCH-02 | Phase 2 | Pending |

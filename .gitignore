@@ -1,3 +1,4 @@
 node_modules/
 packages/*/dist/
 .planning/phases/*/deferred-items.md
+packages/*/tsconfig.tsbuildinfo

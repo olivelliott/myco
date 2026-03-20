@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-03-20T19:51:02.527Z"
-last_activity: 2026-03-20 — Roadmap created
+status: unknown
+stopped_at: Completed 01-storage-foundation 01-01-PLAN.md
+last_updated: "2026-03-20T20:18:08.607Z"
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # Project State
@@ -21,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 1 — Storage Foundation
+**Current focus:** Phase 01 — storage-foundation
 
 ## Current Position
 
-Phase: 1 of 5 (Storage Foundation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-20 — Roadmap created
-
-Progress: [░░░░░░░░░░] 0%
+Phase: 01 (storage-foundation) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -52,6 +46,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01-storage-foundation P01 | 2 | 1 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -63,6 +58,9 @@ Recent decisions affecting current work:
 - Dual-transport monorepo (shared core, separate MCP + API processes)
 - SQLite WAL mode required from Phase 1 — cannot be retrofitted
 - Phase 4 needs research pass during planning (consolidation prompt engineering)
+- [Phase 01-storage-foundation]: sqliteVec.load(db) before applySchema(db): vec0 module must be registered before CREATE VIRTUAL TABLE runs
+- [Phase 01-storage-foundation]: NodeNext module resolution with .js extensions in relative imports across all packages/core/src/ files
+- [Phase 01-storage-foundation]: WAL PRAGMAs set outside transactions; BRAIN_DB_PATH env var + XDG_DATA_HOME fallback for zero-config DB location
 
 ### Pending Todos
 
@@ -74,6 +72,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T19:51:02.524Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-storage-foundation/01-CONTEXT.md
+Last session: 2026-03-20T20:18:08.595Z
+Stopped at: Completed 01-storage-foundation 01-01-PLAN.md
+Resume file: None
