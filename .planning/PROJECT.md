@@ -12,13 +12,12 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Open-schema knowledge graph stores entities and relationships in SQLite — *Validated in Phase 01: storage-foundation*
+- [x] Episodic memory captures agent session events with timestamps and context — *Validated in Phase 01: storage-foundation*
+- [x] MCP server exposes brain tools (remember, recall, query) to any Claude Code session — *Validated in Phase 01: storage-foundation (remember functional, recall/query stubbed for Phase 2)*
 
 ### Active
 
-- [ ] MCP server exposes brain tools (remember, recall, query) to any Claude Code session
-- [ ] Episodic memory captures agent session events with timestamps and context
-- [ ] Open-schema knowledge graph stores entities and relationships in SQLite
 - [ ] Local embeddings via Ollama for semantic search and similarity
 - [ ] Deep sleep consolidation cycle distills episode logs into graph knowledge
 - [ ] Nightly 2am EST automatic consolidation via cron
@@ -59,9 +58,9 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| MCP server (not GSD plugin) | Universal access from any Claude Code session, not just GSD workflows | — Pending |
-| Shared brain + per-agent episode logs | Agents share knowledge but maintain separate session histories for consolidation | — Pending |
-| SQLite + Ollama (all local) | Privacy, speed, no external dependencies | — Pending |
+| MCP server (not GSD plugin) | Universal access from any Claude Code session, not just GSD workflows | ✓ Validated Phase 01 |
+| Shared brain + per-agent episode logs | Agents share knowledge but maintain separate session histories for consolidation | ✓ Validated Phase 01 |
+| SQLite + Ollama (all local) | Privacy, speed, no external dependencies | ✓ Validated Phase 01 (SQLite done, Ollama Phase 2) |
 | High-confidence auto-approve, surface only uncertainty | Keeps approval queue manageable — only contradictions, low-confidence inferences, entity merges need human review | — Pending |
 | Nightly cron + manual trigger for sleep cycle | Automatic consolidation at 2am EST, plus on-demand when the user wants a checkpoint | — Pending |
 
@@ -83,4 +82,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-20 after initialization*
+*Last updated: 2026-03-20 after Phase 01 completion*
