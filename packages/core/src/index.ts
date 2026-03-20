@@ -1,0 +1,12 @@
+export { openDatabase } from './db.js';
+export { applySchema } from './schema.js';
+export { generateSessionId, buildProvenance } from './provenance.js';
+export type {
+  SourceType,
+  Entity,
+  Observation,
+  Relationship,
+  Episode,
+  ApprovalQueueItem,
+  ProvenanceRecord,
+} from './types.js';

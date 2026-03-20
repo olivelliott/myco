@@ -1,0 +1,22 @@
+{
+  "name": "@ai-workbots/core",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "sqlite-vec": "^0.1.7",
+    "nanoid": "^5.1.7",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "typescript": "~5.9.0"
+  }
+}

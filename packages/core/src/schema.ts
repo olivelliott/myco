@@ -1,0 +1,80 @@
+import type Database from 'better-sqlite3';
+
+export function applySchema(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS entities (
+      id          TEXT PRIMARY KEY,
+      name        TEXT NOT NULL,
+      type        TEXT NOT NULL,
+      summary     TEXT,
+      metadata    TEXT NOT NULL DEFAULT '{}',
+      session_id  TEXT NOT NULL,
+      agent_id    TEXT NOT NULL DEFAULT 'unknown',
+      source_type TEXT NOT NULL DEFAULT 'agent_session',
+      confidence  REAL NOT NULL DEFAULT 1.0,
+      created_at  TEXT NOT NULL,
+      updated_at  TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS observations (
+      id          TEXT PRIMARY KEY,
+      entity_id   TEXT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+      content     TEXT NOT NULL,
+      metadata    TEXT NOT NULL DEFAULT '{}',
+      session_id  TEXT NOT NULL,
+      agent_id    TEXT NOT NULL DEFAULT 'unknown',
+      source_type TEXT NOT NULL DEFAULT 'agent_session',
+      confidence  REAL NOT NULL DEFAULT 1.0,
+      created_at  TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS relationships (
+      id           TEXT PRIMARY KEY,
+      from_id      TEXT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+      to_id        TEXT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+      type         TEXT NOT NULL,
+      metadata     TEXT NOT NULL DEFAULT '{}',
+      session_id   TEXT NOT NULL,
+      agent_id     TEXT NOT NULL DEFAULT 'unknown',
+      source_type  TEXT NOT NULL DEFAULT 'agent_session',
+      confidence   REAL NOT NULL DEFAULT 1.0,
+      created_at   TEXT NOT NULL,
+      UNIQUE(from_id, to_id, type)
+    );
+
+    CREATE TABLE IF NOT EXISTS episodes (
+      id          TEXT PRIMARY KEY,
+      session_id  TEXT NOT NULL,
+      agent_id    TEXT NOT NULL DEFAULT 'unknown',
+      event_type  TEXT NOT NULL,
+      payload     TEXT NOT NULL DEFAULT '{}',
+      created_at  TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS approval_queue (
+      id           TEXT PRIMARY KEY,
+      item_type    TEXT NOT NULL,
+      item_id      TEXT NOT NULL,
+      status       TEXT NOT NULL DEFAULT 'pending',
+      reason       TEXT,
+      created_at   TEXT NOT NULL,
+      resolved_at  TEXT
+    );
+
+    CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings USING vec0(
+      item_id     TEXT NOT NULL,
+      item_type   TEXT NOT NULL,
+      embedding   float[768]
+    );
+
+    -- Indexes for common queries
+    CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(type);
+    CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(name);
+    CREATE INDEX IF NOT EXISTS idx_observations_entity_id ON observations(entity_id);
+    CREATE INDEX IF NOT EXISTS idx_relationships_from_id ON relationships(from_id);
+    CREATE INDEX IF NOT EXISTS idx_relationships_to_id ON relationships(to_id);
+    CREATE INDEX IF NOT EXISTS idx_episodes_session_id ON episodes(session_id);
+    CREATE INDEX IF NOT EXISTS idx_episodes_agent_id ON episodes(agent_id);
+    CREATE INDEX IF NOT EXISTS idx_approval_queue_status ON approval_queue(status);
+  `);
+}
