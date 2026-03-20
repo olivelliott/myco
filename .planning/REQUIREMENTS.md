@@ -85,42 +85,42 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | — | Pending |
-| CORE-02 | — | Pending |
-| CORE-03 | — | Pending |
-| CORE-04 | — | Pending |
-| CORE-05 | — | Pending |
-| SRCH-01 | — | Pending |
-| SRCH-02 | — | Pending |
-| SRCH-03 | — | Pending |
-| SRCH-04 | — | Pending |
-| EPSD-01 | — | Pending |
-| EPSD-02 | — | Pending |
-| EPSD-03 | — | Pending |
-| CNSLD-01 | — | Pending |
-| CNSLD-02 | — | Pending |
-| CNSLD-03 | — | Pending |
-| CNSLD-04 | — | Pending |
-| CNSLD-05 | — | Pending |
-| APRV-01 | — | Pending |
-| APRV-02 | — | Pending |
-| APRV-03 | — | Pending |
-| APRV-04 | — | Pending |
-| PWA-01 | — | Pending |
-| PWA-02 | — | Pending |
-| PWA-03 | — | Pending |
-| PWA-04 | — | Pending |
-| PWA-05 | — | Pending |
-| PWA-06 | — | Pending |
-| GSD-01 | — | Pending |
-| GSD-02 | — | Pending |
-| GSD-03 | — | Pending |
+| CORE-01 | Phase 1 | Pending |
+| CORE-02 | Phase 1 | Pending |
+| CORE-03 | Phase 1 | Pending |
+| CORE-04 | Phase 1 | Pending |
+| CORE-05 | Phase 1 | Pending |
+| SRCH-01 | Phase 2 | Pending |
+| SRCH-02 | Phase 2 | Pending |
+| SRCH-03 | Phase 2 | Pending |
+| SRCH-04 | Phase 2 | Pending |
+| EPSD-01 | Phase 2 | Pending |
+| EPSD-02 | Phase 2 | Pending |
+| EPSD-03 | Phase 2 | Pending |
+| CNSLD-01 | Phase 3 | Pending |
+| CNSLD-02 | Phase 3 | Pending |
+| CNSLD-03 | Phase 3 | Pending |
+| CNSLD-04 | Phase 3 | Pending |
+| CNSLD-05 | Phase 3 | Pending |
+| APRV-01 | Phase 3 | Pending |
+| APRV-02 | Phase 3 | Pending |
+| APRV-03 | Phase 3 | Pending |
+| APRV-04 | Phase 3 | Pending |
+| PWA-01 | Phase 4 | Pending |
+| PWA-02 | Phase 4 | Pending |
+| PWA-03 | Phase 4 | Pending |
+| PWA-04 | Phase 4 | Pending |
+| PWA-05 | Phase 4 | Pending |
+| PWA-06 | Phase 4 | Pending |
+| GSD-01 | Phase 5 | Pending |
+| GSD-02 | Phase 5 | Pending |
+| GSD-03 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 30 total
-- Mapped to phases: 0
-- Unmapped: 30
+- Mapped to phases: 30
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-20*
-*Last updated: 2026-03-20 after initial definition*
+*Last updated: 2026-03-20 after roadmap creation*
