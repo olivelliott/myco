@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/Users/olive/Documents/GitHub/ai-workbots/.claude/hooks/gsd-brain-episode.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
