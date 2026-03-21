@@ -24,12 +24,13 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] Human approval queue for low-confidence inferences, contradictions, and entity merges — *Validated in Phase 03: consolidation-approval*
 - [x] High-confidence facts auto-approve into the graph without human intervention — *Validated in Phase 03: consolidation-approval*
 
+- [x] PWA with approval queue — review and approve/reject surfaced knowledge — *Validated in Phase 04: rest-api-pwa*
+- [x] PWA with knowledge graph explorer — browse entities, relationships, connections — *Validated in Phase 04: rest-api-pwa*
+- [x] PWA with activity dashboard — episode logs, agent activity, progress monitoring — *Validated in Phase 04: rest-api-pwa*
+- [x] Responsive PWA works equally well on phone and desktop — *Validated in Phase 04: rest-api-pwa*
+
 ### Active
 - [ ] GSD hooks auto-capture episodes at phase transitions and key workflow moments
-- [ ] PWA with approval queue — review and approve/reject surfaced knowledge
-- [ ] PWA with knowledge graph explorer — browse entities, relationships, connections
-- [ ] PWA with activity dashboard — episode logs, agent activity, progress monitoring
-- [ ] Responsive PWA works equally well on phone and desktop
 
 ### Out of Scope
 
@@ -83,4 +84,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-21 after Phase 03 completion*
+*Last updated: 2026-03-21 after Phase 04 completion*
