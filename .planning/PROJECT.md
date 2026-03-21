@@ -14,11 +14,11 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 
 - [x] Open-schema knowledge graph stores entities and relationships in SQLite — *Validated in Phase 01: storage-foundation*
 - [x] Episodic memory captures agent session events with timestamps and context — *Validated in Phase 01: storage-foundation*
-- [x] MCP server exposes brain tools (remember, recall, query) to any Claude Code session — *Validated in Phase 01: storage-foundation (remember functional, recall/query stubbed for Phase 2)*
+- [x] MCP server exposes brain tools (remember, recall, query) to any Claude Code session — *Validated in Phase 02: mcp-server-memory (all tools fully implemented)*
+- [x] Local embeddings via Ollama for semantic search and similarity — *Validated in Phase 02: mcp-server-memory*
+- [x] Episodic memory log_episode tool with per-agent isolation — *Validated in Phase 02: mcp-server-memory*
 
 ### Active
-
-- [ ] Local embeddings via Ollama for semantic search and similarity
 - [ ] Deep sleep consolidation cycle distills episode logs into graph knowledge
 - [ ] Nightly 2am EST automatic consolidation via cron
 - [ ] Manual consolidation trigger via command
@@ -82,4 +82,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-20 after Phase 01 completion*
+*Last updated: 2026-03-21 after Phase 02 completion*
