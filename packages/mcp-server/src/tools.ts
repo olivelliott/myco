@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type Database from 'better-sqlite3';
 import { generateSessionId, buildProvenance } from '@ai-workbots/core';
 import { nanoid } from 'nanoid';
+import { embedText } from './embed-client.js';
 
 // The session ID is created once per server process lifetime.
 const SESSION_ID = generateSessionId();
@@ -29,7 +30,7 @@ export interface RememberResult {
  * Core write logic extracted for direct testability.
  * The MCP tool handler is a thin wrapper around this function.
  */
-export function rememberEntity(db: Database.Database, params: RememberParams): RememberResult {
+export async function rememberEntity(db: Database.Database, params: RememberParams): Promise<RememberResult> {
   const {
     content,
     entity_name,
@@ -68,6 +69,26 @@ export function rememberEntity(db: Database.Database, params: RememberParams): R
     obsId, entityId, content,
     prov.session_id, prov.agent_id, prov.source_type, prov.confidence, prov.created_at,
   );
+
+  // Insert into FTS5 index for full-text search fallback
+  db.prepare(`
+    INSERT INTO fts_observations (content, observation_id) VALUES (?, ?)
+  `).run(content, obsId);
+
+  // Attempt embedding via Ollama (SRCH-01 inline embedding)
+  const embedding = await embedText(content);
+
+  if (embedding !== null) {
+    const vec = new Float32Array(embedding);
+    db.prepare(`
+      INSERT INTO vec_embeddings (item_id, item_type, embedding) VALUES (?, ?, ?)
+    `).run(obsId, 'observation', vec);
+  } else {
+    // Ollama unavailable — flag for later re-embedding (SRCH-04)
+    db.prepare(`
+      UPDATE observations SET needs_embedding = 1 WHERE id = ?
+    `).run(obsId);
+  }
 
   // Handle optional relations
   if (relations && relations.length > 0) {
