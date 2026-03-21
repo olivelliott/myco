@@ -2,9 +2,19 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { openDatabase } from '@ai-workbots/core';
-import { registerTools } from './tools.js';
+import { registerTools, reEmbedPending } from './tools.js';
 
 const db = openDatabase();
+
+// Startup re-embed sweep: backfill embeddings for observations flagged during Ollama outage
+// Runs async — does not block server startup
+reEmbedPending(db).then(count => {
+  if (count > 0) {
+    console.error(`Re-embedded ${count} pending observations at startup`);
+  }
+}).catch(() => {
+  // Ollama unavailable at startup — will retry next startup
+});
 
 const server = new McpServer({
   name: 'ai-workbots-brain',
