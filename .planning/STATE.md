@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-rest-api-pwa 04-01-PLAN.md
-last_updated: "2026-03-21T03:43:01.482Z"
+stopped_at: Completed 04-rest-api-pwa 04-02-PLAN.md
+last_updated: "2026-03-21T03:46:26.598Z"
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 12
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 ## Current Position
 
 Phase: 04 (rest-api-pwa) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Plan: 2 of 5
 | Phase 03-consolidation-approval P02 | 240s | 2 tasks | 3 files |
 | Phase 03-consolidation-approval P03 | 81s | 2 tasks | 2 files |
 | Phase 04-rest-api-pwa P01 | 4min | 2 tasks | 9 files |
+| Phase 04-rest-api-pwa P02 | 6min | 2 tasks | 25 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - [Phase 04-rest-api-pwa]: Route factories accept db parameter — testable without server setup
 - [Phase 04-rest-api-pwa]: Approval approve path inlines DB writes without embedText — sets needs_embedding=1 so MCP server startup sweep handles embeddings
 - [Phase 04-rest-api-pwa]: npm install requires --legacy-peer-deps due to pre-existing @vitejs/plugin-react peer dep conflict with Vite 8 in dashboard package
+- [Phase 04-rest-api-pwa]: shadcn/ui components created manually (not via CLI) — functionally identical, enables automated execution
+- [Phase 04-rest-api-pwa]: routeTree.gen.ts created manually — regenerated automatically by TanStackRouterVite Vite plugin on first dev start
+- [Phase 04-rest-api-pwa]: Dashboard Sidebar pendingCount wired via prop — TanStack Query integration deferred to plan 03
 
 ### Pending Todos
 
@@ -99,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T03:43:01.478Z
-Stopped at: Completed 04-rest-api-pwa 04-01-PLAN.md
+Last session: 2026-03-21T03:46:26.594Z
+Stopped at: Completed 04-rest-api-pwa 04-02-PLAN.md
 Resume file: None

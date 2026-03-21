@@ -47,7 +47,7 @@
 - [ ] **PWA-02**: Approve/reject/edit actions on queued items from the PWA
 - [ ] **PWA-03**: Knowledge graph explorer visualizes entities, relationships, and connections interactively
 - [ ] **PWA-04**: Activity dashboard shows session timeline, episode counts, graph growth, and pending approval count
-- [ ] **PWA-05**: Responsive design works equally well on phone and desktop
+- [x] **PWA-05**: Responsive design works equally well on phone and desktop
 - [x] **PWA-06**: PWA reads from the same SQLite database as the MCP server via a Hono REST API
 
 ### GSD Integration
@@ -110,7 +110,7 @@
 | PWA-02 | Phase 4 | Pending |
 | PWA-03 | Phase 4 | Pending |
 | PWA-04 | Phase 4 | Pending |
-| PWA-05 | Phase 4 | Pending |
+| PWA-05 | Phase 4 | Complete |
 | PWA-06 | Phase 4 | Complete |
 | GSD-01 | Phase 5 | Pending |
 | GSD-02 | Phase 5 | Pending |
