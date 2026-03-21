@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 03-consolidation-approval 03-03-PLAN.md
-last_updated: "2026-03-21T02:37:55.620Z"
+stopped_at: Completed 04-rest-api-pwa 04-01-PLAN.md
+last_updated: "2026-03-21T03:43:01.482Z"
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 12
+  completed_plans: 8
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 03 — consolidation-approval
+**Current focus:** Phase 04 — rest-api-pwa
 
 ## Current Position
 
-Phase: 03 (consolidation-approval) — EXECUTING
-Plan: 2 of 2
+Phase: 04 (rest-api-pwa) — EXECUTING
+Plan: 2 of 5
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Plan: 2 of 2
 | Phase 03-consolidation-approval P01 | 693s | 2 tasks | 8 files |
 | Phase 03-consolidation-approval P02 | 240s | 2 tasks | 3 files |
 | Phase 03-consolidation-approval P03 | 81s | 2 tasks | 2 files |
+| Phase 04-rest-api-pwa P01 | 4min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Recent decisions affecting current work:
 - [Phase 03-consolidation-approval]: consolidationCron variable held in module scope to prevent GC of Cron instance
 - [Phase 03-consolidation-approval]: process.argv used directly for CLI dispatch (no commander/yargs): 3 subcommands does not justify extra dependency
 - [Phase 03-consolidation-approval]: brain-cli resolve-approval replicates MCP resolve_approval merge_candidate entity reassignment verbatim for identical CLI behavior
+- [Phase 04-rest-api-pwa]: Route factories accept db parameter — testable without server setup
+- [Phase 04-rest-api-pwa]: Approval approve path inlines DB writes without embedText — sets needs_embedding=1 so MCP server startup sweep handles embeddings
+- [Phase 04-rest-api-pwa]: npm install requires --legacy-peer-deps due to pre-existing @vitejs/plugin-react peer dep conflict with Vite 8 in dashboard package
 
 ### Pending Todos
 
@@ -95,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T02:37:55.616Z
-Stopped at: Completed 03-consolidation-approval 03-03-PLAN.md
+Last session: 2026-03-21T03:43:01.478Z
+Stopped at: Completed 04-rest-api-pwa 04-01-PLAN.md
 Resume file: None

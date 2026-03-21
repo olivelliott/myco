@@ -76,10 +76,10 @@ Plans:
   2. A human can approve, reject, or edit a queued approval item in the PWA and the change persists in brain.db
   3. The knowledge graph explorer renders entities and relationships as an interactive graph; clicking a node shows its observations and connected entities
   4. The PWA installs on a phone home screen and remains usable at mobile screen widths
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
-- [ ] 04-01-PLAN.md — Hono REST API server with all route groups (dashboard, approvals, entities, episodes, graph)
+- [x] 04-01-PLAN.md — Hono REST API server with all route groups (dashboard, approvals, entities, episodes, graph)
 - [ ] 04-02-PLAN.md — Dashboard scaffold: Vite 8, React 19, TanStack Router, shadcn/ui, PWA config, responsive root layout
 - [ ] 04-03-PLAN.md — Dashboard home view: stat cards, activity feed, quick-approve list, pending count badge
 - [ ] 04-04-PLAN.md — Approval queue UI: approval cards with actions, merge candidate cards, optimistic mutations
@@ -105,5 +105,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Storage Foundation | 2/2 | Complete   | 2026-03-20 |
 | 2. MCP Server + Memory | 1/2 | In Progress|  |
 | 3. Consolidation + Approval | 3/3 | Complete   | 2026-03-21 |
-| 4. REST API + PWA | 0/5 | Not started | - |
+| 4. REST API + PWA | 1/5 | In Progress|  |
 | 5. GSD Integration | 0/TBD | Not started | - |
