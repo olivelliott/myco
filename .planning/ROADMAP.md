@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Storage Foundation** - Monorepo scaffold, SQLite schema with WAL mode, shared Core library (completed 2026-03-20)
 - [ ] **Phase 2: MCP Server + Memory** - MCP tools, episode logging with provenance, semantic search via Ollama
 - [x] **Phase 3: Consolidation + Approval** - Deep sleep pipeline, LLM extraction, confidence scoring, human approval queue (completed 2026-03-21)
-- [ ] **Phase 4: REST API + PWA** - Hono API server, cron scheduler, React PWA with approval queue and graph explorer
+- [x] **Phase 4: REST API + PWA** - Hono API server, cron scheduler, React PWA with approval queue and graph explorer (completed 2026-03-21)
 - [ ] **Phase 5: GSD Integration** - Hook scripts for phase/milestone transitions, auto-capture structured episodes
 
 ## Phase Details
@@ -76,14 +76,14 @@ Plans:
   2. A human can approve, reject, or edit a queued approval item in the PWA and the change persists in brain.db
   3. The knowledge graph explorer renders entities and relationships as an interactive graph; clicking a node shows its observations and connected entities
   4. The PWA installs on a phone home screen and remains usable at mobile screen widths
-**Plans:** 2/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 04-01-PLAN.md — Hono REST API server with all route groups (dashboard, approvals, entities, episodes, graph)
 - [x] 04-02-PLAN.md — Dashboard scaffold: Vite 8, React 19, TanStack Router, shadcn/ui, PWA config, responsive root layout
-- [ ] 04-03-PLAN.md — Dashboard home view: stat cards, activity feed, quick-approve list, pending count badge
-- [ ] 04-04-PLAN.md — Approval queue UI: approval cards with actions, merge candidate cards, optimistic mutations
-- [ ] 04-05-PLAN.md — Knowledge graph explorer: force-directed graph, search/filter, entity detail side panel
+- [x] 04-03-PLAN.md — Dashboard home view: stat cards, activity feed, quick-approve list, pending count badge
+- [x] 04-04-PLAN.md — Approval queue UI: approval cards with actions, merge candidate cards, optimistic mutations
+- [x] 04-05-PLAN.md — Knowledge graph explorer: force-directed graph, search/filter, entity detail side panel
 
 ### Phase 5: GSD Integration
 **Goal**: GSD workflow transitions automatically feed high-signal episodes into the brain without any manual action from the user
@@ -105,5 +105,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Storage Foundation | 2/2 | Complete   | 2026-03-20 |
 | 2. MCP Server + Memory | 1/2 | In Progress|  |
 | 3. Consolidation + Approval | 3/3 | Complete   | 2026-03-21 |
-| 4. REST API + PWA | 2/5 | In Progress|  |
+| 4. REST API + PWA | 5/5 | Complete   | 2026-03-21 |
 | 5. GSD Integration | 0/TBD | Not started | - |
