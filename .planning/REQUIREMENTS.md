@@ -29,16 +29,16 @@
 ### Consolidation
 
 - [ ] **CNSLD-01**: Nightly deep sleep cycle runs at 2am EST via cron, reading episode logs and extracting facts into the knowledge graph
-- [ ] **CNSLD-02**: LLM-assisted extraction requires direct evidence quotes for every extracted fact
-- [ ] **CNSLD-03**: Contradiction detection identifies when new facts conflict with existing knowledge
-- [ ] **CNSLD-04**: Entity deduplication merges equivalent entities discovered across sessions
+- [x] **CNSLD-02**: LLM-assisted extraction requires direct evidence quotes for every extracted fact
+- [x] **CNSLD-03**: Contradiction detection identifies when new facts conflict with existing knowledge
+- [x] **CNSLD-04**: Entity deduplication merges equivalent entities discovered across sessions
 - [ ] **CNSLD-05**: Manual consolidation trigger available via CLI command
 
 ### Human Approval
 
-- [ ] **APRV-01**: Confidence scoring assigns a score to every extracted fact during consolidation
-- [ ] **APRV-02**: Facts above confidence threshold (0.85+) auto-approve into the knowledge graph
-- [ ] **APRV-03**: Low-confidence facts, contradictions, and entity merge candidates queue for human review
+- [x] **APRV-01**: Confidence scoring assigns a score to every extracted fact during consolidation
+- [x] **APRV-02**: Facts above confidence threshold (0.85+) auto-approve into the knowledge graph
+- [x] **APRV-03**: Low-confidence facts, contradictions, and entity merge candidates queue for human review
 - [ ] **APRV-04**: Human can approve, reject, or edit queued items
 
 ### PWA Dashboard
@@ -98,13 +98,13 @@
 | EPSD-02 | Phase 2 | Complete |
 | EPSD-03 | Phase 2 | Complete |
 | CNSLD-01 | Phase 3 | Pending |
-| CNSLD-02 | Phase 3 | Pending |
-| CNSLD-03 | Phase 3 | Pending |
-| CNSLD-04 | Phase 3 | Pending |
+| CNSLD-02 | Phase 3 | Complete |
+| CNSLD-03 | Phase 3 | Complete |
+| CNSLD-04 | Phase 3 | Complete |
 | CNSLD-05 | Phase 3 | Pending |
-| APRV-01 | Phase 3 | Pending |
-| APRV-02 | Phase 3 | Pending |
-| APRV-03 | Phase 3 | Pending |
+| APRV-01 | Phase 3 | Complete |
+| APRV-02 | Phase 3 | Complete |
+| APRV-03 | Phase 3 | Complete |
 | APRV-04 | Phase 3 | Pending |
 | PWA-01 | Phase 4 | Pending |
 | PWA-02 | Phase 4 | Pending |

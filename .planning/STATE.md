@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-mcp-server-memory 02-02-PLAN.md
-last_updated: "2026-03-21T00:31:54.566Z"
+stopped_at: Completed 03-consolidation-approval 03-01-PLAN.md
+last_updated: "2026-03-21T01:29:31.224Z"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 02 — mcp-server-memory
+**Current focus:** Phase 03 — consolidation-approval
 
 ## Current Position
 
-Phase: 02 (mcp-server-memory) — EXECUTING
+Phase: 03 (consolidation-approval) — EXECUTING
 Plan: 2 of 2
 
 ## Performance Metrics
@@ -50,6 +50,7 @@ Plan: 2 of 2
 | Phase 01-storage-foundation P02 | 3min | 1 tasks | 4 files |
 | Phase 02-mcp-server-memory P01 | 313s | 2 tasks | 5 files |
 | Phase 02-mcp-server-memory P02 | 4min | 2 tasks | 3 files |
+| Phase 03-consolidation-approval P01 | 693s | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,10 @@ Recent decisions affecting current work:
 - [Phase 02-mcp-server-memory]: z.record(z.string(), z.unknown()) required for Zod v4 — single-arg z.record() not supported
 - [Phase 02-mcp-server-memory]: recall and query do not join episodes table — enforces EPSD-03 isolation at query level
 - [Phase 02-mcp-server-memory]: reEmbedPending startup sweep is fire-and-forget async — MCP server startup not gated on Ollama availability
+- [Phase 03-consolidation-approval]: ai@4.3.19 used (not v6): ollama-ai-provider@1.2.0 returns LanguageModelV1 which ai@6 dropped; experimental_output API in v4
+- [Phase 03-consolidation-approval]: Zod unified to single v4.3.6 via root override — eliminates MCP SDK Zod cross-version type conflicts
+- [Phase 03-consolidation-approval]: server.registerTool() replaces deprecated server.tool() for MCP SDK 1.27.1 Zod v4 compatibility
+- [Phase 03-consolidation-approval]: consolidator extractFacts failures mark batch consolidated anyway — prevents infinite reprocessing
 
 ### Pending Todos
 
@@ -84,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T00:31:54.563Z
-Stopped at: Completed 02-mcp-server-memory 02-02-PLAN.md
+Last session: 2026-03-21T01:29:31.221Z
+Stopped at: Completed 03-consolidation-approval 03-01-PLAN.md
 Resume file: None
