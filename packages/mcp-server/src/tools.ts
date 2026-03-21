@@ -379,38 +379,40 @@ export async function reEmbedPending(db: Database.Database): Promise<number> {
 }
 
 export function registerTools(server: McpServer, db: Database.Database): void {
-  server.tool(
+  server.registerTool(
     'remember',
-    'Store a piece of knowledge in the brain. Creates an entity with an observation, and optionally relationships to other entities.',
     {
-      content: z.string().describe('The observation or fact to remember'),
-      entity_name: z.string().describe('Name of the entity this knowledge is about'),
-      entity_type: z
-        .string()
-        .default('concept')
-        .describe('Entity type (e.g. "person", "project", "concept", "technology")'),
-      agent_id: z.string().optional().describe('Calling agent identifier'),
-      confidence: z
-        .number()
-        .min(0)
-        .max(1)
-        .default(1.0)
-        .describe('Confidence score 0.0-1.0'),
-      relations: z
-        .array(
-          z.object({
-            target_name: z.string().describe('Name of the related entity'),
-            target_type: z
-              .string()
-              .default('concept')
-              .describe('Type of the related entity'),
-            relation_type: z
-              .string()
-              .describe('Relationship type (e.g. "depends_on", "is_part_of", "uses")'),
-          }),
-        )
-        .optional()
-        .describe('Optional relationships to create'),
+      description: 'Store a piece of knowledge in the brain. Creates an entity with an observation, and optionally relationships to other entities.',
+      inputSchema: {
+        content: z.string().describe('The observation or fact to remember'),
+        entity_name: z.string().describe('Name of the entity this knowledge is about'),
+        entity_type: z
+          .string()
+          .default('concept')
+          .describe('Entity type (e.g. "person", "project", "concept", "technology")'),
+        agent_id: z.string().optional().describe('Calling agent identifier'),
+        confidence: z
+          .number()
+          .min(0)
+          .max(1)
+          .default(1.0)
+          .describe('Confidence score 0.0-1.0'),
+        relations: z
+          .array(
+            z.object({
+              target_name: z.string().describe('Name of the related entity'),
+              target_type: z
+                .string()
+                .default('concept')
+                .describe('Type of the related entity'),
+              relation_type: z
+                .string()
+                .describe('Relationship type (e.g. "depends_on", "is_part_of", "uses")'),
+            }),
+          )
+          .optional()
+          .describe('Optional relationships to create'),
+      },
     },
     async ({ content, entity_name, entity_type, agent_id, confidence, relations }) => {
       return rememberEntity(db, {
@@ -424,38 +426,44 @@ export function registerTools(server: McpServer, db: Database.Database): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     'recall',
-    'Retrieve relevant knowledge from the brain using natural language',
     {
-      query: z.string().describe('Natural language query'),
-      limit: z.number().default(10).describe('Max results to return'),
+      description: 'Retrieve relevant knowledge from the brain using natural language',
+      inputSchema: {
+        query: z.string().describe('Natural language query'),
+        limit: z.number().default(10).describe('Max results to return'),
+      },
     },
     async ({ query, limit }) => {
       return recallKnowledge(db, { query, limit });
     },
   );
 
-  server.tool(
+  server.registerTool(
     'query',
-    'Query the knowledge graph by entity name, type, or relationship',
     {
-      entity_name: z.string().optional().describe('Exact entity name'),
-      entity_type: z.string().optional().describe('Filter by entity type'),
-      relation_type: z.string().optional().describe('Filter by relationship type'),
+      description: 'Query the knowledge graph by entity name, type, or relationship',
+      inputSchema: {
+        entity_name: z.string().optional().describe('Exact entity name'),
+        entity_type: z.string().optional().describe('Filter by entity type'),
+        relation_type: z.string().optional().describe('Filter by relationship type'),
+      },
     },
     async ({ entity_name, entity_type, relation_type }) => {
       return queryEntities(db, { entity_name, entity_type, relation_type });
     },
   );
 
-  server.tool(
+  server.registerTool(
     'log_episode',
-    'Log an episode event for later consolidation. Episodes are raw session events, not directly queryable by agents.',
     {
-      event_type: z.string().describe('Type of event (e.g. "task_complete", "decision", "discovery", "error")'),
-      payload: z.record(z.string(), z.unknown()).describe('Event payload — any structured data relevant to the event'),
-      agent_id: z.string().optional().describe('Calling agent identifier'),
+      description: 'Log an episode event for later consolidation. Episodes are raw session events, not directly queryable by agents.',
+      inputSchema: {
+        event_type: z.string().describe('Type of event (e.g. "task_complete", "decision", "discovery", "error")'),
+        payload: z.record(z.string(), z.unknown()).describe('Event payload — any structured data relevant to the event'),
+        agent_id: z.string().optional().describe('Calling agent identifier'),
+      },
     },
     async ({ event_type, payload, agent_id }) => {
       return logEpisode(db, { event_type, payload, agent_id });

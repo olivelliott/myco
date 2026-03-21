@@ -97,4 +97,25 @@ export function applySchema(db: Database.Database): void {
   } catch {
     // Index may already exist
   }
+
+  // Migration: add consolidated_at column to episodes (NULL = unconsolidated)
+  try {
+    db.exec(`ALTER TABLE episodes ADD COLUMN consolidated_at TEXT`);
+  } catch {
+    // Column already exists
+  }
+
+  // Index for efficient unconsolidated episode queries
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_episodes_unconsolidated ON episodes(consolidated_at) WHERE consolidated_at IS NULL`);
+  } catch {
+    // Index may already exist
+  }
+
+  // Migration: add metadata column to approval_queue for storing proposed fact payloads as JSON
+  try {
+    db.exec(`ALTER TABLE approval_queue ADD COLUMN metadata TEXT`);
+  } catch {
+    // Column already exists
+  }
 }

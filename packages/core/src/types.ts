@@ -47,6 +47,7 @@ export interface Episode {
   event_type: string;
   payload: string; // JSON string
   created_at: string;
+  consolidated_at?: string | null;
 }
 
 export interface ApprovalQueueItem {
@@ -55,6 +56,7 @@ export interface ApprovalQueueItem {
   item_id: string;
   status: string; // "pending" | "approved" | "rejected"
   reason: string | null;
+  metadata?: string | null; // JSON string with proposed fact payload
   created_at: string;
   resolved_at: string | null;
 }
@@ -65,4 +67,25 @@ export interface ProvenanceRecord {
   source_type: SourceType;
   confidence: number;
   created_at: string;
+}
+
+export interface ExtractedFact {
+  entity_name: string;
+  entity_type: string;
+  observation: string;
+  confidence: number;
+  evidence_quote: string;
+  related_entities: Array<{
+    name: string;
+    type: string;
+    relation_type: string;
+  }>;
+}
+
+export interface ConsolidationSummary {
+  totalProcessed: number;
+  totalExtracted: number;
+  totalAutoApproved: number;
+  totalQueued: number;
+  errors: number;
 }
