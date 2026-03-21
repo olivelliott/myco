@@ -29,8 +29,11 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] PWA with activity dashboard — episode logs, agent activity, progress monitoring — *Validated in Phase 04: rest-api-pwa*
 - [x] Responsive PWA works equally well on phone and desktop — *Validated in Phase 04: rest-api-pwa*
 
+- [x] GSD hooks auto-capture episodes at phase transitions and key workflow moments — *Validated in Phase 05: gsd-integration*
+
 ### Active
-- [ ] GSD hooks auto-capture episodes at phase transitions and key workflow moments
+
+*No active requirements — all v1 requirements validated.*
 
 ### Out of Scope
 
@@ -84,4 +87,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-21 after Phase 04 completion*
+*Last updated: 2026-03-21 after Phase 05 completion — all v1 requirements validated*
