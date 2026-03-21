@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-gsd-integration 05-01-PLAN.md
-last_updated: "2026-03-21T17:21:01.372Z"
+stopped_at: Completed 05-gsd-integration 05-02-PLAN.md
+last_updated: "2026-03-21T18:30:29.993Z"
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Project State
@@ -59,6 +59,7 @@ Plan: 2 of 2
 | Phase 04-rest-api-pwa P04 | 2min | 2 tasks | 4 files |
 | Phase 04-rest-api-pwa P05 | 4min | 2 tasks | 4 files |
 | Phase 05-gsd-integration P01 | 2073s | 2 tasks | 3 files |
+| Phase 05-gsd-integration P02 | 5min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,9 @@ Recent decisions affecting current work:
 - [Phase 05-gsd-integration]: .claude/package.json with type:commonjs enables require() in ESM project for hook scripts
 - [Phase 05-gsd-integration]: crypto.randomUUID() used in hooks instead of nanoid — nanoid v5 is ESM-only, incompatible with CommonJS hook scripts
 - [Phase 05-gsd-integration]: Hook direct SQLite INSERT identical to logEpisode() — no MCP tool invocation needed from hook context
+- [Phase 05-gsd-integration]: Project-scoped hook registration in .claude/settings.json ensures hook fires only in this project, not globally
+- [Phase 05-gsd-integration]: Absolute path to hook script required — Claude Code resolves hook commands from its own cwd, not the project root
+- [Phase 05-gsd-integration]: 10-second hook timeout matches the stdin timeout guard in gsd-brain-episode.js to prevent process hang
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T17:21:01.369Z
-Stopped at: Completed 05-gsd-integration 05-01-PLAN.md
+Last session: 2026-03-21T18:30:29.990Z
+Stopped at: Completed 05-gsd-integration 05-02-PLAN.md
 Resume file: None

@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: MCP Server + Memory** - MCP tools, episode logging with provenance, semantic search via Ollama
 - [x] **Phase 3: Consolidation + Approval** - Deep sleep pipeline, LLM extraction, confidence scoring, human approval queue (completed 2026-03-21)
 - [x] **Phase 4: REST API + PWA** - Hono API server, cron scheduler, React PWA with approval queue and graph explorer (completed 2026-03-21)
-- [ ] **Phase 5: GSD Integration** - Hook scripts for phase/milestone transitions, auto-capture structured episodes
+- [x] **Phase 5: GSD Integration** - Hook scripts for phase/milestone transitions, auto-capture structured episodes (completed 2026-03-21)
 
 ## Phase Details
 
@@ -93,11 +93,11 @@ Plans:
   1. Completing a GSD phase transition via `/gsd:transition` automatically creates an episode log entry with phase name, requirements covered, and outcome summary
   2. A hook failure during a GSD workflow does not interrupt or error the GSD workflow itself
   3. GSD-captured episodes appear in the PWA activity dashboard within one page refresh
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 05-01-PLAN.md — GSD phase transition hook script + unit tests
-- [ ] 05-02-PLAN.md — Hook registration in project settings + integration verification
+- [x] 05-02-PLAN.md — Hook registration in project settings + integration verification
 
 ## Progress
 
@@ -110,4 +110,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. MCP Server + Memory | 1/2 | In Progress|  |
 | 3. Consolidation + Approval | 3/3 | Complete   | 2026-03-21 |
 | 4. REST API + PWA | 5/5 | Complete   | 2026-03-21 |
-| 5. GSD Integration | 1/2 | In Progress|  |
+| 5. GSD Integration | 2/2 | Complete   | 2026-03-21 |
