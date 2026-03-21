@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "brain-mcp": "./dist/index.js"
+    "brain-mcp": "./dist/index.js",
+    "brain-cli": "./dist/cli.js"
   },
   "exports": {
     ".": {
