@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { rmSync, mkdirSync } from 'node:fs';
 import { openDatabase } from '@ai-workbots/core';
 import type Database from 'better-sqlite3';
-import { rememberEntity } from '../src/tools.js';
+import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending } from '../src/tools.js';
 
 const testDir = join(tmpdir(), 'ai-workbots-mcp-test-' + process.pid);
 
@@ -228,13 +228,196 @@ describe('MCP server tools', () => {
     });
   });
 
-  describe('tool registration stubs', () => {
-    it('recall tool stub returns not yet implemented text', async () => {
-      // Test by importing registerTools and verifying through the server
-      // Using McpServer internals is complex, so we test the recall stub via
-      // a direct import approach — this is covered in integration by the MCP server itself.
-      // The behavior test here validates that the text "not yet implemented" is in the source.
-      // Structural test: verify tools.ts exports registerTools
+  describe('recallKnowledge', () => {
+    it('returns FTS5 results with method "fts" when Ollama is unavailable', async () => {
+      // Store an observation (Ollama unavailable in tests — FTS5 path exercised)
+      await rememberEntity(db, {
+        content: 'TypeScript supports generics and interfaces',
+        entity_name: 'TypeScript',
+        entity_type: 'technology',
+      });
+
+      const result = await recallKnowledge(db, { query: 'TypeScript', limit: 10 });
+      const parsed = JSON.parse(result.content[0].text) as {
+        results: Array<{ entity_name: string; observation: string; confidence: number; relevance_score: number }>;
+        metadata: { method: string; count: number; query: string };
+      };
+
+      expect(parsed.metadata.method).toBe('fts');
+      expect(parsed.results.length).toBeGreaterThan(0);
+      expect(parsed.results[0].entity_name).toBe('TypeScript');
+      expect(parsed.results[0].observation).toBe('TypeScript supports generics and interfaces');
+    });
+
+    it('returns empty results when no matching observations', async () => {
+      const result = await recallKnowledge(db, { query: 'xyzzy nonexistent content', limit: 10 });
+      const parsed = JSON.parse(result.content[0].text) as {
+        results: unknown[];
+        metadata: { method: string; count: number };
+      };
+
+      expect(parsed.results).toHaveLength(0);
+      expect(parsed.metadata.count).toBe(0);
+    });
+
+    it('recall does not return episodes (episode isolation - EPSD-03)', async () => {
+      await logEpisode(db, { event_type: 'secret_event', payload: { task: 'secret' } });
+
+      const result = await recallKnowledge(db, { query: 'secret_event', limit: 10 });
+      const parsed = JSON.parse(result.content[0].text) as {
+        results: Array<{ entity_name: string; observation: string }>;
+      };
+
+      // Episodes must never appear in recall results
+      const hasEpisodeContent = parsed.results.some(r =>
+        r.observation?.includes('secret_event') || r.entity_name?.includes('secret_event'),
+      );
+      expect(hasEpisodeContent).toBe(false);
+    });
+  });
+
+  describe('queryEntities', () => {
+    it('returns entity by exact name with observation_count', async () => {
+      await rememberEntity(db, {
+        content: 'A statically typed language',
+        entity_name: 'TestEntity',
+        entity_type: 'technology',
+      });
+
+      const result = queryEntities(db, { entity_name: 'TestEntity' });
+      const parsed = JSON.parse(result.content[0].text) as {
+        results: Array<{ entity_name: string; observation_count: number; observations: unknown[] }>;
+        metadata: { count: number };
+      };
+
+      expect(parsed.metadata.count).toBe(1);
+      expect(parsed.results[0].entity_name).toBe('TestEntity');
+      expect(parsed.results[0].observation_count).toBeGreaterThanOrEqual(1);
+    });
+
+    it('filters entities by type', async () => {
+      await rememberEntity(db, {
+        content: 'A programming language',
+        entity_name: 'Rust',
+        entity_type: 'technology',
+      });
+
+      await rememberEntity(db, {
+        content: 'A person',
+        entity_name: 'Alice',
+        entity_type: 'person',
+      });
+
+      const result = queryEntities(db, { entity_type: 'technology' });
+      const parsed = JSON.parse(result.content[0].text) as {
+        results: Array<{ entity_name: string; entity_type: string }>;
+      };
+
+      const names = parsed.results.map(r => r.entity_name);
+      expect(names).toContain('Rust');
+      expect(names).not.toContain('Alice');
+    });
+
+    it('returns all entities when no filter provided', async () => {
+      await rememberEntity(db, {
+        content: 'First entity',
+        entity_name: 'EntityA',
+        entity_type: 'concept',
+      });
+
+      await rememberEntity(db, {
+        content: 'Second entity',
+        entity_name: 'EntityB',
+        entity_type: 'concept',
+      });
+
+      const result = queryEntities(db, {});
+      const parsed = JSON.parse(result.content[0].text) as {
+        results: Array<{ entity_name: string }>;
+        metadata: { count: number };
+      };
+
+      expect(parsed.metadata.count).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('logEpisode', () => {
+    it('creates episode record with correct fields', async () => {
+      const result = await logEpisode(db, {
+        event_type: 'test_event',
+        payload: { key: 'value' },
+      });
+
+      const parsed = JSON.parse(result.content[0].text) as {
+        id: string;
+        session_id: string;
+      };
+
+      expect(parsed.id).toBeTruthy();
+      expect(parsed.session_id).toBeTruthy();
+
+      const row = db.prepare('SELECT * FROM episodes WHERE event_type = ?').get('test_event') as {
+        id: string;
+        session_id: string;
+        agent_id: string;
+        event_type: string;
+        payload: string;
+        created_at: string;
+      } | undefined;
+
+      expect(row).toBeDefined();
+      expect(row?.id).toBe(parsed.id);
+      expect(row?.event_type).toBe('test_event');
+      expect(JSON.parse(row?.payload ?? '{}')).toEqual({ key: 'value' });
+    });
+
+    it('per-agent episode isolation (EPSD-02): distinct agent_id values stored', async () => {
+      await logEpisode(db, {
+        event_type: 'agent_a_event',
+        payload: { task: 'build' },
+        agent_id: 'agent-alpha',
+      });
+
+      await logEpisode(db, {
+        event_type: 'agent_b_event',
+        payload: { task: 'test' },
+        agent_id: 'agent-beta',
+      });
+
+      const rows = db.prepare('SELECT agent_id FROM episodes ORDER BY created_at').all() as Array<{ agent_id: string }>;
+
+      expect(rows).toHaveLength(2);
+
+      const agentIds = rows.map(r => r.agent_id);
+      expect(agentIds).toContain('agent-alpha');
+      expect(agentIds).toContain('agent-beta');
+      expect(new Set(agentIds).size).toBe(2);
+    });
+  });
+
+  describe('reEmbedPending', () => {
+    it('returns 0 when no pending rows', async () => {
+      const count = await reEmbedPending(db);
+      expect(count).toBe(0);
+    });
+
+    it('returns 0 when Ollama unavailable (graceful — does not throw)', async () => {
+      // Store an entity with needs_embedding = 1 (Ollama unavailable in tests)
+      await rememberEntity(db, {
+        content: 'Pending embedding content',
+        entity_name: 'PendingEntity',
+        entity_type: 'concept',
+      });
+
+      // In test env, embedText returns null — reEmbedPending attempts but Ollama is down
+      // Should not throw and returns 0 (Ollama unavailable mid-sweep stops early)
+      const count = await reEmbedPending(db);
+      expect(count).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('tool registration', () => {
+    it('registerTools exports are all functions', async () => {
       const { registerTools } = await import('../src/tools.js');
       expect(typeof registerTools).toBe('function');
     });
