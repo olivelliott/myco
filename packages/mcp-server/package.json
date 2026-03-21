@@ -17,7 +17,7 @@
   "dependencies": {
     "@ai-workbots/core": "*",
     "@modelcontextprotocol/sdk": "^1.27.1",
-    "ai": "^6.0.134",
+    "ai": "^4.3.19",
     "croner": "^10.0.1",
     "nanoid": "^5.1.7",
     "ollama": "^0.6.3",

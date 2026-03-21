@@ -9,4 +9,6 @@ export type {
   Episode,
   ApprovalQueueItem,
   ProvenanceRecord,
+  ExtractedFact,
+  ConsolidationSummary,
 } from './types.js';

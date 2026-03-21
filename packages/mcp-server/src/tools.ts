@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type Database from 'better-sqlite3';
 import { generateSessionId, buildProvenance } from '@ai-workbots/core';
+import type { SourceType } from '@ai-workbots/core';
 import { nanoid } from 'nanoid';
 import { embedText } from './embed-client.js';
 
@@ -14,6 +15,7 @@ export interface RememberParams {
   entity_type?: string;
   agent_id?: string;
   confidence?: number;
+  source_type?: SourceType;
   relations?: Array<{
     target_name: string;
     target_type?: string;
@@ -73,10 +75,11 @@ export async function rememberEntity(db: Database.Database, params: RememberPara
     entity_type = 'concept',
     agent_id,
     confidence = 1.0,
+    source_type = 'agent_session',
     relations,
   } = params;
 
-  const prov = buildProvenance(SESSION_ID, agent_id, 'agent_session', confidence);
+  const prov = buildProvenance(SESSION_ID, agent_id, source_type, confidence);
 
   // Upsert entity: find existing by name+type or create new
   const existingEntity = db
