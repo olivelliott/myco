@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-rest-api-pwa 04-04-PLAN.md
-last_updated: "2026-03-21T03:51:47.711Z"
+stopped_at: Completed 04-rest-api-pwa 04-05-PLAN.md
+last_updated: "2026-03-21T03:51:54.331Z"
 progress:
   total_phases: 5
   completed_phases: 4
@@ -98,6 +98,8 @@ Recent decisions affecting current work:
 - [Phase 04-rest-api-pwa]: Sidebar self-wires pending count via useQuery rather than accepting prop — eliminates prop drilling through root layout
 - [Phase 04-rest-api-pwa]: useDashboard queryKey ['dashboard'] shared between Sidebar and DashboardPage — TanStack Query deduplicates to one network request
 - [Phase 04-rest-api-pwa]: use-approvals.ts created in plan 04 (not 03) due to parallel execution — hooks/ dir was absent at plan 04 start
+- [Phase 04-rest-api-pwa]: Search filtering uses opacity 0.2 (nodes stay in graphData) — keeps graph layout stable while showing non-matches. Type filtering removes nodes entirely for cleaner categorical view.
+- [Phase 04-rest-api-pwa]: Entity panel uses requestAnimationFrame before setVisible(true) to guarantee translate-x-full initial state is painted before CSS transition fires
 
 ### Pending Todos
 
@@ -109,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T03:51:41.668Z
-Stopped at: Completed 04-rest-api-pwa 04-04-PLAN.md
+Last session: 2026-03-21T03:51:54.328Z
+Stopped at: Completed 04-rest-api-pwa 04-05-PLAN.md
 Resume file: None
