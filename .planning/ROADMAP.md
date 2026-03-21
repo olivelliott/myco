@@ -60,11 +60,12 @@ Plans:
   3. Facts that contradict existing knowledge, entity merge candidates, and externally-sourced facts appear in the approval queue rather than auto-approving
   4. A human can approve, reject, or edit a queued item from the CLI and the graph reflects the decision immediately
   5. Every auto-approved fact has a direct evidence quote traceable to the source episode
-**Plans:** 1/2 plans executed
+**Plans:** 3 plans
 
 Plans:
 - [x] 03-01-PLAN.md — Consolidation core: deps, schema migrations, consolidator.ts (LLM extraction, contradiction detection, entity merge, batch routing)
 - [x] 03-02-PLAN.md — MCP tools (consolidate, list_pending_approvals, resolve_approval) + croner scheduler wiring
+- [ ] 03-03-PLAN.md — CLI wrapper (brain-cli) for consolidation trigger and approval management (gap closure)
 
 ### Phase 4: REST API + PWA
 **Goal**: The human has a visual interface to review pending approvals, explore the knowledge graph, and monitor agent activity from any device
@@ -96,6 +97,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Storage Foundation | 2/2 | Complete   | 2026-03-20 |
 | 2. MCP Server + Memory | 1/2 | In Progress|  |
-| 3. Consolidation + Approval | 1/2 | In Progress|  |
+| 3. Consolidation + Approval | 2/3 | In Progress|  |
 | 4. REST API + PWA | 0/TBD | Not started | - |
 | 5. GSD Integration | 0/TBD | Not started | - |
