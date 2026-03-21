@@ -18,12 +18,13 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] Local embeddings via Ollama for semantic search and similarity — *Validated in Phase 02: mcp-server-memory*
 - [x] Episodic memory log_episode tool with per-agent isolation — *Validated in Phase 02: mcp-server-memory*
 
+- [x] Deep sleep consolidation cycle distills episode logs into graph knowledge — *Validated in Phase 03: consolidation-approval*
+- [x] Nightly 2am EST automatic consolidation via cron — *Validated in Phase 03: consolidation-approval*
+- [x] Manual consolidation trigger via command — *Validated in Phase 03: consolidation-approval (brain-cli consolidate)*
+- [x] Human approval queue for low-confidence inferences, contradictions, and entity merges — *Validated in Phase 03: consolidation-approval*
+- [x] High-confidence facts auto-approve into the graph without human intervention — *Validated in Phase 03: consolidation-approval*
+
 ### Active
-- [ ] Deep sleep consolidation cycle distills episode logs into graph knowledge
-- [ ] Nightly 2am EST automatic consolidation via cron
-- [ ] Manual consolidation trigger via command
-- [ ] Human approval queue for low-confidence inferences, contradictions, and entity merges
-- [ ] High-confidence facts auto-approve into the graph without human intervention
 - [ ] GSD hooks auto-capture episodes at phase transitions and key workflow moments
 - [ ] PWA with approval queue — review and approve/reject surfaced knowledge
 - [ ] PWA with knowledge graph explorer — browse entities, relationships, connections
@@ -82,4 +83,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-21 after Phase 02 completion*
+*Last updated: 2026-03-21 after Phase 03 completion*
