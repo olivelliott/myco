@@ -1,5 +1,8 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { LayoutDashboard, CheckSquare, Network } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { fetchDashboard } from '../lib/api'
+import { Badge } from './ui/badge'
 
 interface NavItem {
   label: string
@@ -13,11 +16,13 @@ const navItems: NavItem[] = [
   { label: 'Graph', to: '/graph', icon: Network },
 ]
 
-interface SidebarProps {
-  pendingCount?: number
-}
-
-export function Sidebar({ pendingCount = 0 }: SidebarProps) {
+export function Sidebar() {
+  const { data } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: fetchDashboard,
+    refetchInterval: 30_000,
+  })
+  const pendingCount = data?.pending ?? 0
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
 
@@ -49,9 +54,9 @@ export function Sidebar({ pendingCount = 0 }: SidebarProps) {
                 <Icon size={18} className="flex-shrink-0" />
                 <span className="flex-1">{item.label}</span>
                 {item.label === 'Approvals' && pendingCount > 0 && (
-                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-semibold bg-amber-500 text-white">
+                  <Badge className="bg-amber-500 text-white text-xs ml-auto border-0 px-1.5">
                     {pendingCount}
-                  </span>
+                  </Badge>
                 )}
               </Link>
             )
