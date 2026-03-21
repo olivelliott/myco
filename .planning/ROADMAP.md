@@ -48,7 +48,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Schema migration (FTS5 + needs_embedding) + EmbedClient + remember enhancement
-- [ ] 02-02-PLAN.md — recall, query, log_episode tool implementations + startup re-embed sweep
+- [x] 02-02-PLAN.md — recall, query, log_episode tool implementations + startup re-embed sweep
 
 ### Phase 3: Consolidation + Approval
 **Goal**: The brain distills raw episode logs into durable graph knowledge nightly, and the human can review and control what becomes permanent

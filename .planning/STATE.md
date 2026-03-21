@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-mcp-server-memory 02-01-PLAN.md
-last_updated: "2026-03-21T00:24:55.036Z"
+stopped_at: Completed 02-mcp-server-memory 02-02-PLAN.md
+last_updated: "2026-03-21T00:31:54.566Z"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -49,6 +49,7 @@ Plan: 2 of 2
 | Phase 01-storage-foundation P01 | 2 | 1 tasks | 19 files |
 | Phase 01-storage-foundation P02 | 3min | 1 tasks | 4 files |
 | Phase 02-mcp-server-memory P01 | 313s | 2 tasks | 5 files |
+| Phase 02-mcp-server-memory P02 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,9 @@ Recent decisions affecting current work:
 - [Phase 02-mcp-server-memory]: embedText uses AbortSignal.timeout(2000) on each Ollama fetch for 2s graceful degradation
 - [Phase 02-mcp-server-memory]: fts_observations uses porter unicode61 tokenizer for stemming support
 - [Phase 02-mcp-server-memory]: needs_embedding migration uses idempotent try/catch ALTER TABLE safe for repeat startups
+- [Phase 02-mcp-server-memory]: z.record(z.string(), z.unknown()) required for Zod v4 — single-arg z.record() not supported
+- [Phase 02-mcp-server-memory]: recall and query do not join episodes table — enforces EPSD-03 isolation at query level
+- [Phase 02-mcp-server-memory]: reEmbedPending startup sweep is fire-and-forget async — MCP server startup not gated on Ollama availability
 
 ### Pending Todos
 
@@ -80,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T00:24:55.033Z
-Stopped at: Completed 02-mcp-server-memory 02-01-PLAN.md
+Last session: 2026-03-21T00:31:54.563Z
+Stopped at: Completed 02-mcp-server-memory 02-02-PLAN.md
 Resume file: None

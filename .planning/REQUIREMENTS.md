@@ -16,15 +16,15 @@
 ### Semantic Search
 
 - [x] **SRCH-01**: Local embeddings generated via Ollama (nomic-embed-text) for all entities and observations
-- [ ] **SRCH-02**: Vector similarity search via sqlite-vec for semantic recall
-- [ ] **SRCH-03**: Multi-access retrieval: exact entity lookup, tag/type filter, and semantic similarity
+- [x] **SRCH-02**: Vector similarity search via sqlite-vec for semantic recall
+- [x] **SRCH-03**: Multi-access retrieval: exact entity lookup, tag/type filter, and semantic similarity
 - [x] **SRCH-04**: System degrades gracefully when Ollama is unavailable (writes succeed without embeddings, re-embeds on next consolidation)
 
 ### Episode Capture
 
-- [ ] **EPSD-01**: Timestamped episode log captures session events with agent ID and context payload
-- [ ] **EPSD-02**: Per-agent episode isolation — each agent session has its own episode stream
-- [ ] **EPSD-03**: Episodes are the raw input for consolidation, not directly queryable by agents
+- [x] **EPSD-01**: Timestamped episode log captures session events with agent ID and context payload
+- [x] **EPSD-02**: Per-agent episode isolation — each agent session has its own episode stream
+- [x] **EPSD-03**: Episodes are the raw input for consolidation, not directly queryable by agents
 
 ### Consolidation
 
@@ -91,12 +91,12 @@
 | CORE-04 | Phase 1 | Complete |
 | CORE-05 | Phase 1 | Complete |
 | SRCH-01 | Phase 2 | Complete |
-| SRCH-02 | Phase 2 | Pending |
-| SRCH-03 | Phase 2 | Pending |
+| SRCH-02 | Phase 2 | Complete |
+| SRCH-03 | Phase 2 | Complete |
 | SRCH-04 | Phase 2 | Complete |
-| EPSD-01 | Phase 2 | Pending |
-| EPSD-02 | Phase 2 | Pending |
-| EPSD-03 | Phase 2 | Pending |
+| EPSD-01 | Phase 2 | Complete |
+| EPSD-02 | Phase 2 | Complete |
+| EPSD-03 | Phase 2 | Complete |
 | CNSLD-01 | Phase 3 | Pending |
 | CNSLD-02 | Phase 3 | Pending |
 | CNSLD-03 | Phase 3 | Pending |
