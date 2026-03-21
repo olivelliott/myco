@@ -64,7 +64,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Consolidation core: deps, schema migrations, consolidator.ts (LLM extraction, contradiction detection, entity merge, batch routing)
-- [ ] 03-02-PLAN.md — MCP tools (consolidate, list_pending_approvals, resolve_approval) + croner scheduler wiring
+- [x] 03-02-PLAN.md — MCP tools (consolidate, list_pending_approvals, resolve_approval) + croner scheduler wiring
 
 ### Phase 4: REST API + PWA
 **Goal**: The human has a visual interface to review pending approvals, explore the knowledge graph, and monitor agent activity from any device
