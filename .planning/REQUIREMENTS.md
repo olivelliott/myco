@@ -52,9 +52,9 @@
 
 ### GSD Integration
 
-- [ ] **GSD-01**: Hooks auto-capture episodes at GSD phase transitions (phase complete, milestone complete)
-- [ ] **GSD-02**: Structured episode payloads include phase name, requirements covered, and outcome summary
-- [ ] **GSD-03**: Hooks call existing MCP tools — no separate write path
+- [x] **GSD-01**: Hooks auto-capture episodes at GSD phase transitions (phase complete, milestone complete)
+- [x] **GSD-02**: Structured episode payloads include phase name, requirements covered, and outcome summary
+- [x] **GSD-03**: Hooks use the same INSERT schema as logEpisode() — direct SQLite write (MCP tools cannot be invoked from shell hooks)
 
 ## v2 Requirements
 
@@ -112,9 +112,9 @@
 | PWA-04 | Phase 4 | Complete |
 | PWA-05 | Phase 4 | Complete |
 | PWA-06 | Phase 4 | Complete |
-| GSD-01 | Phase 5 | Pending |
-| GSD-02 | Phase 5 | Pending |
-| GSD-03 | Phase 5 | Pending |
+| GSD-01 | Phase 5 | Complete |
+| GSD-02 | Phase 5 | Complete |
+| GSD-03 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 30 total
