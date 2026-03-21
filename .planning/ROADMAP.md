@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Storage Foundation** - Monorepo scaffold, SQLite schema with WAL mode, shared Core library (completed 2026-03-20)
 - [ ] **Phase 2: MCP Server + Memory** - MCP tools, episode logging with provenance, semantic search via Ollama
-- [ ] **Phase 3: Consolidation + Approval** - Deep sleep pipeline, LLM extraction, confidence scoring, human approval queue
+- [x] **Phase 3: Consolidation + Approval** - Deep sleep pipeline, LLM extraction, confidence scoring, human approval queue (completed 2026-03-21)
 - [ ] **Phase 4: REST API + PWA** - Hono API server, cron scheduler, React PWA with approval queue and graph explorer
 - [ ] **Phase 5: GSD Integration** - Hook scripts for phase/milestone transitions, auto-capture structured episodes
 
@@ -60,12 +60,12 @@ Plans:
   3. Facts that contradict existing knowledge, entity merge candidates, and externally-sourced facts appear in the approval queue rather than auto-approving
   4. A human can approve, reject, or edit a queued item from the CLI and the graph reflects the decision immediately
   5. Every auto-approved fact has a direct evidence quote traceable to the source episode
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 03-01-PLAN.md — Consolidation core: deps, schema migrations, consolidator.ts (LLM extraction, contradiction detection, entity merge, batch routing)
 - [x] 03-02-PLAN.md — MCP tools (consolidate, list_pending_approvals, resolve_approval) + croner scheduler wiring
-- [ ] 03-03-PLAN.md — CLI wrapper (brain-cli) for consolidation trigger and approval management (gap closure)
+- [x] 03-03-PLAN.md — CLI wrapper (brain-cli) for consolidation trigger and approval management (gap closure)
 
 ### Phase 4: REST API + PWA
 **Goal**: The human has a visual interface to review pending approvals, explore the knowledge graph, and monitor agent activity from any device
@@ -97,6 +97,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Storage Foundation | 2/2 | Complete   | 2026-03-20 |
 | 2. MCP Server + Memory | 1/2 | In Progress|  |
-| 3. Consolidation + Approval | 2/3 | In Progress|  |
+| 3. Consolidation + Approval | 3/3 | Complete   | 2026-03-21 |
 | 4. REST API + PWA | 0/TBD | Not started | - |
 | 5. GSD Integration | 0/TBD | Not started | - |
