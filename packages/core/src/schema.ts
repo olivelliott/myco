@@ -67,6 +67,12 @@ export function applySchema(db: Database.Database): void {
       embedding   float[768]
     );
 
+    CREATE VIRTUAL TABLE IF NOT EXISTS fts_observations USING fts5(
+      content,
+      observation_id UNINDEXED,
+      tokenize = 'porter unicode61'
+    );
+
     -- Indexes for common queries
     CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(type);
     CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(name);
@@ -77,4 +83,18 @@ export function applySchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_episodes_agent_id ON episodes(agent_id);
     CREATE INDEX IF NOT EXISTS idx_approval_queue_status ON approval_queue(status);
   `);
+
+  // Migration: add needs_embedding column to observations (safe to run on startup)
+  try {
+    db.exec(`ALTER TABLE observations ADD COLUMN needs_embedding INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // Column already exists — expected on databases created after this migration shipped
+  }
+
+  // Index for efficient re-embedding queue queries
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_observations_needs_embedding ON observations(needs_embedding) WHERE needs_embedding = 1`);
+  } catch {
+    // Index may already exist
+  }
 }

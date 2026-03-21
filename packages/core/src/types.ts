@@ -24,6 +24,7 @@ export interface Observation {
   source_type: SourceType;
   confidence: number;
   created_at: string;
+  needs_embedding?: number; // 0 or 1 — 1 means Ollama was unavailable at insert time
 }
 
 export interface Relationship {
