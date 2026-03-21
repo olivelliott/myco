@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 01-storage-foundation 01-02-PLAN.md
-last_updated: "2026-03-20T20:25:41.078Z"
+stopped_at: Completed 02-mcp-server-memory 02-01-PLAN.md
+last_updated: "2026-03-21T00:24:55.036Z"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 01 — storage-foundation
+**Current focus:** Phase 02 — mcp-server-memory
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 02 (mcp-server-memory) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Plan: Not started
 *Updated after each plan completion*
 | Phase 01-storage-foundation P01 | 2 | 1 tasks | 19 files |
 | Phase 01-storage-foundation P02 | 3min | 1 tasks | 4 files |
+| Phase 02-mcp-server-memory P01 | 313s | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,9 @@ Recent decisions affecting current work:
 - [Phase 01-storage-foundation]: rememberEntity() extracted from MCP tool handler for testability — thin wrapper pattern avoids SDK invocation complexity in unit tests
 - [Phase 01-storage-foundation]: SESSION_ID is module-scoped (per-process), not per-call — a session represents the MCP server process lifetime
 - [Phase 01-storage-foundation]: MCP SDK CallToolResult requires index signature on return types — RememberResult needs [key: string]: unknown
+- [Phase 02-mcp-server-memory]: embedText uses AbortSignal.timeout(2000) on each Ollama fetch for 2s graceful degradation
+- [Phase 02-mcp-server-memory]: fts_observations uses porter unicode61 tokenizer for stemming support
+- [Phase 02-mcp-server-memory]: needs_embedding migration uses idempotent try/catch ALTER TABLE safe for repeat startups
 
 ### Pending Todos
 
@@ -76,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T20:23:07.768Z
-Stopped at: Completed 01-storage-foundation 01-02-PLAN.md
+Last session: 2026-03-21T00:24:55.033Z
+Stopped at: Completed 02-mcp-server-memory 02-01-PLAN.md
 Resume file: None

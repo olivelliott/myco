@@ -15,10 +15,10 @@
 
 ### Semantic Search
 
-- [ ] **SRCH-01**: Local embeddings generated via Ollama (nomic-embed-text) for all entities and observations
+- [x] **SRCH-01**: Local embeddings generated via Ollama (nomic-embed-text) for all entities and observations
 - [ ] **SRCH-02**: Vector similarity search via sqlite-vec for semantic recall
 - [ ] **SRCH-03**: Multi-access retrieval: exact entity lookup, tag/type filter, and semantic similarity
-- [ ] **SRCH-04**: System degrades gracefully when Ollama is unavailable (writes succeed without embeddings, re-embeds on next consolidation)
+- [x] **SRCH-04**: System degrades gracefully when Ollama is unavailable (writes succeed without embeddings, re-embeds on next consolidation)
 
 ### Episode Capture
 
@@ -90,10 +90,10 @@
 | CORE-03 | Phase 1 | Complete |
 | CORE-04 | Phase 1 | Complete |
 | CORE-05 | Phase 1 | Complete |
-| SRCH-01 | Phase 2 | Pending |
+| SRCH-01 | Phase 2 | Complete |
 | SRCH-02 | Phase 2 | Pending |
 | SRCH-03 | Phase 2 | Pending |
-| SRCH-04 | Phase 2 | Pending |
+| SRCH-04 | Phase 2 | Complete |
 | EPSD-01 | Phase 2 | Pending |
 | EPSD-02 | Phase 2 | Pending |
 | EPSD-03 | Phase 2 | Pending |
