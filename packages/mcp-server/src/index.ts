@@ -3,6 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { openDatabase } from '@ai-workbots/core';
 import { registerTools, reEmbedPending } from './tools.js';
+import { scheduleDailyConsolidation } from './scheduler.js';
 
 const db = openDatabase();
 
@@ -22,6 +23,10 @@ const server = new McpServer({
 });
 
 registerTools(server, db);
+
+// Schedule nightly consolidation at 2am EST — does not block startup
+const consolidationCron = scheduleDailyConsolidation(db);
+console.error('[scheduler] nightly consolidation scheduled (2am America/New_York)');
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
