@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-rest-api-pwa 04-05-PLAN.md
-last_updated: "2026-03-21T03:51:54.331Z"
+stopped_at: Completed 05-gsd-integration 05-01-PLAN.md
+last_updated: "2026-03-21T17:21:01.372Z"
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 14
+  completed_plans: 13
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 04 — rest-api-pwa
+**Current focus:** Phase 05 — gsd-integration
 
 ## Current Position
 
-Phase: 04 (rest-api-pwa) — EXECUTING
-Plan: 5 of 5
+Phase: 05 (gsd-integration) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Plan: 5 of 5
 | Phase 04-rest-api-pwa P03 | 2min | 2 tasks | 7 files |
 | Phase 04-rest-api-pwa P04 | 2min | 2 tasks | 4 files |
 | Phase 04-rest-api-pwa P05 | 4min | 2 tasks | 4 files |
+| Phase 05-gsd-integration P01 | 2073s | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Recent decisions affecting current work:
 - [Phase 04-rest-api-pwa]: use-approvals.ts created in plan 04 (not 03) due to parallel execution — hooks/ dir was absent at plan 04 start
 - [Phase 04-rest-api-pwa]: Search filtering uses opacity 0.2 (nodes stay in graphData) — keeps graph layout stable while showing non-matches. Type filtering removes nodes entirely for cleaner categorical view.
 - [Phase 04-rest-api-pwa]: Entity panel uses requestAnimationFrame before setVisible(true) to guarantee translate-x-full initial state is painted before CSS transition fires
+- [Phase 05-gsd-integration]: .claude/package.json with type:commonjs enables require() in ESM project for hook scripts
+- [Phase 05-gsd-integration]: crypto.randomUUID() used in hooks instead of nanoid — nanoid v5 is ESM-only, incompatible with CommonJS hook scripts
+- [Phase 05-gsd-integration]: Hook direct SQLite INSERT identical to logEpisode() — no MCP tool invocation needed from hook context
 
 ### Pending Todos
 
@@ -111,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T03:51:54.328Z
-Stopped at: Completed 04-rest-api-pwa 04-05-PLAN.md
+Last session: 2026-03-21T17:21:01.369Z
+Stopped at: Completed 05-gsd-integration 05-01-PLAN.md
 Resume file: None

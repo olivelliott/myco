@@ -93,10 +93,10 @@ Plans:
   1. Completing a GSD phase transition via `/gsd:transition` automatically creates an episode log entry with phase name, requirements covered, and outcome summary
   2. A hook failure during a GSD workflow does not interrupt or error the GSD workflow itself
   3. GSD-captured episodes appear in the PWA activity dashboard within one page refresh
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 05-01-PLAN.md — GSD phase transition hook script + unit tests
+- [x] 05-01-PLAN.md — GSD phase transition hook script + unit tests
 - [ ] 05-02-PLAN.md — Hook registration in project settings + integration verification
 
 ## Progress
@@ -110,4 +110,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. MCP Server + Memory | 1/2 | In Progress|  |
 | 3. Consolidation + Approval | 3/3 | Complete   | 2026-03-21 |
 | 4. REST API + PWA | 5/5 | Complete   | 2026-03-21 |
-| 5. GSD Integration | 0/2 | Not started | - |
+| 5. GSD Integration | 1/2 | In Progress|  |
