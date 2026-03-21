@@ -5,6 +5,7 @@ import { generateSessionId, buildProvenance } from '@ai-workbots/core';
 import type { SourceType } from '@ai-workbots/core';
 import { nanoid } from 'nanoid';
 import { embedText } from './embed-client.js';
+import { runConsolidation } from './consolidator.js';
 
 // The session ID is created once per server process lifetime.
 const SESSION_ID = generateSessionId();
@@ -470,6 +471,180 @@ export function registerTools(server: McpServer, db: Database.Database): void {
     },
     async ({ event_type, payload, agent_id }) => {
       return logEpisode(db, { event_type, payload, agent_id });
+    },
+  );
+
+  server.registerTool(
+    'consolidate',
+    {
+      description: 'Manually trigger the consolidation pipeline. Processes unconsolidated episodes, extracts facts via LLM, and routes them to auto-approve or approval queue.',
+      inputSchema: {},
+    },
+    async () => {
+      console.error('[consolidation] manual trigger via MCP tool');
+      const summary = await runConsolidation(db);
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(summary),
+        }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'list_pending_approvals',
+    {
+      description: 'List items pending human review in the approval queue. Shows reason, confidence, evidence, and proposed changes.',
+      inputSchema: {
+        limit: z.number().default(20).describe('Maximum number of items to return'),
+      },
+    },
+    async ({ limit }) => {
+      const rows = db.prepare(`
+        SELECT id, item_type, item_id, status, reason, metadata, created_at
+        FROM approval_queue
+        WHERE status = 'pending'
+        ORDER BY created_at
+        LIMIT ?
+      `).all(limit) as Array<{
+        id: string;
+        item_type: string;
+        item_id: string;
+        status: string;
+        reason: string | null;
+        metadata: string | null;
+        created_at: string;
+      }>;
+
+      const items = rows.map(row => ({
+        id: row.id,
+        item_type: row.item_type,
+        reason: row.reason,
+        created_at: row.created_at,
+        ...(row.metadata ? { details: JSON.parse(row.metadata) } : {}),
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ items, count: items.length }),
+        }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'resolve_approval',
+    {
+      description: 'Approve, reject, or edit a queued approval item. Approved items are written to the knowledge graph. Edited items have their content replaced before approval.',
+      inputSchema: {
+        id: z.string().describe('Approval queue item ID'),
+        action: z.enum(['approve', 'reject', 'edit']).describe('Resolution action'),
+        edited_content: z.string().optional().describe('Replacement observation content (required when action is "edit")'),
+      },
+    },
+    async ({ id, action, edited_content }) => {
+      // Fetch the pending item
+      const item = db.prepare(
+        'SELECT id, item_type, metadata, status FROM approval_queue WHERE id = ?'
+      ).get(id) as { id: string; item_type: string; metadata: string | null; status: string } | undefined;
+
+      if (!item) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: `Approval item ${id} not found` }) }],
+        };
+      }
+
+      if (item.status !== 'pending') {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: `Item ${id} already resolved (${item.status})` }) }],
+        };
+      }
+
+      if (action === 'edit' && !edited_content) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'edited_content is required for edit action' }) }],
+        };
+      }
+
+      const now = new Date().toISOString();
+
+      if (action === 'reject') {
+        db.prepare(
+          'UPDATE approval_queue SET status = ?, resolved_at = ? WHERE id = ?'
+        ).run('rejected', now, id);
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ status: 'rejected', id }) }],
+        };
+      }
+
+      // approve or edit — write to knowledge graph
+      if (!item.metadata) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Item has no metadata — cannot determine what to approve' }) }],
+        };
+      }
+
+      const meta = JSON.parse(item.metadata) as {
+        fact: {
+          entity_name: string;
+          entity_type: string;
+          observation: string;
+          confidence: number;
+          evidence_quote: string;
+          related_entities: Array<{ name: string; type: string; relation_type: string }>;
+        };
+        merge_candidate_ids?: string[];
+      };
+
+      const observation = action === 'edit' ? edited_content! : meta.fact.observation;
+
+      // Handle merge_candidate items: reassign observations from secondary entity to primary
+      // (action is 'approve' or 'edit' at this point — 'reject' returned early above)
+      if (item.item_type === 'proposed_fact' && meta.merge_candidate_ids && meta.merge_candidate_ids.length > 0) {
+        // The fact's entity is the primary; merge candidates are secondaries
+        const primaryEntity = db.prepare(
+          'SELECT id FROM entities WHERE name = ? AND type = ?'
+        ).get(meta.fact.entity_name, meta.fact.entity_type) as { id: string } | undefined;
+
+        if (primaryEntity) {
+          for (const secondaryId of meta.merge_candidate_ids) {
+            // Reassign observations
+            db.prepare('UPDATE observations SET entity_id = ? WHERE entity_id = ?').run(primaryEntity.id, secondaryId);
+            // Reassign relationships
+            db.prepare('UPDATE relationships SET from_id = ? WHERE from_id = ?').run(primaryEntity.id, secondaryId);
+            db.prepare('UPDATE relationships SET to_id = ? WHERE to_id = ?').run(primaryEntity.id, secondaryId);
+            // Delete secondary entity
+            db.prepare('DELETE FROM entities WHERE id = ?').run(secondaryId);
+          }
+        }
+      }
+
+      // Write the fact to the knowledge graph
+      await rememberEntity(db, {
+        content: observation,
+        entity_name: meta.fact.entity_name,
+        entity_type: meta.fact.entity_type,
+        confidence: meta.fact.confidence,
+        source_type: 'consolidation',
+        relations: meta.fact.related_entities.map(r => ({
+          target_name: r.name,
+          target_type: r.type,
+          relation_type: r.relation_type,
+        })),
+      });
+
+      db.prepare(
+        'UPDATE approval_queue SET status = ?, resolved_at = ? WHERE id = ?'
+      ).run('approved', now, id);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ status: 'approved', id, action, entity: meta.fact.entity_name }),
+        }],
+      };
     },
   );
 }
