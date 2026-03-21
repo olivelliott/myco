@@ -44,7 +44,11 @@ Plans:
   2. An agent calling `recall` returns semantically relevant knowledge even when the query uses different words than the stored content
   3. When Ollama is unavailable, `log_episode` still succeeds and `recall` falls back to FTS5 full-text search without crashing
   4. Episode logs from two different agent sessions are isolated per-agent and not directly queryable via the `recall` or `query` tools
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Schema migration (FTS5 + needs_embedding) + EmbedClient + remember enhancement
+- [ ] 02-02-PLAN.md — recall, query, log_episode tool implementations + startup re-embed sweep
 
 ### Phase 3: Consolidation + Approval
 **Goal**: The brain distills raw episode logs into durable graph knowledge nightly, and the human can review and control what becomes permanent
@@ -87,7 +91,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Storage Foundation | 2/2 | Complete   | 2026-03-20 |
-| 2. MCP Server + Memory | 0/TBD | Not started | - |
+| 2. MCP Server + Memory | 0/2 | Not started | - |
 | 3. Consolidation + Approval | 0/TBD | Not started | - |
 | 4. REST API + PWA | 0/TBD | Not started | - |
 | 5. GSD Integration | 0/TBD | Not started | - |
