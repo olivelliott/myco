@@ -25,7 +25,7 @@ export function episodesRoutes(db: Database.Database): Hono {
       })(),
     }));
 
-    return c.json(parsed);
+    return c.json({ episodes: parsed });
   });
 
   return app;

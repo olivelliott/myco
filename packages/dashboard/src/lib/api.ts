@@ -63,16 +63,6 @@ export interface EntityDetail {
   }>
 }
 
-export interface EpisodeEntry {
-  id: string
-  session_id: string
-  agent_id: string
-  event_type: string
-  payload: string
-  created_at: string
-  consolidated_at: string | null
-}
-
 async function apiFetch<T>(url: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json', ...opts?.headers },
@@ -110,12 +100,4 @@ export function fetchGraph(): Promise<GraphData> {
 
 export function fetchEntityDetail(id: string): Promise<EntityDetail> {
   return apiFetch<EntityDetail>(`/api/entities/${id}`)
-}
-
-export function fetchEpisodes(
-  limit = 50,
-): Promise<{ episodes: EpisodeEntry[] }> {
-  return apiFetch<{ episodes: EpisodeEntry[] }>(
-    `/api/episodes?limit=${limit}`,
-  )
 }
