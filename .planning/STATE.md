@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Open Source Release
 status: unknown
-stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-03-22T17:21:40.743Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-03-22T17:32:09.389Z"
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 07 — tech-debt
+**Current focus:** Phase 08 — open-source-packaging
 
 ## Current Position
 
-Phase: 8
-Plan: Not started
+Phase: 08 (open-source-packaging) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -45,6 +45,7 @@ Plan: Not started
 | Phase 06-rename P01 | 2 | 2 tasks | 15 files |
 | Phase 06-rename P03 | 15 | 2 tasks | 5 files |
 | Phase 07-tech-debt P01 | 115 | 2 tasks | 3 files |
+| Phase 08-open-source-packaging P01 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,8 @@ Recent decisions affecting current work:
 - [Phase 06-rename]: GETTING-STARTED.md path examples updated to myco directory name reflecting intended open-source repo rename
 - [Phase 07-tech-debt]: Wrap /api/episodes response in { episodes: [...] } object to match expected client contract
 - [Phase 07-tech-debt]: Remove EpisodeEntry interface alongside fetchEpisodes to avoid orphaned types
+- [Phase 08-01]: README uses generic paths (path/to/myco/...) so documentation works for any cloner without edits
+- [Phase 08-01]: Apache 2.0 LICENSE with Copyright 2026 Olive added as the project's open source license
 
 ### Pending Todos
 
@@ -74,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T17:20:07.565Z
-Stopped at: Completed 07-01-PLAN.md
+Last session: 2026-03-22T17:32:09.386Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None

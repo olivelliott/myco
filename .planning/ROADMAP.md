@@ -70,7 +70,7 @@ Plans:
   5. `.github/ISSUE_TEMPLATE/` and `.github/PULL_REQUEST_TEMPLATE.md` are present and usable
 **Plans:** 2 plans
 Plans:
-- [ ] 08-01-PLAN.md — Create LICENSE (Apache 2.0) and README.md
+- [x] 08-01-PLAN.md — Create LICENSE (Apache 2.0) and README.md
 - [ ] 08-02-PLAN.md — Create CONTRIBUTING.md, CODE_OF_CONDUCT.md, and GitHub templates
 
 ## Progress
