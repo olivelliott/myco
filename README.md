@@ -9,10 +9,10 @@ A persistent cognitive layer for Claude Code agents — an MCP server that gives
 - Persistent memory across Claude Code sessions
 - Semantic search via local Ollama embeddings (nomic-embed-text, 768 dims)
 - Knowledge graph with entities, observations, and relationships
+- **Self-enhancing web** — auto-discovers relationships via name-mention scanning, semantic similarity, and back-linking on every `remember()` call
 - Nightly consolidation extracts structured facts from raw episodes
 - Human-in-the-loop approval queue for uncertain or contradictory findings
-- Visual dashboard (React 19 PWA) for graph exploration and approvals
-- Force-directed knowledge graph visualization — explore entities, relationships, and connections with an interactive canvas-based graph powered by react-force-graph-2d. Click nodes to see observations, filter by entity type, search across the web
+- **Mycelium dashboard** (React 19 PWA) — bioluminescent graph visualization with hover illumination, path tracing, timeline slider, and cluster grouping
 - SQLite + sqlite-vec — no external database, no cloud dependencies
 
 ## Architecture
@@ -74,7 +74,7 @@ A persistent cognitive layer for Claude Code agents — an MCP server that gives
 ### Clone and Build
 
 ```bash
-git clone https://github.com/your-org/myco.git
+git clone https://github.com/olivelliott/myco.git
 cd myco
 npm install --legacy-peer-deps
 npm run build
