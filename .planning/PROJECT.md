@@ -1,12 +1,23 @@
-# AI Workbots Brain
+# Mnemo
 
 ## What This Is
 
-A persistent cognitive layer for Claude Code agents — an MCP server that gives every agent session access to long-term episodic memory, an open-schema knowledge graph, and entity relationships. A nightly deep sleep cycle consolidates raw episode logs into durable knowledge, surfacing only uncertain or contradictory findings for human approval. A responsive PWA provides a visual command center for exploring the knowledge graph, reviewing agent activity, and handling approval queues. GSD workflow hooks automatically capture high-signal episodes at phase transitions.
+A persistent cognitive layer for Claude Code agents — an MCP server that gives every agent session access to long-term episodic memory, an open-schema knowledge graph, and entity relationships. A nightly deep sleep cycle consolidates raw episode logs into durable knowledge, surfacing only uncertain or contradictory findings for human approval. A responsive PWA provides a visual command center for exploring the knowledge graph, reviewing agent activity, and handling approval queues.
 
 ## Core Value
 
 Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
+
+## Current Milestone: v2.0 Open Source Release
+
+**Goal:** Rename project to Mnemo, package for public GitHub release with Apache 2.0 license, clean README, contribution guidelines, and resolved tech debt.
+
+**Target features:**
+- Rename all packages, imports, branding, CLI commands, and DB paths from "ai-workbots" to "mnemo"
+- Apache 2.0 license, README, CONTRIBUTING.md, CODE_OF_CONDUCT.md, GitHub issue/PR templates
+- Production README with architecture diagram, quick start, MCP tool reference
+- Clean up known tech debt (episodes API mismatch, dead exports)
+- Fresh-clone installability — npm install + build works out of the box
 
 ## Current State
 
@@ -25,7 +36,6 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - LLM-powered nightly consolidation extracts facts from episodes with evidence quotes
 - Contradiction detection, entity merge candidates, and confidence-based auto-approval
 - PWA dashboard for human review of pending approvals and knowledge graph exploration
-- GSD hooks auto-capture phase transition episodes
 
 ## Requirements
 
@@ -45,11 +55,10 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] PWA with knowledge graph explorer — browse entities, relationships, connections — *v1.0*
 - [x] PWA with activity dashboard — episode logs, agent activity, progress monitoring — *v1.0*
 - [x] Responsive PWA works equally well on phone and desktop — *v1.0*
-- [x] GSD hooks auto-capture episodes at phase transitions and key workflow moments — *v1.0*
 
 ### Active
 
-*No active requirements — planning next milestone.*
+*See REQUIREMENTS.md for v2.0 requirements.*
 
 ### Out of Scope
 
@@ -57,6 +66,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - Obsidian integration — the brain is the source of truth, not a markdown vault mirror
 - Multi-user / team features — single user, single machine
 - Real-time collaboration between concurrent agent sessions (eventual consistency is fine)
+- New features beyond rename + open source packaging (save for v2.1+)
 
 ## Context
 
@@ -65,6 +75,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - Vercel AI SDK v4.3.19 used for consolidation (v6 incompatible with ollama-ai-provider)
 - MCP SDK uses `registerTool()` with Zod v4 (migrated from `server.tool()`)
 - GSD hook uses direct SQLite write (MCP tools not callable from shell hooks)
+- Renaming to "Mnemo" (from Mnemosyne, Greek goddess of memory) for public release
 
 ## Constraints
 
@@ -73,6 +84,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - **Embeddings**: Ollama — local inference, no API keys, privacy-preserving
 - **Privacy**: Everything stays on the local machine — no cloud dependencies
 - **Integration**: Must work as a standard MCP server that any Claude Code session can connect to
+- **License**: Apache 2.0 — permissive with patent grant protection
 
 ## Key Decisions
 
@@ -86,6 +98,8 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 | Vercel AI SDK v4.3.19 (not v6) | ollama-ai-provider returns LanguageModelV1 which v6 dropped | ✓ Working v1.0 |
 | GSD hook: direct SQLite write (not MCP tool call) | MCP tools run over stdio, not callable from shell hooks; same INSERT SQL as logEpisode() | ✓ Validated v1.0 |
 | Separate api-server + dashboard packages | Decoupled concerns; API is read-heavy from shared brain.db via WAL mode | ✓ Validated v1.0 |
+| Rename to "Mnemo" | Short, unique, googlable — from Mnemosyne (Greek goddess of memory). Better than "AI Workbots Brain" for public release. | — Pending |
+| Apache 2.0 license | Permissive like MIT but includes explicit patent grant. Keeps commercial options open. | — Pending |
 
 ## Known Tech Debt (v1.0)
 
@@ -97,5 +111,18 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 
 This document evolves at phase transitions and milestone boundaries.
 
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-03-21 after v1.0 milestone completion*
+*Last updated: 2026-03-22 after v2.0 milestone start*

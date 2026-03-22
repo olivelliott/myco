@@ -1,30 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: unknown
-stopped_at: Completed 05-gsd-integration 05-02-PLAN.md
-last_updated: "2026-03-21T19:15:02.243Z"
+milestone: v2.0
+milestone_name: open-source-release
+status: defining-requirements
+stopped_at: null
+last_updated: "2026-03-22T00:00:00.000Z"
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 14
-  completed_plans: 14
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-20)
+See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 05 — gsd-integration
+**Current focus:** Defining requirements for v2.0 Open Source Release
 
 ## Current Position
 
-Phase: 05
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-22 — Milestone v2.0 started
 
 ## Performance Metrics
 
@@ -40,26 +42,7 @@ Plan: Not started
 |-------|-------|-------|----------|
 | - | - | - | - |
 
-**Recent Trend:**
-
-- Last 5 plans: —
-- Trend: —
-
 *Updated after each plan completion*
-| Phase 01-storage-foundation P01 | 2 | 1 tasks | 19 files |
-| Phase 01-storage-foundation P02 | 3min | 1 tasks | 4 files |
-| Phase 02-mcp-server-memory P01 | 313s | 2 tasks | 5 files |
-| Phase 02-mcp-server-memory P02 | 4min | 2 tasks | 3 files |
-| Phase 03-consolidation-approval P01 | 693s | 2 tasks | 8 files |
-| Phase 03-consolidation-approval P02 | 240s | 2 tasks | 3 files |
-| Phase 03-consolidation-approval P03 | 81s | 2 tasks | 2 files |
-| Phase 04-rest-api-pwa P01 | 4min | 2 tasks | 9 files |
-| Phase 04-rest-api-pwa P02 | 6min | 2 tasks | 25 files |
-| Phase 04-rest-api-pwa P03 | 2min | 2 tasks | 7 files |
-| Phase 04-rest-api-pwa P04 | 2min | 2 tasks | 4 files |
-| Phase 04-rest-api-pwa P05 | 4min | 2 tasks | 4 files |
-| Phase 05-gsd-integration P01 | 2073s | 2 tasks | 3 files |
-| Phase 05-gsd-integration P02 | 5min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -68,46 +51,9 @@ Plan: Not started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Dual-transport monorepo (shared core, separate MCP + API processes)
-- SQLite WAL mode required from Phase 1 — cannot be retrofitted
-- Phase 4 needs research pass during planning (consolidation prompt engineering)
-- [Phase 01-storage-foundation]: sqliteVec.load(db) before applySchema(db): vec0 module must be registered before CREATE VIRTUAL TABLE runs
-- [Phase 01-storage-foundation]: NodeNext module resolution with .js extensions in relative imports across all packages/core/src/ files
-- [Phase 01-storage-foundation]: WAL PRAGMAs set outside transactions; BRAIN_DB_PATH env var + XDG_DATA_HOME fallback for zero-config DB location
-- [Phase 01-storage-foundation]: rememberEntity() extracted from MCP tool handler for testability — thin wrapper pattern avoids SDK invocation complexity in unit tests
-- [Phase 01-storage-foundation]: SESSION_ID is module-scoped (per-process), not per-call — a session represents the MCP server process lifetime
-- [Phase 01-storage-foundation]: MCP SDK CallToolResult requires index signature on return types — RememberResult needs [key: string]: unknown
-- [Phase 02-mcp-server-memory]: embedText uses AbortSignal.timeout(2000) on each Ollama fetch for 2s graceful degradation
-- [Phase 02-mcp-server-memory]: fts_observations uses porter unicode61 tokenizer for stemming support
-- [Phase 02-mcp-server-memory]: needs_embedding migration uses idempotent try/catch ALTER TABLE safe for repeat startups
-- [Phase 02-mcp-server-memory]: z.record(z.string(), z.unknown()) required for Zod v4 — single-arg z.record() not supported
-- [Phase 02-mcp-server-memory]: recall and query do not join episodes table — enforces EPSD-03 isolation at query level
-- [Phase 02-mcp-server-memory]: reEmbedPending startup sweep is fire-and-forget async — MCP server startup not gated on Ollama availability
-- [Phase 03-consolidation-approval]: ai@4.3.19 used (not v6): ollama-ai-provider@1.2.0 returns LanguageModelV1 which ai@6 dropped; experimental_output API in v4
-- [Phase 03-consolidation-approval]: Zod unified to single v4.3.6 via root override — eliminates MCP SDK Zod cross-version type conflicts
-- [Phase 03-consolidation-approval]: server.registerTool() replaces deprecated server.tool() for MCP SDK 1.27.1 Zod v4 compatibility
-- [Phase 03-consolidation-approval]: consolidator extractFacts failures mark batch consolidated anyway — prevents infinite reprocessing
-- [Phase 03-consolidation-approval]: server.registerTool() used for all new MCP tools — consistent with Plan 01 fix for MCP SDK 1.27.1 Zod v4 compatibility
-- [Phase 03-consolidation-approval]: consolidationCron variable held in module scope to prevent GC of Cron instance
-- [Phase 03-consolidation-approval]: process.argv used directly for CLI dispatch (no commander/yargs): 3 subcommands does not justify extra dependency
-- [Phase 03-consolidation-approval]: brain-cli resolve-approval replicates MCP resolve_approval merge_candidate entity reassignment verbatim for identical CLI behavior
-- [Phase 04-rest-api-pwa]: Route factories accept db parameter — testable without server setup
-- [Phase 04-rest-api-pwa]: Approval approve path inlines DB writes without embedText — sets needs_embedding=1 so MCP server startup sweep handles embeddings
-- [Phase 04-rest-api-pwa]: npm install requires --legacy-peer-deps due to pre-existing @vitejs/plugin-react peer dep conflict with Vite 8 in dashboard package
-- [Phase 04-rest-api-pwa]: shadcn/ui components created manually (not via CLI) — functionally identical, enables automated execution
-- [Phase 04-rest-api-pwa]: routeTree.gen.ts created manually — regenerated automatically by TanStackRouterVite Vite plugin on first dev start
-- [Phase 04-rest-api-pwa]: Dashboard Sidebar pendingCount wired via prop — TanStack Query integration deferred to plan 03
-- [Phase 04-rest-api-pwa]: Sidebar self-wires pending count via useQuery rather than accepting prop — eliminates prop drilling through root layout
-- [Phase 04-rest-api-pwa]: useDashboard queryKey ['dashboard'] shared between Sidebar and DashboardPage — TanStack Query deduplicates to one network request
-- [Phase 04-rest-api-pwa]: use-approvals.ts created in plan 04 (not 03) due to parallel execution — hooks/ dir was absent at plan 04 start
-- [Phase 04-rest-api-pwa]: Search filtering uses opacity 0.2 (nodes stay in graphData) — keeps graph layout stable while showing non-matches. Type filtering removes nodes entirely for cleaner categorical view.
-- [Phase 04-rest-api-pwa]: Entity panel uses requestAnimationFrame before setVisible(true) to guarantee translate-x-full initial state is painted before CSS transition fires
-- [Phase 05-gsd-integration]: .claude/package.json with type:commonjs enables require() in ESM project for hook scripts
-- [Phase 05-gsd-integration]: crypto.randomUUID() used in hooks instead of nanoid — nanoid v5 is ESM-only, incompatible with CommonJS hook scripts
-- [Phase 05-gsd-integration]: Hook direct SQLite INSERT identical to logEpisode() — no MCP tool invocation needed from hook context
-- [Phase 05-gsd-integration]: Project-scoped hook registration in .claude/settings.json ensures hook fires only in this project, not globally
-- [Phase 05-gsd-integration]: Absolute path to hook script required — Claude Code resolves hook commands from its own cwd, not the project root
-- [Phase 05-gsd-integration]: 10-second hook timeout matches the stdin timeout guard in gsd-brain-episode.js to prevent process hang
+- Rename from "AI Workbots Brain" to "Mnemo" for public release
+- Apache 2.0 license (patent grant protection over MIT)
+- v2.0 scope: rename + open source packaging + tech debt cleanup (no new features)
 
 ### Pending Todos
 
@@ -119,6 +65,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T18:30:29.990Z
-Stopped at: Completed 05-gsd-integration 05-02-PLAN.md
+Last session: 2026-03-22
+Stopped at: null
 Resume file: None
