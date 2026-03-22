@@ -1,5 +1,19 @@
 # Milestones
 
+## v2.0 Open Source Release (Shipped: 2026-03-22)
+
+**Phases completed:** 3 phases, 6 plans, 10 tasks
+
+**Key accomplishments:**
+
+- Dashboard PWA manifest, HTML title, sidebar, and heading updated to Myco; hook default db path moved to ~/.local/share/myco with BRAIN_DB_PATH fallback; GETTING-STARTED.md and CLAUDE.md updated throughout
+- Test files updated to MYCO_DB_PATH primary with BRAIN_DB_PATH fallback, all 68 tests pass, zero stale ai-workbots references in source
+- Episodes API response wrapped in { episodes: [...] }, dead fetchEpisodes/EpisodeEntry removed, fresh-clone build verified clean
+- Apache 2.0 LICENSE (Copyright 2026 Olive) and comprehensive README.md with architecture diagram, 7-tool MCP reference table, and quick-start guide for Myco open source release
+- Status:
+
+---
+
 ## v1.0 AI Workbots Brain (Shipped: 2026-03-21)
 
 **Phases completed:** 5 phases, 14 plans, 26 tasks
