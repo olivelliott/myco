@@ -9,11 +9,11 @@ Requirements for public open source release. Each maps to roadmap phases.
 
 ### Rename
 
-- [ ] **REN-01**: All package names renamed from `@ai-workbots/*` to `@myco/*`
-- [ ] **REN-02**: All internal imports and cross-package references updated to `@myco/*`
-- [ ] **REN-03**: CLI commands renamed from `brain-mcp`/`brain-cli` to `myco`/`myco-cli`
-- [ ] **REN-04**: Default database path changed from `~/.local/share/ai-workbots/` to `~/.local/share/myco/`
-- [ ] **REN-05**: MCP server name, tool descriptions, and user-facing strings updated to "Myco"
+- [x] **REN-01**: All package names renamed from `@ai-workbots/*` to `@myco/*`
+- [x] **REN-02**: All internal imports and cross-package references updated to `@myco/*`
+- [x] **REN-03**: CLI commands renamed from `brain-mcp`/`brain-cli` to `myco`/`myco-cli`
+- [x] **REN-04**: Default database path changed from `~/.local/share/ai-workbots/` to `~/.local/share/myco/`
+- [x] **REN-05**: MCP server name, tool descriptions, and user-facing strings updated to "Myco"
 - [x] **REN-06**: Dashboard title, branding, and PWA manifest updated to "Myco"
 
 ### Open Source
@@ -62,11 +62,11 @@ Deferred to v2.1+. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REN-01 | Phase 6 | Pending |
-| REN-02 | Phase 6 | Pending |
-| REN-03 | Phase 6 | Pending |
-| REN-04 | Phase 6 | Pending |
-| REN-05 | Phase 6 | Pending |
+| REN-01 | Phase 6 | Complete |
+| REN-02 | Phase 6 | Complete |
+| REN-03 | Phase 6 | Complete |
+| REN-04 | Phase 6 | Complete |
+| REN-05 | Phase 6 | Complete |
 | REN-06 | Phase 6 | Complete |
 | DEBT-01 | Phase 7 | Pending |
 | DEBT-02 | Phase 7 | Pending |
