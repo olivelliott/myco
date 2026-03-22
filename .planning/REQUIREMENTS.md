@@ -26,9 +26,9 @@ Requirements for public open source release. Each maps to roadmap phases.
 
 ### Tech Debt
 
-- [ ] **DEBT-01**: Fix `/api/episodes` response shape to match `fetchEpisodes()` client expectations
-- [ ] **DEBT-02**: Remove dead `fetchEpisodes` export from `api.ts`
-- [ ] **DEBT-03**: Verify fresh-clone `npm install --legacy-peer-deps && npm run build` succeeds with no errors
+- [x] **DEBT-01**: Fix `/api/episodes` response shape to match `fetchEpisodes()` client expectations
+- [x] **DEBT-02**: Remove dead `fetchEpisodes` export from `api.ts`
+- [x] **DEBT-03**: Verify fresh-clone `npm install --legacy-peer-deps && npm run build` succeeds with no errors
 
 ## Future Requirements
 
@@ -68,9 +68,9 @@ Deferred to v2.1+. Tracked but not in current roadmap.
 | REN-04 | Phase 6 | Complete |
 | REN-05 | Phase 6 | Complete |
 | REN-06 | Phase 6 | Complete |
-| DEBT-01 | Phase 7 | Pending |
-| DEBT-02 | Phase 7 | Pending |
-| DEBT-03 | Phase 7 | Pending |
+| DEBT-01 | Phase 7 | Complete |
+| DEBT-02 | Phase 7 | Complete |
+| DEBT-03 | Phase 7 | Complete |
 | OSS-01 | Phase 8 | Pending |
 | OSS-02 | Phase 8 | Pending |
 | OSS-03 | Phase 8 | Pending |

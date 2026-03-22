@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Open Source Release
 status: unknown
-stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-03-22T17:14:28.330Z"
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-22T17:20:07.568Z"
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 06 — rename
+**Current focus:** Phase 07 — tech-debt
 
 ## Current Position
 
-Phase: 7
-Plan: Not started
+Phase: 07 (tech-debt) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -44,6 +44,7 @@ Plan: Not started
 | Phase 06-rename P02 | 1 | 2 tasks | 7 files |
 | Phase 06-rename P01 | 2 | 2 tasks | 15 files |
 | Phase 06-rename P03 | 15 | 2 tasks | 5 files |
+| Phase 07-tech-debt P01 | 115 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -60,6 +61,8 @@ Recent decisions affecting current work:
 - [Phase 06-rename]: BRAIN_DB_PATH preserved as fallback env var for backward compatibility with existing users
 - [Phase 06-rename]: Stale tsbuildinfo files caused tsc to skip core rebuild - cleared all tsbuildinfo to force clean compilation
 - [Phase 06-rename]: GETTING-STARTED.md path examples updated to myco directory name reflecting intended open-source repo rename
+- [Phase 07-tech-debt]: Wrap /api/episodes response in { episodes: [...] } object to match expected client contract
+- [Phase 07-tech-debt]: Remove EpisodeEntry interface alongside fetchEpisodes to avoid orphaned types
 
 ### Pending Todos
 
@@ -71,6 +74,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T17:06:49.364Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-03-22T17:20:07.565Z
+Stopped at: Completed 07-01-PLAN.md
 Resume file: None
