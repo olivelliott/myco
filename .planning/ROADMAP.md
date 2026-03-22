@@ -71,7 +71,7 @@ Plans:
 **Plans:** 2 plans
 Plans:
 - [x] 08-01-PLAN.md — Create LICENSE (Apache 2.0) and README.md
-- [ ] 08-02-PLAN.md — Create CONTRIBUTING.md, CODE_OF_CONDUCT.md, and GitHub templates
+- [x] 08-02-PLAN.md — Create CONTRIBUTING.md, CODE_OF_CONDUCT.md, and GitHub templates
 
 ## Progress
 
