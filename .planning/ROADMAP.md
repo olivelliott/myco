@@ -24,7 +24,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 **Milestone Goal:** Rename the project to Myco, clean up known tech debt, and package it for public GitHub release under Apache 2.0.
 
-- [ ] **Phase 6: Rename** - Update all packages, imports, CLI commands, DB paths, and branding from "ai-workbots" to "mnemo"
+- [ ] **Phase 6: Rename** - Update all packages, imports, CLI commands, DB paths, and branding from "ai-workbots" to "myco"
 - [ ] **Phase 7: Tech Debt** - Fix the episodes API mismatch, remove dead exports, and verify fresh-clone installability
 - [ ] **Phase 8: Open Source Packaging** - Add LICENSE, README, CONTRIBUTING, CODE_OF_CONDUCT, and GitHub templates
 
@@ -34,13 +34,17 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 **Goal**: Every reference to "ai-workbots" or "AI Workbots Brain" in the codebase is replaced with "myco" or "Myco"
 **Depends on**: Phase 5 (v1.0 shipped)
 **Requirements**: REN-01, REN-02, REN-03, REN-04, REN-05, REN-06
+**Plans:** 3 plans
+Plans:
+- [ ] 06-01-PLAN.md — Rename package identities, imports, binaries, DB path, and MCP server strings
+- [ ] 06-02-PLAN.md — Update dashboard branding, PWA manifest, hooks, and documentation
+- [ ] 06-03-PLAN.md — Update tests, rebuild, and verify zero stale references
 **Success Criteria** (what must be TRUE):
   1. All four package.json files use `@myco/*` package names with no `@ai-workbots/*` references remaining
   2. All cross-package imports resolve correctly under the new `@myco/*` namespace
   3. The MCP server binary is `myco` and CLI binary is `myco-cli`; `brain-mcp` and `brain-cli` no longer exist
   4. The default database path is `~/.local/share/myco/` — no file or path references `ai-workbots`
   5. The dashboard PWA title and manifest show "Myco"; MCP server tool descriptions reference "Myco"
-**Plans**: TBD
 
 ### Phase 7: Tech Debt
 **Goal**: Known v1.0 defects are resolved and the project installs and builds cleanly from a fresh clone
@@ -73,6 +77,6 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 3. Consolidation + Approval | v1.0 | 3/3 | Complete | 2026-03-21 |
 | 4. REST API + PWA | v1.0 | 5/5 | Complete | 2026-03-21 |
 | 5. GSD Integration | v1.0 | 2/2 | Complete | 2026-03-21 |
-| 6. Rename | v2.0 | 0/? | Not started | - |
+| 6. Rename | v2.0 | 0/3 | Not started | - |
 | 7. Tech Debt | v2.0 | 0/? | Not started | - |
 | 8. Open Source Packaging | v2.0 | 0/? | Not started | - |
