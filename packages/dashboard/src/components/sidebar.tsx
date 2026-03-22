@@ -35,7 +35,7 @@ export function Sidebar() {
     <>
       {/* Desktop sidebar — hidden on mobile */}
       <aside className="hidden md:flex md:flex-col md:w-60 bg-slate-900 border-r border-slate-800 h-screen flex-shrink-0">
-        <div className="p-6 text-lg font-semibold text-slate-100">Brain</div>
+        <div className="p-6 text-lg font-semibold text-slate-100">Myco</div>
         <nav className="flex-1 flex flex-col gap-1 px-3">
           {navItems.map((item) => {
             const active = isActive(item.to)

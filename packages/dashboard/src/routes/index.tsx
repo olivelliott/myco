@@ -18,7 +18,7 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold">Brain Dashboard</h1>
+      <h1 className="text-lg font-semibold">Myco Dashboard</h1>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           label="Pending Approvals"

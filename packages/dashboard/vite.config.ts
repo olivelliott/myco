@@ -28,9 +28,9 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'AI Workbots Brain',
-        short_name: 'Brain',
-        description: 'Agent knowledge graph dashboard',
+        name: 'Myco',
+        short_name: 'Myco',
+        description: 'Agent memory and knowledge graph',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',
