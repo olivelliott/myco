@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rmSync, mkdirSync } from 'node:fs';
-import { openDatabase } from '@ai-workbots/core';
+import { openDatabase } from '@myco/core';
 import type Database from 'better-sqlite3';
 import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending } from '../src/tools.js';
 
-const testDir = join(tmpdir(), 'ai-workbots-mcp-test-' + process.pid);
+const testDir = join(tmpdir(), 'myco-mcp-test-' + process.pid);
 
 describe('MCP server tools', () => {
   let db: Database.Database;

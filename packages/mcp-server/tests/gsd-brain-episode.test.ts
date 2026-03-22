@@ -35,11 +35,13 @@ const PHASE_COMPLETE_RE = /gsd-tools[^\s]*\s+phase\s+complete/;
 const PHASE_NUMBER_RE = /phase\s+complete\s+["']?([^\s"']+)["']?/i;
 
 function getDbPath(envOverrides: Record<string, string | undefined> = {}): string {
+  const mycoDbPath = envOverrides.MYCO_DB_PATH ?? process.env.MYCO_DB_PATH;
+  if (mycoDbPath) return mycoDbPath;
   const brainDbPath = envOverrides.BRAIN_DB_PATH ?? process.env.BRAIN_DB_PATH;
   if (brainDbPath) return brainDbPath;
   const xdgData = envOverrides.XDG_DATA_HOME ?? process.env.XDG_DATA_HOME ??
     path.join(os.homedir(), '.local', 'share');
-  return path.join(xdgData, 'ai-workbots', 'brain.db');
+  return path.join(xdgData, 'myco', 'brain.db');
 }
 
 function extractPhaseNumber(command: string): string | null {
@@ -129,27 +131,33 @@ describe('phase extraction', () => {
 // ---------------------------------------------------------------------------
 
 describe('db path resolution', () => {
-  it('returns BRAIN_DB_PATH env var when set', () => {
+  it('returns MYCO_DB_PATH env var when set', () => {
     const customPath = '/custom/path/brain.db';
-    const result = getDbPath({ BRAIN_DB_PATH: customPath });
+    const result = getDbPath({ MYCO_DB_PATH: customPath });
     expect(result).toBe(customPath);
   });
 
-  it('returns XDG_DATA_HOME based path when BRAIN_DB_PATH is not set', () => {
-    const customXdg = '/custom/xdg';
-    const result = getDbPath({ XDG_DATA_HOME: customXdg });
-    expect(result).toBe(path.join(customXdg, 'ai-workbots', 'brain.db'));
+  it('falls back to BRAIN_DB_PATH when MYCO_DB_PATH is not set', () => {
+    const customPath = '/fallback/brain.db';
+    const result = getDbPath({ MYCO_DB_PATH: undefined, BRAIN_DB_PATH: customPath });
+    expect(result).toBe(customPath);
   });
 
-  it('returns default ~/.local/share path when neither env var is set', () => {
-    const result = getDbPath({ BRAIN_DB_PATH: undefined, XDG_DATA_HOME: undefined });
-    const expected = path.join(os.homedir(), '.local', 'share', 'ai-workbots', 'brain.db');
+  it('returns XDG_DATA_HOME based path when neither MYCO_DB_PATH nor BRAIN_DB_PATH is set', () => {
+    const customXdg = '/custom/xdg';
+    const result = getDbPath({ MYCO_DB_PATH: undefined, BRAIN_DB_PATH: undefined, XDG_DATA_HOME: customXdg });
+    expect(result).toBe(path.join(customXdg, 'myco', 'brain.db'));
+  });
+
+  it('returns default ~/.local/share path when no env vars are set', () => {
+    const result = getDbPath({ MYCO_DB_PATH: undefined, BRAIN_DB_PATH: undefined, XDG_DATA_HOME: undefined });
+    const expected = path.join(os.homedir(), '.local', 'share', 'myco', 'brain.db');
     expect(result).toBe(expected);
   });
 
-  it('BRAIN_DB_PATH takes priority over XDG_DATA_HOME', () => {
+  it('MYCO_DB_PATH takes priority over XDG_DATA_HOME', () => {
     const result = getDbPath({
-      BRAIN_DB_PATH: '/priority/brain.db',
+      MYCO_DB_PATH: '/priority/brain.db',
       XDG_DATA_HOME: '/custom/xdg',
     });
     expect(result).toBe('/priority/brain.db');
