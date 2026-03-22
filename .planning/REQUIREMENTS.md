@@ -20,9 +20,9 @@ Requirements for public open source release. Each maps to roadmap phases.
 
 - [x] **OSS-01**: Apache 2.0 LICENSE file in repo root
 - [x] **OSS-02**: README.md with project description, architecture diagram, quick start, MCP tool reference, and knowledge graph visualization showcase
-- [ ] **OSS-03**: CONTRIBUTING.md with development setup, PR guidelines, and code style expectations
-- [ ] **OSS-04**: CODE_OF_CONDUCT.md (Contributor Covenant)
-- [ ] **OSS-05**: GitHub issue and PR templates (`.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md`)
+- [x] **OSS-03**: CONTRIBUTING.md with development setup, PR guidelines, and code style expectations
+- [x] **OSS-04**: CODE_OF_CONDUCT.md (Contributor Covenant)
+- [x] **OSS-05**: GitHub issue and PR templates (`.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md`)
 
 ### Tech Debt
 
@@ -73,9 +73,9 @@ Deferred to v2.1+. Tracked but not in current roadmap.
 | DEBT-03 | Phase 7 | Complete |
 | OSS-01 | Phase 8 | Complete |
 | OSS-02 | Phase 8 | Complete |
-| OSS-03 | Phase 8 | Pending |
-| OSS-04 | Phase 8 | Pending |
-| OSS-05 | Phase 8 | Pending |
+| OSS-03 | Phase 8 | Complete |
+| OSS-04 | Phase 8 | Complete |
+| OSS-05 | Phase 8 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 14 total

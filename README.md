@@ -12,6 +12,7 @@ A persistent cognitive layer for Claude Code agents — an MCP server that gives
 - Nightly consolidation extracts structured facts from raw episodes
 - Human-in-the-loop approval queue for uncertain or contradictory findings
 - Visual dashboard (React 19 PWA) for graph exploration and approvals
+- Force-directed knowledge graph visualization — explore entities, relationships, and connections with an interactive canvas-based graph powered by react-force-graph-2d. Click nodes to see observations, filter by entity type, search across the web
 - SQLite + sqlite-vec — no external database, no cloud dependencies
 
 ## Architecture
