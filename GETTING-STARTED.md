@@ -32,7 +32,7 @@ It does NOT replace your internal workflows (GSD, swing-trader scripts, etc.). I
 ### Install & Build
 
 ```bash
-cd ~/Documents/GitHub/ai-workbots
+cd ~/Documents/GitHub/myco
 npm install --legacy-peer-deps
 npm run build
 ```
@@ -47,7 +47,7 @@ Add the MCP server to your **global** Claude Code settings so every project has 
   "mcpServers": {
     "brain": {
       "command": "node",
-      "args": ["/Users/olive/Documents/GitHub/ai-workbots/packages/mcp-server/dist/index.js"]
+      "args": ["/Users/olive/Documents/GitHub/myco/packages/mcp-server/dist/index.js"]
     }
   }
 }
@@ -55,7 +55,7 @@ Add the MCP server to your **global** Claude Code settings so every project has 
 
 **Option B — Use `claude mcp add`:**
 ```bash
-claude mcp add brain -s user -- node /Users/olive/Documents/GitHub/ai-workbots/packages/mcp-server/dist/index.js
+claude mcp add brain -s user -- node /Users/olive/Documents/GitHub/myco/packages/mcp-server/dist/index.js
 ```
 
 After adding, restart Claude Code. You'll see `brain` in your MCP server list.
@@ -132,7 +132,7 @@ This is the "deep sleep" feature — extracts structured facts from raw episodes
 
 ```bash
 # Log some test episodes manually
-cd ~/Documents/GitHub/ai-workbots
+cd ~/Documents/GitHub/myco
 myco-cli consolidate
 ```
 
@@ -169,7 +169,7 @@ Use brain consolidate tool
 
 ### Tier 4 — GSD Hook Integration
 
-This only fires inside the `ai-workbots` project (project-scoped hook).
+This only fires inside the `myco` project (project-scoped hook).
 
 **What to verify:**
 - [ ] When GSD completes a phase, an episode gets logged automatically
@@ -208,7 +208,7 @@ This only fires inside the `ai-workbots` project (project-scoped hook).
 ```
 ┌─────────────────────────────────────────────────┐
 │  Your Claude Code Sessions                      │
-│  (swing-trader, fathom, ai-workbots, anything)  │
+│  (swing-trader, fathom, myco, anything)          │
 │                                                 │
 │  Claude uses MCP tools:                         │
 │  remember / recall / query / log_episode        │
