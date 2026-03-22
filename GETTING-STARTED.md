@@ -47,7 +47,7 @@ Add the MCP server to your **global** Claude Code settings so every project has 
   "mcpServers": {
     "brain": {
       "command": "node",
-      "args": ["/Users/olive/Documents/GitHub/myco/packages/mcp-server/dist/index.js"]
+      "args": ["/path/to/myco/packages/mcp-server/dist/index.js"]
     }
   }
 }
@@ -55,7 +55,7 @@ Add the MCP server to your **global** Claude Code settings so every project has 
 
 **Option B — Use `claude mcp add`:**
 ```bash
-claude mcp add brain -s user -- node /Users/olive/Documents/GitHub/myco/packages/mcp-server/dist/index.js
+claude mcp add brain -s user -- node /path/to/myco/packages/mcp-server/dist/index.js
 ```
 
 After adding, restart Claude Code. You'll see `brain` in your MCP server list.
@@ -109,7 +109,7 @@ Your existing workflows (GSD phases, trade journal, market analysis) continue ex
 Start a Claude Code session in any project and try:
 
 ```
-Use the brain remember tool to store: "Olive prefers minimal UI, dark themes, and concise responses"
+Use the brain remember tool to store: "I prefer minimal UI, dark themes, and concise responses"
 ```
 
 ```
@@ -178,17 +178,7 @@ This only fires inside the `myco` project (project-scoped hook).
 
 ---
 
-## What Still Needs to Be Done
-
-### Known Issues (From v1.0)
-
-| Issue | Impact | Priority |
-|-------|--------|----------|
-| **Phase 3 live Ollama validation** | Consolidation LLM extraction hasn't been tested end-to-end with real Ollama | High — test this first |
-| **`/api/episodes` response shape mismatch** | `fetchEpisodes()` client expects a different shape than API returns | Medium — will cause dashboard episode display bugs |
-| **Unused `fetchEpisodes` export** | Dead code in `api.ts` | Low — cleanup |
-
-### Natural v2.0 Ideas
+## Future Ideas
 
 | Feature | Description |
 |---------|-------------|

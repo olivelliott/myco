@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"/Users/olive/Documents/GitHub/myco/.claude/hooks/gsd-brain-episode.js\"",
+            "command": "node .claude/hooks/gsd-brain-episode.js",
             "timeout": 10
           }
         ]

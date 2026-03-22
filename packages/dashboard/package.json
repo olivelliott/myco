@@ -2,6 +2,9 @@
   "name": "@myco/dashboard",
   "private": true,
   "version": "0.1.0",
+  "description": "React PWA dashboard for exploring the Myco knowledge graph and managing approvals",
+  "license": "Apache-2.0",
+  "author": "Olive",
   "type": "module",
   "scripts": {
     "dev": "vite",

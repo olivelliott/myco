@@ -14,7 +14,7 @@ Thanks for your interest in contributing! By participating, you agree to abide b
 
 ```bash
 # Clone the repo
-git clone https://github.com/olive/myco.git
+git clone https://github.com/YOUR-USERNAME/myco.git
 cd myco
 
 # Install dependencies (--legacy-peer-deps needed for Vite 8 peer dep conflict)
@@ -76,7 +76,7 @@ Tests live alongside their packages in `packages/*/tests/`.
 
 ## Reporting Bugs
 
-Use the [Bug Report](https://github.com/olive/myco/issues/new?template=bug_report.md) issue template. Include:
+Use the [Bug Report](https://github.com/YOUR-USERNAME/myco/issues/new?template=bug_report.md) issue template. Include:
 
 - Steps to reproduce
 - Expected vs actual behavior
@@ -84,7 +84,7 @@ Use the [Bug Report](https://github.com/olive/myco/issues/new?template=bug_repor
 
 ## Requesting Features
 
-Use the [Feature Request](https://github.com/olive/myco/issues/new?template=feature_request.md) template. Describe the **problem** you're trying to solve, not just the solution.
+Use the [Feature Request](https://github.com/YOUR-USERNAME/myco/issues/new?template=feature_request.md) template. Describe the **problem** you're trying to solve, not just the solution.
 
 ## Code Style
 

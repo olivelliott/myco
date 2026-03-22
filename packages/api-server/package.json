@@ -1,6 +1,10 @@
 {
   "name": "@myco/api-server",
   "version": "0.1.0",
+  "description": "REST API server exposing Myco knowledge graph data to the dashboard",
+  "license": "Apache-2.0",
+  "author": "Olive",
+  "keywords": ["myco", "api", "hono", "knowledge-graph"],
   "type": "module",
   "exports": {
     ".": {

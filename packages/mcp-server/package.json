@@ -1,6 +1,10 @@
 {
   "name": "@myco/mcp-server",
   "version": "0.1.0",
+  "description": "MCP server providing long-term memory and knowledge graph tools for Claude Code agents",
+  "license": "Apache-2.0",
+  "author": "Olive",
+  "keywords": ["myco", "mcp", "claude", "agent", "memory", "knowledge-graph"],
   "type": "module",
   "bin": {
     "myco": "./dist/index.js",
