@@ -38,7 +38,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 Plans:
 - [x] 06-01-PLAN.md — Rename package identities, imports, binaries, DB path, and MCP server strings
 - [x] 06-02-PLAN.md — Update dashboard branding, PWA manifest, hooks, and documentation
-- [ ] 06-03-PLAN.md — Update tests, rebuild, and verify zero stale references
+- [x] 06-03-PLAN.md — Update tests, rebuild, and verify zero stale references
 **Success Criteria** (what must be TRUE):
   1. All four package.json files use `@myco/*` package names with no `@ai-workbots/*` references remaining
   2. All cross-package imports resolve correctly under the new `@myco/*` namespace
