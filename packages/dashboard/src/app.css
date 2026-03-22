@@ -2,40 +2,61 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Mycelium palette */
+    --bg-void: #050510;
+    --bg-surface: #0a0a1f;
+    --bg-elevated: #111133;
+    --border-subtle: #1a1a3a;
+    --border-glow: #2a2a5a;
+
+    --text-primary: #e8e8f0;
+    --text-secondary: #8888aa;
+    --text-muted: #555577;
+
+    --glow-teal: #06ffc8;
+    --glow-violet: #a78bfa;
+    --glow-amber: #fbbf24;
+    --glow-emerald: #34d399;
+    --glow-rose: #f472b6;
+    --glow-blue: #60a5fa;
+    --glow-indigo: #818cf8;
+
+    /* shadcn/ui compatibility */
+    --background: 240 100% 3%;
+    --foreground: 240 20% 93%;
+    --card: 240 100% 5%;
+    --card-foreground: 240 20% 93%;
+    --popover: 240 100% 5%;
+    --popover-foreground: 240 20% 93%;
+    --primary: 240 20% 93%;
+    --primary-foreground: 240 100% 8%;
+    --secondary: 240 40% 12%;
+    --secondary-foreground: 240 20% 93%;
+    --muted: 240 40% 12%;
+    --muted-foreground: 240 15% 55%;
+    --accent: 240 40% 12%;
+    --accent-foreground: 240 20% 93%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --destructive-foreground: 240 20% 93%;
+    --border: 240 40% 12%;
+    --input: 240 40% 12%;
+    --ring: 166 100% 51%;
     --radius: 0.5rem;
   }
 }
 
 @layer base {
   * {
-    border-color: theme(--color-slate-800);
+    border-color: var(--border-subtle);
     box-sizing: border-box;
   }
 
   body {
-    @apply bg-slate-950 text-slate-100;
+    background-color: var(--bg-void);
+    color: var(--text-primary);
     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

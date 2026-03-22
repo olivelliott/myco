@@ -4,6 +4,8 @@
 export interface DashboardStats {
   pending: number
   entities: number
+  relationships: number
+  observations: number
   recentEpisodes: Array<{
     id: string
     session_id: string
@@ -11,6 +13,21 @@ export interface DashboardStats {
     event_type: string
     created_at: string
   }>
+  topConnected: Array<{
+    id: string
+    name: string
+    type: string
+    connection_count: number
+  }>
+  typeBreakdown: Array<{
+    type: string
+    count: number
+  }>
+  growthStats: {
+    entitiesLast7d: number
+    observationsLast7d: number
+    relationshipsLast7d: number
+  }
 }
 
 export interface ApprovalItem {
@@ -36,8 +53,23 @@ export interface ApprovalItem {
 }
 
 export interface GraphData {
-  nodes: Array<{ id: string; name: string; type: string; val: number }>
-  links: Array<{ source: string; target: string; type: string }>
+  nodes: Array<{
+    id: string
+    name: string
+    type: string
+    val: number
+    confidence: number
+    summary: string | null
+    created_at: string
+  }>
+  links: Array<{
+    source: string
+    target: string
+    type: string
+    confidence: number
+    source_type: string
+    created_at: string
+  }>
 }
 
 export interface EntityDetail {

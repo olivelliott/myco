@@ -1,23 +1,48 @@
 import { Card, CardContent } from './ui/card'
-import { cn } from '../lib/utils'
 
 interface StatCardProps {
   label: string
   value: number | string
-  subtext?: string
+  sub?: string
+  glow?: boolean
   valueClassName?: string
+  // Keep backward compat
+  subtext?: string
 }
 
-export function StatCard({ label, value, subtext, valueClassName }: StatCardProps) {
+export function StatCard({ label, value, sub, glow, subtext, valueClassName }: StatCardProps) {
+  const displaySub = sub ?? subtext
   return (
-    <Card className="bg-slate-800 border-slate-800">
+    <Card
+      style={{
+        backgroundColor: 'var(--bg-surface)',
+        borderColor: glow ? 'var(--glow-amber)' : 'var(--border-subtle)',
+        boxShadow: glow ? '0 0 16px rgba(251, 191, 36, 0.15)' : 'none',
+        transition: 'box-shadow 0.3s, border-color 0.3s',
+      }}
+    >
       <CardContent className="p-4">
-        <p className="text-xs font-normal text-slate-500">{label}</p>
-        <p className={cn('text-[28px] font-semibold leading-none mt-1', valueClassName)}>
+        <p
+          className="text-xs font-normal uppercase tracking-wider"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          {label}
+        </p>
+        <p
+          className={`text-[28px] font-semibold leading-none mt-1 ${valueClassName ?? ''}`}
+          style={{
+            color: glow ? 'var(--glow-amber)' : 'var(--text-primary)',
+          }}
+        >
           {value}
         </p>
-        {subtext && (
-          <p className="text-xs font-normal text-slate-500 mt-1">{subtext}</p>
+        {displaySub && (
+          <p
+            className="text-xs font-normal mt-1"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {displaySub}
+          </p>
         )}
       </CardContent>
     </Card>
