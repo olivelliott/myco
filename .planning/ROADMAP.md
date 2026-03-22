@@ -34,10 +34,10 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 **Goal**: Every reference to "ai-workbots" or "AI Workbots Brain" in the codebase is replaced with "myco" or "Myco"
 **Depends on**: Phase 5 (v1.0 shipped)
 **Requirements**: REN-01, REN-02, REN-03, REN-04, REN-05, REN-06
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 Plans:
 - [ ] 06-01-PLAN.md — Rename package identities, imports, binaries, DB path, and MCP server strings
-- [ ] 06-02-PLAN.md — Update dashboard branding, PWA manifest, hooks, and documentation
+- [x] 06-02-PLAN.md — Update dashboard branding, PWA manifest, hooks, and documentation
 - [ ] 06-03-PLAN.md — Update tests, rebuild, and verify zero stale references
 **Success Criteria** (what must be TRUE):
   1. All four package.json files use `@myco/*` package names with no `@ai-workbots/*` references remaining
@@ -77,6 +77,6 @@ Plans:
 | 3. Consolidation + Approval | v1.0 | 3/3 | Complete | 2026-03-21 |
 | 4. REST API + PWA | v1.0 | 5/5 | Complete | 2026-03-21 |
 | 5. GSD Integration | v1.0 | 2/2 | Complete | 2026-03-21 |
-| 6. Rename | v2.0 | 0/3 | Not started | - |
+| 6. Rename | v2.0 | 1/3 | In Progress|  |
 | 7. Tech Debt | v2.0 | 0/? | Not started | - |
 | 8. Open Source Packaging | v2.0 | 0/? | Not started | - |

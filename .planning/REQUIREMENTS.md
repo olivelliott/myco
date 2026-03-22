@@ -14,7 +14,7 @@ Requirements for public open source release. Each maps to roadmap phases.
 - [ ] **REN-03**: CLI commands renamed from `brain-mcp`/`brain-cli` to `myco`/`myco-cli`
 - [ ] **REN-04**: Default database path changed from `~/.local/share/ai-workbots/` to `~/.local/share/myco/`
 - [ ] **REN-05**: MCP server name, tool descriptions, and user-facing strings updated to "Myco"
-- [ ] **REN-06**: Dashboard title, branding, and PWA manifest updated to "Myco"
+- [x] **REN-06**: Dashboard title, branding, and PWA manifest updated to "Myco"
 
 ### Open Source
 
@@ -67,7 +67,7 @@ Deferred to v2.1+. Tracked but not in current roadmap.
 | REN-03 | Phase 6 | Pending |
 | REN-04 | Phase 6 | Pending |
 | REN-05 | Phase 6 | Pending |
-| REN-06 | Phase 6 | Pending |
+| REN-06 | Phase 6 | Complete |
 | DEBT-01 | Phase 7 | Pending |
 | DEBT-02 | Phase 7 | Pending |
 | DEBT-03 | Phase 7 | Pending |
