@@ -1,0 +1,87 @@
+# Requirements: Mnemo
+
+**Defined:** 2026-03-22
+**Core Value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
+
+## v2.0 Requirements
+
+Requirements for public open source release. Each maps to roadmap phases.
+
+### Rename
+
+- [ ] **REN-01**: All package names renamed from `@ai-workbots/*` to `@mnemo/*`
+- [ ] **REN-02**: All internal imports and cross-package references updated to `@mnemo/*`
+- [ ] **REN-03**: CLI commands renamed from `brain-mcp`/`brain-cli` to `mnemo`/`mnemo-cli`
+- [ ] **REN-04**: Default database path changed from `~/.local/share/ai-workbots/` to `~/.local/share/mnemo/`
+- [ ] **REN-05**: MCP server name, tool descriptions, and user-facing strings updated to "Mnemo"
+- [ ] **REN-06**: Dashboard title, branding, and PWA manifest updated to "Mnemo"
+
+### Open Source
+
+- [ ] **OSS-01**: Apache 2.0 LICENSE file in repo root
+- [ ] **OSS-02**: README.md with project description, architecture diagram, quick start, MCP tool reference, and knowledge graph visualization showcase
+- [ ] **OSS-03**: CONTRIBUTING.md with development setup, PR guidelines, and code style expectations
+- [ ] **OSS-04**: CODE_OF_CONDUCT.md (Contributor Covenant)
+- [ ] **OSS-05**: GitHub issue and PR templates (`.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md`)
+
+### Tech Debt
+
+- [ ] **DEBT-01**: Fix `/api/episodes` response shape to match `fetchEpisodes()` client expectations
+- [ ] **DEBT-02**: Remove dead `fetchEpisodes` export from `api.ts`
+- [ ] **DEBT-03**: Verify fresh-clone `npm install --legacy-peer-deps && npm run build` succeeds with no errors
+
+## Future Requirements
+
+Deferred to v2.1+. Tracked but not in current roadmap.
+
+### Agent Intelligence
+- **AGENT-01**: Agents query the brain at session start for project context
+- **AGENT-02**: Contextual recall factors in current project and recent topics
+- **AGENT-03**: Confidence decay on old observations unless reinforced
+
+### Distribution
+- **DIST-01**: npm publishable packages
+- **DIST-02**: PWA build + deploy as installable app
+- **DIST-03**: Backup/export knowledge graph as JSON/Markdown
+
+### Cross-Project
+- **CROSS-01**: Global GSD hooks auto-log episodes from all projects
+- **CROSS-02**: Relationship inference between entities
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| New MCP tools or capabilities | v2.0 is packaging only — new features are v2.1+ |
+| Cloud storage or external APIs | Core constraint — everything local |
+| Multi-user / team features | Single user, single machine |
+| npm publish | Not yet — get the repo public first, publish later |
+| Directory/repo rename on disk | User will handle GitHub repo creation separately |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| REN-01 | — | Pending |
+| REN-02 | — | Pending |
+| REN-03 | — | Pending |
+| REN-04 | — | Pending |
+| REN-05 | — | Pending |
+| REN-06 | — | Pending |
+| OSS-01 | — | Pending |
+| OSS-02 | — | Pending |
+| OSS-03 | — | Pending |
+| OSS-04 | — | Pending |
+| OSS-05 | — | Pending |
+| DEBT-01 | — | Pending |
+| DEBT-02 | — | Pending |
+| DEBT-03 | — | Pending |
+
+**Coverage:**
+- v2.0 requirements: 14 total
+- Mapped to phases: 0
+- Unmapped: 14 ⚠️
+
+---
+*Requirements defined: 2026-03-22*
+*Last updated: 2026-03-22 after initial definition*
