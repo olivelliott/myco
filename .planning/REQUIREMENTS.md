@@ -1,4 +1,4 @@
-# Requirements: Mnemo
+# Requirements: Myco
 
 **Defined:** 2026-03-22
 **Core Value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
@@ -9,12 +9,12 @@ Requirements for public open source release. Each maps to roadmap phases.
 
 ### Rename
 
-- [ ] **REN-01**: All package names renamed from `@ai-workbots/*` to `@mnemo/*`
-- [ ] **REN-02**: All internal imports and cross-package references updated to `@mnemo/*`
-- [ ] **REN-03**: CLI commands renamed from `brain-mcp`/`brain-cli` to `mnemo`/`mnemo-cli`
-- [ ] **REN-04**: Default database path changed from `~/.local/share/ai-workbots/` to `~/.local/share/mnemo/`
-- [ ] **REN-05**: MCP server name, tool descriptions, and user-facing strings updated to "Mnemo"
-- [ ] **REN-06**: Dashboard title, branding, and PWA manifest updated to "Mnemo"
+- [ ] **REN-01**: All package names renamed from `@ai-workbots/*` to `@myco/*`
+- [ ] **REN-02**: All internal imports and cross-package references updated to `@myco/*`
+- [ ] **REN-03**: CLI commands renamed from `brain-mcp`/`brain-cli` to `myco`/`myco-cli`
+- [ ] **REN-04**: Default database path changed from `~/.local/share/ai-workbots/` to `~/.local/share/myco/`
+- [ ] **REN-05**: MCP server name, tool descriptions, and user-facing strings updated to "Myco"
+- [ ] **REN-06**: Dashboard title, branding, and PWA manifest updated to "Myco"
 
 ### Open Source
 
@@ -62,26 +62,26 @@ Deferred to v2.1+. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REN-01 | — | Pending |
-| REN-02 | — | Pending |
-| REN-03 | — | Pending |
-| REN-04 | — | Pending |
-| REN-05 | — | Pending |
-| REN-06 | — | Pending |
-| OSS-01 | — | Pending |
-| OSS-02 | — | Pending |
-| OSS-03 | — | Pending |
-| OSS-04 | — | Pending |
-| OSS-05 | — | Pending |
-| DEBT-01 | — | Pending |
-| DEBT-02 | — | Pending |
-| DEBT-03 | — | Pending |
+| REN-01 | Phase 6 | Pending |
+| REN-02 | Phase 6 | Pending |
+| REN-03 | Phase 6 | Pending |
+| REN-04 | Phase 6 | Pending |
+| REN-05 | Phase 6 | Pending |
+| REN-06 | Phase 6 | Pending |
+| DEBT-01 | Phase 7 | Pending |
+| DEBT-02 | Phase 7 | Pending |
+| DEBT-03 | Phase 7 | Pending |
+| OSS-01 | Phase 8 | Pending |
+| OSS-02 | Phase 8 | Pending |
+| OSS-03 | Phase 8 | Pending |
+| OSS-04 | Phase 8 | Pending |
+| OSS-05 | Phase 8 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 ⚠️
+- Mapped to phases: 14
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-03-22 after initial definition*
+*Last updated: 2026-03-22 after roadmap creation*
