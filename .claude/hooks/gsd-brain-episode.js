@@ -21,11 +21,11 @@ const os = require('os');
 // ---------------------------------------------------------------------------
 
 function getDbPath() {
-  const envPath = process.env.BRAIN_DB_PATH;
+  const envPath = process.env.MYCO_DB_PATH || process.env.BRAIN_DB_PATH;
   if (envPath) return envPath;
   const xdgData = process.env.XDG_DATA_HOME ||
     path.join(os.homedir(), '.local', 'share');
-  return path.join(xdgData, 'ai-workbots', 'brain.db');
+  return path.join(xdgData, 'myco', 'brain.db');
 }
 
 // ---------------------------------------------------------------------------
