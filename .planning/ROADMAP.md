@@ -68,7 +68,10 @@ Plans:
   3. CONTRIBUTING.md explains how to set up the dev environment, run tests, and submit a pull request
   4. CODE_OF_CONDUCT.md (Contributor Covenant) exists in the repo root
   5. `.github/ISSUE_TEMPLATE/` and `.github/PULL_REQUEST_TEMPLATE.md` are present and usable
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 08-01-PLAN.md — Create LICENSE (Apache 2.0) and README.md
+- [ ] 08-02-PLAN.md — Create CONTRIBUTING.md, CODE_OF_CONDUCT.md, and GitHub templates
 
 ## Progress
 
@@ -81,4 +84,4 @@ Plans:
 | 5. GSD Integration | v1.0 | 2/2 | Complete | 2026-03-21 |
 | 6. Rename | v2.0 | 2/3 | In Progress|  |
 | 7. Tech Debt | v2.0 | 1/1 | Complete   | 2026-03-22 |
-| 8. Open Source Packaging | v2.0 | 0/? | Not started | - |
+| 8. Open Source Packaging | v2.0 | 0/2 | Not started | - |
