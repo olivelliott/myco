@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { ZodType } from 'zod';
 import type Database from 'better-sqlite3';
 import { nanoid } from 'nanoid';
-import type { ConsolidationSummary, ExtractedFact, Episode } from '@ai-workbots/core';
+import type { ConsolidationSummary, ExtractedFact, Episode } from '@myco/core';
 import { rememberEntity } from './tools.js';
 import { embedText } from './embed-client.js';
 

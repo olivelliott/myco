@@ -1,5 +1,5 @@
 {
-  "name": "@ai-workbots/core",
+  "name": "@myco/core",
   "version": "0.1.0",
   "type": "module",
   "exports": {

@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 /**
- * brain-cli: Standalone CLI for triggering consolidation and managing
+ * myco-cli: Standalone CLI for triggering consolidation and managing
  * the approval queue without an active MCP session.
  *
- * Usage: brain-cli <command> [options]
+ * Usage: myco-cli <command> [options]
  */
 
-import { openDatabase } from '@ai-workbots/core';
+import { openDatabase } from '@myco/core';
 import { runConsolidation } from './consolidator.js';
 import { rememberEntity } from './tools.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function printUsage(): void {
-  console.log(`Usage: brain-cli <command>
+  console.log(`Usage: myco-cli <command>
 
 Commands:
   consolidate              Trigger consolidation pipeline
@@ -39,7 +39,7 @@ function parseArgs(args: string[]): Record<string, string> {
 async function cmdConsolidate(): Promise<void> {
   const db = openDatabase();
   try {
-    console.error('[brain-cli] Starting consolidation…');
+    console.error('[myco-cli] Starting consolidation…');
     const summary = await runConsolidation(db);
     console.log(`Consolidation complete.
 Episodes processed: ${summary.totalProcessed}
@@ -47,7 +47,7 @@ Facts extracted:    ${summary.totalExtracted}
 Auto-approved:      ${summary.totalAutoApproved}
 Queued for review:  ${summary.totalQueued}`);
   } catch (err) {
-    console.error('[brain-cli] Consolidation failed:', (err as Error).message);
+    console.error('[myco-cli] Consolidation failed:', (err as Error).message);
     process.exit(1);
   }
 }
@@ -106,7 +106,7 @@ function cmdListApprovals(args: string[]): void {
 ${factInfo}`);
     }
   } catch (err) {
-    console.error('[brain-cli] Failed to list approvals:', (err as Error).message);
+    console.error('[myco-cli] Failed to list approvals:', (err as Error).message);
     process.exit(1);
   }
 }
@@ -117,13 +117,13 @@ async function cmdResolveApproval(args: string[]): Promise<void> {
 
   if (!id) {
     console.error('Error: missing approval ID.');
-    console.error('Usage: brain-cli resolve-approval <id> <approve|reject|edit> [--content "..."]');
+    console.error('Usage: myco-cli resolve-approval <id> <approve|reject|edit> [--content "..."]');
     process.exit(1);
   }
 
   if (!action || !['approve', 'reject', 'edit'].includes(action)) {
     console.error(`Error: missing or invalid action "${action ?? ''}". Must be approve, reject, or edit.`);
-    console.error('Usage: brain-cli resolve-approval <id> <approve|reject|edit> [--content "..."]');
+    console.error('Usage: myco-cli resolve-approval <id> <approve|reject|edit> [--content "..."]');
     process.exit(1);
   }
 
@@ -196,7 +196,7 @@ async function cmdResolveApproval(args: string[]): Promise<void> {
           db.prepare('UPDATE relationships SET to_id = ? WHERE to_id = ?').run(primaryEntity.id, secondaryId);
           db.prepare('DELETE FROM entities WHERE id = ?').run(secondaryId);
         }
-        console.error(`[brain-cli] Merged ${meta.merge_candidate_ids.length} secondary entity/entities into ${meta.fact.entity_name}`);
+        console.error(`[myco-cli] Merged ${meta.merge_candidate_ids.length} secondary entity/entities into ${meta.fact.entity_name}`);
       }
     }
 
@@ -222,7 +222,7 @@ async function cmdResolveApproval(args: string[]): Promise<void> {
 Entity: ${meta.fact.entity_name} (${meta.fact.entity_type})
 Action: ${action}`);
   } catch (err) {
-    console.error('[brain-cli] Failed to resolve approval:', (err as Error).message);
+    console.error('[myco-cli] Failed to resolve approval:', (err as Error).message);
     process.exit(1);
   }
 }

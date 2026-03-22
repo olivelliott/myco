@@ -1,6 +1,6 @@
 import type Database from 'better-sqlite3';
 import { Hono } from 'hono';
-import type { Episode } from '@ai-workbots/core';
+import type { Episode } from '@myco/core';
 
 export function episodesRoutes(db: Database.Database): Hono {
   const app = new Hono();

@@ -1,8 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type Database from 'better-sqlite3';
-import { generateSessionId, buildProvenance } from '@ai-workbots/core';
-import type { SourceType } from '@ai-workbots/core';
+import { generateSessionId, buildProvenance } from '@myco/core';
+import type { SourceType } from '@myco/core';
 import { nanoid } from 'nanoid';
 import { embedText } from './embed-client.js';
 import { runConsolidation } from './consolidator.js';
@@ -386,7 +386,7 @@ export function registerTools(server: McpServer, db: Database.Database): void {
   server.registerTool(
     'remember',
     {
-      description: 'Store a piece of knowledge in the brain. Creates an entity with an observation, and optionally relationships to other entities.',
+      description: 'Store a piece of knowledge in Myco. Creates an entity with an observation, and optionally relationships to other entities.',
       inputSchema: {
         content: z.string().describe('The observation or fact to remember'),
         entity_name: z.string().describe('Name of the entity this knowledge is about'),
@@ -433,7 +433,7 @@ export function registerTools(server: McpServer, db: Database.Database): void {
   server.registerTool(
     'recall',
     {
-      description: 'Retrieve relevant knowledge from the brain using natural language',
+      description: 'Retrieve relevant knowledge from Myco using natural language',
       inputSchema: {
         query: z.string().describe('Natural language query'),
         limit: z.number().default(10).describe('Max results to return'),

@@ -1,6 +1,6 @@
 import type Database from 'better-sqlite3';
 import { Hono } from 'hono';
-import type { Entity, Observation } from '@ai-workbots/core';
+import type { Entity, Observation } from '@myco/core';
 
 interface ConnectedEntity {
   relation_type: string;

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { openDatabase } from '@ai-workbots/core';
+import { openDatabase } from '@myco/core';
 import { registerTools, reEmbedPending } from './tools.js';
 import { scheduleDailyConsolidation } from './scheduler.js';
 
@@ -18,7 +18,7 @@ reEmbedPending(db).then(count => {
 });
 
 const server = new McpServer({
-  name: 'ai-workbots-brain',
+  name: 'myco',
   version: '0.1.0',
 });
 
@@ -33,4 +33,4 @@ await server.connect(transport);
 
 // CRITICAL: After connect(), stdout is owned by the MCP transport.
 // All diagnostic output MUST use console.error (writes to stderr).
-console.error('ai-workbots-brain MCP server started');
+console.error('myco MCP server started');

@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
-import type { ApprovalQueueItem, ExtractedFact } from '@ai-workbots/core';
+import type { ApprovalQueueItem, ExtractedFact } from '@myco/core';
 
 const resolveSchema = z.object({
   status: z.enum(['approved', 'rejected']),

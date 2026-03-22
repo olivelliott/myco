@@ -1,5 +1,5 @@
 {
-  "name": "ai-workbots",
+  "name": "myco",
   "private": true,
   "type": "module",
   "workspaces": ["packages/*"],

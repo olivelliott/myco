@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3';
-import { openDatabase } from '@ai-workbots/core';
+import { openDatabase } from '@myco/core';
 
 let _db: Database.Database | null = null;
 
