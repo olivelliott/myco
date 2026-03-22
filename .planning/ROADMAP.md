@@ -54,7 +54,9 @@ Plans:
   1. `/api/episodes` returns a response shape that `fetchEpisodes()` in the dashboard client can parse without error
   2. The dead `fetchEpisodes` export is removed from `api.ts` and no consumer references it
   3. Running `npm install --legacy-peer-deps && npm run build` on a fresh clone completes with no errors
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 07-01-PLAN.md — Fix episodes API shape, remove dead export, verify clean build
 
 ### Phase 8: Open Source Packaging
 **Goal**: The repository is ready to make public — all standard open source community files are present and accurate
@@ -78,5 +80,5 @@ Plans:
 | 4. REST API + PWA | v1.0 | 5/5 | Complete | 2026-03-21 |
 | 5. GSD Integration | v1.0 | 2/2 | Complete | 2026-03-21 |
 | 6. Rename | v2.0 | 2/3 | In Progress|  |
-| 7. Tech Debt | v2.0 | 0/? | Not started | - |
+| 7. Tech Debt | v2.0 | 0/1 | Not started | - |
 | 8. Open Source Packaging | v2.0 | 0/? | Not started | - |
