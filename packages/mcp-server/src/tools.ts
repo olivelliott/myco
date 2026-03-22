@@ -6,6 +6,7 @@ import type { SourceType } from '@myco/core';
 import { nanoid } from 'nanoid';
 import { embedText } from './embed-client.js';
 import { runConsolidation } from './consolidator.js';
+import { discoverRelationships, createBackLinks, invalidateEntityCache } from './relationship-discovery.js';
 
 // The session ID is created once per server process lifetime.
 const SESSION_ID = generateSessionId();
@@ -98,6 +99,7 @@ export async function rememberEntity(db: Database.Database, params: RememberPara
       prov.session_id, prov.agent_id, prov.source_type, prov.confidence,
       prov.created_at, prov.created_at,
     );
+    invalidateEntityCache();
   }
 
   // Always add the observation
@@ -161,6 +163,15 @@ export async function rememberEntity(db: Database.Database, params: RememberPara
         prov.session_id, prov.agent_id, prov.source_type, prov.confidence, prov.created_at,
       );
     }
+  }
+
+  // Auto-discover relationships from observation text and embedding
+  const embeddingVec = embedding !== null ? new Float32Array(embedding) : null;
+  await discoverRelationships(db, entityId, content, embeddingVec);
+
+  // If this is a new entity, create back-links from existing observations
+  if (!existingEntity) {
+    createBackLinks(db, entityId, entity_name);
   }
 
   return {
