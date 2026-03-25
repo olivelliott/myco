@@ -3,6 +3,8 @@ export { applySchema } from './schema.js';
 export { generateSessionId, buildProvenance } from './provenance.js';
 export { loadConfig, getConfig } from './config.js';
 export type { MycoConfig } from './config.js';
+export { prepareStatements } from './statements.js';
+export type { MycoStatements } from './statements.js';
 export type {
   SourceType,
   Entity,
