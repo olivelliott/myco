@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Performance & Architecture Optimization
-status: Ready to plan
-stopped_at: Completed 09-01-PLAN.md — config layer with dotenv + stderr logging
-last_updated: "2026-03-25T19:46:02.008Z"
+status: Ready to execute
+stopped_at: Completed 10-01-PLAN.md — prepared statement factory + MCP server refactor
+last_updated: "2026-03-25T21:39:01.685Z"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 09 — config-embedding-performance
+**Current focus:** Phase 10 — prepared-statements
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
+Phase: 10 (prepared-statements) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -46,6 +46,7 @@ Plan: Not started
 *Updated after each plan completion*
 | Phase 09 P02 | 111 | 2 tasks | 2 files |
 | Phase 09-config-embedding-performance P01 | 5 | 2 tasks | 8 files |
+| Phase 10-prepared-statements P01 | 0 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,9 @@ Recent decisions affecting current work:
 - [Phase 09]: reEmbedPending now skips null embeddings with continue (not break) — allows partial success when embedBatch falls back to sequential
 - [Phase 09-config-embedding-performance]: dotenv loads before env-dependent modules via loadConfig() at entry points; lazy getters prevent ESM hoisting pitfall
 - [Phase 09-config-embedding-performance]: API server port now driven by MYCO_API_PORT env var via config.apiPort; default 3001 maintained
+- [Phase 10-prepared-statements]: Dynamic WHERE (queryEntities) and dynamic IN() (markBatchConsolidated) kept as inline db.prepare() — STMT-02 exceptions for variable SQL structure
+- [Phase 10-prepared-statements]: stmts passed as explicit parameter through call chain (not module singleton) — keeps functions independently testable
+- [Phase 10-prepared-statements]: MycoStatements exported from @myco/core so api-server (Plan 02) can import without redeclaring types
 
 ### Pending Todos
 
@@ -77,6 +81,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-25T19:17:01.893Z
-Stopped at: Completed 09-01-PLAN.md — config layer with dotenv + stderr logging
+Last session: 2026-03-25T21:39:01.682Z
+Stopped at: Completed 10-01-PLAN.md — prepared statement factory + MCP server refactor
 Resume file: None

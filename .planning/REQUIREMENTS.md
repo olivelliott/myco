@@ -29,8 +29,8 @@ Requirements for performance & architecture optimization. Each maps to roadmap p
 
 ### Prepared Statements
 
-- [ ] **STMT-01**: All hot-path SQL queries use prepared statements created once at startup
-- [ ] **STMT-02**: No db.prepare() calls exist inside request/tool handler functions
+- [x] **STMT-01**: All hot-path SQL queries use prepared statements created once at startup
+- [x] **STMT-02**: No db.prepare() calls exist inside request/tool handler functions
 
 ### Namespace Isolation
 
@@ -93,8 +93,8 @@ Deferred to v3.1+. Tracked but not in current roadmap.
 | EMBED-02 | Phase 9 | Complete |
 | EMBED-03 | Phase 9 | Complete |
 | EMBED-04 | Phase 9 | Complete |
-| STMT-01 | Phase 10 | Pending |
-| STMT-02 | Phase 10 | Pending |
+| STMT-01 | Phase 10 | Complete |
+| STMT-02 | Phase 10 | Complete |
 | QUERY-01 | Phase 11 | Pending |
 | QUERY-02 | Phase 11 | Pending |
 | QUERY-03 | Phase 11 | Pending |
