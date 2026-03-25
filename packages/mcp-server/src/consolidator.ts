@@ -14,7 +14,9 @@ const BATCH_SIZE = 10;
 const CONFIDENCE_THRESHOLD = 0.85;
 const CONTRADICTION_DISTANCE_THRESHOLD = 0.3;
 const LLM_TIMEOUT_MS = 60_000;
-const CONSOLIDATION_MODEL = process.env.BRAIN_CONSOLIDATION_MODEL ?? 'llama3.2';
+function getConsolidationModel(): string {
+  return process.env.BRAIN_CONSOLIDATION_MODEL ?? 'llama3.2';
+}
 
 // ─── Ollama provider ──────────────────────────────────────────────────────────
 
@@ -153,7 +155,7 @@ Extract all meaningful facts. Be precise with evidence quotes — they must be v
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const outputSpec = Output.object({ schema: ConsolidationOutputSchema as unknown as ZodType<{ facts: ExtractedFact[] }, any, any> });
     const result = await generateText({
-      model: ollamaProvider(CONSOLIDATION_MODEL),
+      model: ollamaProvider(getConsolidationModel()),
       prompt,
       experimental_output: outputSpec,
       abortSignal: AbortSignal.timeout(LLM_TIMEOUT_MS),

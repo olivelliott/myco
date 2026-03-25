@@ -1,3 +1,5 @@
+import { loadConfig } from '@myco/core';
+const config = loadConfig();
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -26,9 +28,9 @@ app.route('/api/entities', entitiesRoutes(db));
 app.route('/api/episodes', episodesRoutes(db));
 app.route('/api/graph', graphRoutes(db));
 
-const server = serve({ fetch: app.fetch, port: 3001 });
+const server = serve({ fetch: app.fetch, port: config.apiPort });
 
-console.log('API server running on http://localhost:3001');
+console.log(`API server running on http://localhost:${config.apiPort}`);
 
 // Graceful shutdown
 process.on('SIGINT', () => {

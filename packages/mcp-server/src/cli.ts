@@ -6,6 +6,8 @@
  * Usage: myco-cli <command> [options]
  */
 
+import { loadConfig } from '@myco/core';
+loadConfig();
 import { openDatabase } from '@myco/core';
 import { runConsolidation } from './consolidator.js';
 import { rememberEntity } from './tools.js';
