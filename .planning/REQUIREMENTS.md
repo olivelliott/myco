@@ -9,10 +9,10 @@ Requirements for performance & architecture optimization. Each maps to roadmap p
 
 ### Embedding Performance
 
-- [ ] **EMBED-01**: Ollama client is a singleton reused across all embedding calls
-- [ ] **EMBED-02**: Failed Ollama connections trigger 30s cooldown before retrying
-- [ ] **EMBED-03**: Batch embedding uses Ollama's string[] input for multiple texts in one call
-- [ ] **EMBED-04**: reEmbedPending processes all pending observations in a single batch call
+- [x] **EMBED-01**: Ollama client is a singleton reused across all embedding calls
+- [x] **EMBED-02**: Failed Ollama connections trigger 30s cooldown before retrying
+- [x] **EMBED-03**: Batch embedding uses Ollama's string[] input for multiple texts in one call
+- [x] **EMBED-04**: reEmbedPending processes all pending observations in a single batch call
 
 ### Configuration
 
@@ -89,10 +89,10 @@ Deferred to v3.1+. Tracked but not in current roadmap.
 | CONFIG-01 | Phase 9 | Pending |
 | CONFIG-02 | Phase 9 | Pending |
 | CONFIG-03 | Phase 9 | Pending |
-| EMBED-01 | Phase 9 | Pending |
-| EMBED-02 | Phase 9 | Pending |
-| EMBED-03 | Phase 9 | Pending |
-| EMBED-04 | Phase 9 | Pending |
+| EMBED-01 | Phase 9 | Complete |
+| EMBED-02 | Phase 9 | Complete |
+| EMBED-03 | Phase 9 | Complete |
+| EMBED-04 | Phase 9 | Complete |
 | STMT-01 | Phase 10 | Pending |
 | STMT-02 | Phase 10 | Pending |
 | QUERY-01 | Phase 11 | Pending |

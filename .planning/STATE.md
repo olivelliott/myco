@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Performance & Architecture Optimization
-status: roadmap_ready
-stopped_at: Roadmap created — Phase 9 ready to plan
-last_updated: "2026-03-25T00:00:00.000Z"
+status: Ready to execute
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-03-25T19:13:48.425Z"
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # Project State
@@ -19,18 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** v3.0 Performance & Architecture Optimization — Phase 9 ready to plan
+**Current focus:** Phase 09 — config-embedding-performance
 
 ## Current Position
 
-Phase: 9 — Config + Embedding Performance (not started)
-Plan: —
-Status: Roadmap created, awaiting phase planning
-Last activity: 2026-03-25 — v3.0 roadmap created (Phases 9-12)
-
-```
-v3.0 Progress: [░░░░░░░░░░░░░░░░░░░░] 0% — 0 of 4 phases complete
-```
+Phase: 09 (config-embedding-performance) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -50,6 +44,7 @@ v3.0 Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
 | 12. Namespace Isolation | - | - | - |
 
 *Updated after each plan completion*
+| Phase 09 P02 | 111 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -66,6 +61,8 @@ Recent decisions affecting current work:
 - Prepared statements for Phase 9 must NOT reference the project column — that column doesn't exist until Phase 12
 - SQLite ALTER TABLE cannot modify virtual tables (vec_embeddings, fts_observations) — filter at query time for namespace isolation
 - Ollama batch embed fails entirely on error — need fallback to sequential embedding on batch failure
+- [Phase 09]: Used Promise.race for per-call timeouts in embed-client — avoids needing two Ollama client instances for different timeout values (2s single, 10s batch)
+- [Phase 09]: reEmbedPending now skips null embeddings with continue (not break) — allows partial success when embedBatch falls back to sequential
 
 ### Pending Todos
 
@@ -77,6 +74,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-25
-Stopped at: v3.0 roadmap created — Phase 9 Config + Embedding Performance ready to plan
+Last session: 2026-03-25T19:13:48.421Z
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None

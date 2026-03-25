@@ -56,7 +56,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`
 **Plans**: 2 plans
 Plans:
 - [ ] 09-01-PLAN.md — Config layer: dotenv loading, config module, .env.example, entry point wiring
-- [ ] 09-02-PLAN.md — Embedding client: singleton, health cooldown, batch API, reEmbedPending batch
+- [x] 09-02-PLAN.md — Embedding client: singleton, health cooldown, batch API, reEmbedPending batch
 
 ### Phase 10: Prepared Statements
 **Goal**: All hot-path database queries are compiled once at startup, eliminating per-request statement preparation overhead
@@ -110,7 +110,7 @@ Plans:
 | 6. Rename | v2.0 | 3/3 | Complete | 2026-03-22 |
 | 7. Tech Debt | v2.0 | 1/1 | Complete | 2026-03-22 |
 | 8. Open Source Packaging | v2.0 | 2/2 | Complete | 2026-03-22 |
-| 9. Config + Embedding Performance | v3.0 | 0/2 | Not started | - |
+| 9. Config + Embedding Performance | v3.0 | 1/2 | In Progress|  |
 | 10. Prepared Statements | v3.0 | 0/TBD | Not started | - |
 | 11. Query Filters + Error Handling | v3.0 | 0/TBD | Not started | - |
 | 12. Namespace Isolation | v3.0 | 0/TBD | Not started | - |
