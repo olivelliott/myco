@@ -51,6 +51,28 @@ export interface MycoStatements {
   selectApprovalById: Statement;
   updateApprovalStatus: Statement;
   insertApprovalQueueItem: Statement;
+
+  // ── Dashboard / aggregate statements ─────────────────────────────────────
+  countPendingApprovals: Statement;
+  countEntities: Statement;
+  countRelationships: Statement;
+  countObservations: Statement;
+  selectRecentEpisodes: Statement;
+  selectTopConnected: Statement;
+  selectTypeBreakdown: Statement;
+  countEntitiesAfter: Statement;
+  countObservationsAfter: Statement;
+  countRelationshipsAfter: Statement;
+
+  // ── API route statements ──────────────────────────────────────────────────
+  selectAllPendingApprovals: Statement;
+  selectEntitiesPaginated: Statement;
+  selectEntityById: Statement;
+  selectObservationsByEntity: Statement;
+  selectConnectedEntities: Statement;
+  selectGraphNodes: Statement;
+  selectGraphRelationships: Statement;
+  selectEpisodesPaginated: Statement;
 }
 
 /**
@@ -255,6 +277,92 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     insertApprovalQueueItem: db.prepare(
       `INSERT INTO approval_queue (id, item_type, item_id, status, reason, metadata, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ),
+
+    // ── Dashboard / aggregate statements ────────────────────────────────────
+    countPendingApprovals: db.prepare(
+      `SELECT COUNT(*) as n FROM approval_queue WHERE status = 'pending'`
+    ),
+
+    countEntities: db.prepare(
+      `SELECT COUNT(*) as n FROM entities`
+    ),
+
+    countRelationships: db.prepare(
+      `SELECT COUNT(*) as n FROM relationships`
+    ),
+
+    countObservations: db.prepare(
+      `SELECT COUNT(*) as n FROM observations`
+    ),
+
+    selectRecentEpisodes: db.prepare(
+      `SELECT id, session_id, agent_id, event_type, created_at FROM episodes ORDER BY created_at DESC LIMIT 20`
+    ),
+
+    selectTopConnected: db.prepare(
+      `SELECT e.id, e.name, e.type,
+         (SELECT COUNT(*) FROM relationships r WHERE r.from_id = e.id OR r.to_id = e.id) AS connection_count
+       FROM entities e
+       ORDER BY connection_count DESC
+       LIMIT 5`
+    ),
+
+    selectTypeBreakdown: db.prepare(
+      `SELECT type, COUNT(*) as count FROM entities GROUP BY type ORDER BY count DESC`
+    ),
+
+    countEntitiesAfter: db.prepare(
+      `SELECT COUNT(*) as n FROM entities WHERE created_at > ?`
+    ),
+
+    countObservationsAfter: db.prepare(
+      `SELECT COUNT(*) as n FROM observations WHERE created_at > ?`
+    ),
+
+    countRelationshipsAfter: db.prepare(
+      `SELECT COUNT(*) as n FROM relationships WHERE created_at > ?`
+    ),
+
+    // ── API route statements ─────────────────────────────────────────────────
+    selectAllPendingApprovals: db.prepare(
+      `SELECT * FROM approval_queue WHERE status = 'pending' ORDER BY created_at DESC LIMIT 50`
+    ),
+
+    selectEntitiesPaginated: db.prepare(
+      `SELECT id, name, type, confidence, created_at FROM entities ORDER BY updated_at DESC LIMIT ? OFFSET ?`
+    ),
+
+    selectEntityById: db.prepare(
+      `SELECT * FROM entities WHERE id = ?`
+    ),
+
+    selectObservationsByEntity: db.prepare(
+      `SELECT * FROM observations WHERE entity_id = ? ORDER BY created_at DESC`
+    ),
+
+    selectConnectedEntities: db.prepare(
+      `SELECT r.type as relation_type, r.from_id, r.to_id,
+              e.id, e.name, e.type
+       FROM relationships r
+       JOIN entities e ON (
+         e.id = CASE WHEN r.from_id = ? THEN r.to_id ELSE r.from_id END
+       )
+       WHERE r.from_id = ? OR r.to_id = ?`
+    ),
+
+    selectGraphNodes: db.prepare(
+      `SELECT id, name, type, confidence, summary, created_at,
+         (SELECT COUNT(*) FROM observations WHERE entity_id = e.id) AS obs_count
+       FROM entities e`
+    ),
+
+    selectGraphRelationships: db.prepare(
+      `SELECT id, from_id, to_id, type, confidence, source_type, created_at FROM relationships`
+    ),
+
+    selectEpisodesPaginated: db.prepare(
+      `SELECT id, session_id, agent_id, event_type, payload, created_at FROM episodes ORDER BY created_at DESC LIMIT ?`
     ),
   };
 }

@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3';
 import { Hono } from 'hono';
+import type { MycoStatements } from '@myco/core';
 
 interface GraphNodeRow {
   id: string;
@@ -21,15 +22,11 @@ interface RelationshipRow {
   created_at: string;
 }
 
-export function graphRoutes(db: Database.Database): Hono {
+export function graphRoutes(db: Database.Database, stmts: MycoStatements): Hono {
   const app = new Hono();
 
   app.get('/', (c) => {
-    const nodeRows = db.prepare(
-      `SELECT id, name, type, confidence, summary, created_at,
-        (SELECT COUNT(*) FROM observations WHERE entity_id = e.id) AS obs_count
-       FROM entities e`
-    ).all() as GraphNodeRow[];
+    const nodeRows = stmts.selectGraphNodes.all() as GraphNodeRow[];
 
     const nodes = nodeRows.map((row) => ({
       id: row.id,
@@ -41,9 +38,7 @@ export function graphRoutes(db: Database.Database): Hono {
       val: Math.max(1, row.obs_count),
     }));
 
-    const relRows = db.prepare(
-      'SELECT id, from_id, to_id, type, confidence, source_type, created_at FROM relationships'
-    ).all() as RelationshipRow[];
+    const relRows = stmts.selectGraphRelationships.all() as RelationshipRow[];
 
     const links = relRows.map((row) => ({
       source: row.from_id,

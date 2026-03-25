@@ -1,6 +1,6 @@
 import type Database from 'better-sqlite3';
 import { Hono } from 'hono';
-import type { Entity, Observation } from '@myco/core';
+import type { Entity, Observation, MycoStatements } from '@myco/core';
 
 interface ConnectedEntity {
   relation_type: string;
@@ -11,7 +11,7 @@ interface ConnectedEntity {
   type: string;
 }
 
-export function entitiesRoutes(db: Database.Database): Hono {
+export function entitiesRoutes(db: Database.Database, stmts: MycoStatements): Hono {
   const app = new Hono();
 
   app.get('/', (c) => {
@@ -22,9 +22,7 @@ export function entitiesRoutes(db: Database.Database): Hono {
     const limit = Math.min(Math.max(1, isNaN(rawLimit) ? 50 : rawLimit), 200);
     const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
 
-    const entities = db.prepare(
-      'SELECT id, name, type, confidence, created_at FROM entities ORDER BY updated_at DESC LIMIT ? OFFSET ?'
-    ).all(limit, offset) as Pick<Entity, 'id' | 'name' | 'type' | 'confidence' | 'created_at'>[];
+    const entities = stmts.selectEntitiesPaginated.all(limit, offset) as Pick<Entity, 'id' | 'name' | 'type' | 'confidence' | 'created_at'>[];
 
     return c.json(entities);
   });
@@ -32,27 +30,15 @@ export function entitiesRoutes(db: Database.Database): Hono {
   app.get('/:id', (c) => {
     const id = c.req.param('id');
 
-    const entity = db.prepare(
-      'SELECT * FROM entities WHERE id = ?'
-    ).get(id) as Entity | undefined;
+    const entity = stmts.selectEntityById.get(id) as Entity | undefined;
 
     if (!entity) {
       return c.json({ error: 'Entity not found' }, 404);
     }
 
-    const observations = db.prepare(
-      'SELECT * FROM observations WHERE entity_id = ? ORDER BY created_at DESC'
-    ).all(id) as Observation[];
+    const observations = stmts.selectObservationsByEntity.all(id) as Observation[];
 
-    const connected = db.prepare(
-      `SELECT r.type as relation_type, r.from_id, r.to_id,
-              e.id, e.name, e.type
-       FROM relationships r
-       JOIN entities e ON (
-         e.id = CASE WHEN r.from_id = ? THEN r.to_id ELSE r.from_id END
-       )
-       WHERE r.from_id = ? OR r.to_id = ?`
-    ).all(id, id, id) as ConnectedEntity[];
+    const connected = stmts.selectConnectedEntities.all(id, id, id) as ConnectedEntity[];
 
     return c.json({ entity, observations, connected });
   });
