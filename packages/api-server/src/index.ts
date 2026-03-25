@@ -3,7 +3,7 @@ const config = loadConfig();
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { getDb } from './db.js';
+import { getDb, getStatements } from './db.js';
 import { dashboardRoutes } from './routes/dashboard.js';
 import { approvalsRoutes } from './routes/approvals.js';
 import { entitiesRoutes } from './routes/entities.js';
@@ -11,6 +11,7 @@ import { episodesRoutes } from './routes/episodes.js';
 import { graphRoutes } from './routes/graph.js';
 
 const db = getDb();
+const stmts = getStatements();
 
 const app = new Hono();
 
@@ -22,11 +23,11 @@ app.use('/api/*', cors({
 }));
 
 // Mount route groups
-app.route('/api/dashboard', dashboardRoutes(db));
-app.route('/api/approvals', approvalsRoutes(db));
-app.route('/api/entities', entitiesRoutes(db));
-app.route('/api/episodes', episodesRoutes(db));
-app.route('/api/graph', graphRoutes(db));
+app.route('/api/dashboard', dashboardRoutes(db, stmts));
+app.route('/api/approvals', approvalsRoutes(db, stmts));
+app.route('/api/entities', entitiesRoutes(db, stmts));
+app.route('/api/episodes', episodesRoutes(db, stmts));
+app.route('/api/graph', graphRoutes(db, stmts));
 
 const server = serve({ fetch: app.fetch, port: config.apiPort });
 
