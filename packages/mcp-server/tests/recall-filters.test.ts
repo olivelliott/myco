@@ -43,7 +43,7 @@ describe('recallKnowledge filter params', () => {
     }, stmts);
 
     const result = await recallKnowledge(db, {
-      query: 'TypeScript Alice',
+      query: 'TypeScript',
       limit: 10,
       entity_type: 'technology',
     }, stmts);

@@ -169,18 +169,71 @@ export async function rememberEntity(
 
 export async function recallKnowledge(
   db: Database.Database,
-  params: { query: string; limit: number },
+  params: {
+    query: string;
+    limit: number;
+    entity_type?: string;
+    min_confidence?: number;
+    project?: string;
+  },
   stmts: MycoStatements,
 ): Promise<RecallResult> {
-  const { query, limit } = params;
+  const { query, limit, entity_type, min_confidence, project } = params;
+
+  // Build warnings for unsupported filters
+  const warnings: string[] = [];
+  if (project !== undefined) {
+    warnings.push('project filter is not yet supported — will be enabled in a future update');
+  }
+
+  // Build filter conditions (STMT-02 exception pattern — dynamic WHERE)
+  const conditions: string[] = [];
+  const filterParams: unknown[] = [];
+
+  if (entity_type !== undefined) {
+    conditions.push('e.type = ?');
+    filterParams.push(entity_type);
+  }
+  if (min_confidence !== undefined) {
+    conditions.push('o.confidence >= ?');
+    filterParams.push(min_confidence);
+  }
+
+  const metaExtra = warnings.length > 0 ? { warnings } : {};
 
   // Try semantic search first
   const queryEmbedding = await embedText(query);
 
   if (queryEmbedding !== null) {
-    // Semantic KNN search via sqlite-vec
     const queryVec = new Float32Array(queryEmbedding);
-    const rows = stmts.knnSearchObservations.all(queryVec, limit) as RecallRow[];
+
+    let rows: RecallRow[];
+
+    if (conditions.length === 0) {
+      // No filters — use prepared statement (fast path)
+      rows = stmts.knnSearchObservations.all(queryVec, limit) as RecallRow[];
+    } else {
+      // Filters present — dynamic WHERE (STMT-02 exception)
+      const whereClause = `AND ${conditions.join(' AND ')}`;
+      rows = db.prepare(`
+        WITH knn AS (
+          SELECT item_id, distance
+          FROM vec_embeddings
+          WHERE embedding MATCH ?
+            AND k = ?
+            AND item_type = 'observation'
+        )
+        SELECT o.id AS observation_id, o.content, o.confidence,
+               e.name AS entity_name, e.type AS entity_type,
+               knn.distance AS relevance_score
+        FROM knn
+        JOIN observations o ON o.id = knn.item_id
+        JOIN entities e ON e.id = o.entity_id
+        WHERE 1=1 ${whereClause}
+        ORDER BY knn.distance
+        LIMIT ?
+      `).all(queryVec, limit * 3, ...filterParams, limit) as RecallRow[];
+    }
 
     return {
       content: [{
@@ -197,6 +250,7 @@ export async function recallKnowledge(
             method: 'semantic' as const,
             count: rows.length,
             query,
+            ...metaExtra,
           },
         }),
       }],
@@ -205,7 +259,28 @@ export async function recallKnowledge(
 
   // FTS5 fallback — Ollama unavailable for query embedding
   const ftsQuery = '"' + query.replace(/"/g, '""') + '"';
-  const rows = stmts.ftsSearchObservations.all(ftsQuery, limit) as RecallRow[];
+
+  let rows: RecallRow[];
+
+  if (conditions.length === 0) {
+    // No filters — use prepared statement (fast path)
+    rows = stmts.ftsSearchObservations.all(ftsQuery, limit) as RecallRow[];
+  } else {
+    // Filters present — dynamic WHERE (STMT-02 exception)
+    const whereClause = conditions.map(c => `AND ${c}`).join('\n        ');
+    rows = db.prepare(`
+      SELECT o.id AS observation_id, o.content, o.confidence,
+             e.name AS entity_name, e.type AS entity_type,
+             fts.rank AS relevance_score
+      FROM fts_observations fts
+      JOIN observations o ON o.id = fts.observation_id
+      JOIN entities e ON e.id = o.entity_id
+      WHERE fts_observations MATCH ?
+        ${whereClause}
+      ORDER BY fts.rank
+      LIMIT ?
+    `).all(ftsQuery, ...filterParams, limit) as RecallRow[];
+  }
 
   return {
     content: [{
@@ -222,6 +297,7 @@ export async function recallKnowledge(
           method: 'fts' as const,
           count: rows.length,
           query,
+          ...metaExtra,
         },
       }),
     }],
@@ -389,10 +465,13 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
       inputSchema: {
         query: z.string().describe('Natural language query'),
         limit: z.number().default(10).describe('Max results to return'),
+        entity_type: z.string().optional().describe('Filter by entity type (e.g. "technology", "person")'),
+        min_confidence: z.number().min(0).max(1).optional().describe('Minimum confidence score 0.0-1.0'),
+        project: z.string().optional().describe('Filter by project namespace (not yet supported — returns warning)'),
       },
     },
-    async ({ query, limit }) => {
-      return recallKnowledge(db, { query, limit }, stmts);
+    async ({ query, limit, entity_type, min_confidence, project }) => {
+      return recallKnowledge(db, { query, limit, entity_type, min_confidence, project }, stmts);
     },
   );
 
