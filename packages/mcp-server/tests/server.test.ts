@@ -2,8 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rmSync, mkdirSync } from 'node:fs';
-import { openDatabase } from '@myco/core';
+import { openDatabase, prepareStatements } from '@myco/core';
 import type Database from 'better-sqlite3';
+import type { MycoStatements } from '@myco/core';
 import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending } from '../src/tools.js';
 import * as embedClient from '../src/embed-client.js';
 
@@ -11,10 +12,12 @@ const testDir = join(tmpdir(), 'myco-mcp-test-' + process.pid);
 
 describe('MCP server tools', () => {
   let db: Database.Database;
+  let stmts: MycoStatements;
 
   beforeEach(() => {
     mkdirSync(testDir, { recursive: true });
     db = openDatabase(join(testDir, 'test.db'));
+    stmts = prepareStatements(db);
   });
 
   afterEach(() => {
@@ -28,7 +31,7 @@ describe('MCP server tools', () => {
         content: 'TypeScript is great',
         entity_name: 'TypeScript',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       const row = db.prepare('SELECT * FROM entities WHERE name = ?').get('TypeScript') as {
         id: string; name: string; type: string;
@@ -43,7 +46,7 @@ describe('MCP server tools', () => {
         content: 'TypeScript is great',
         entity_name: 'TypeScript',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       const entity = db.prepare('SELECT id FROM entities WHERE name = ?').get('TypeScript') as { id: string };
       const obs = db.prepare('SELECT * FROM observations WHERE entity_id = ?').get(entity.id) as {
@@ -60,7 +63,7 @@ describe('MCP server tools', () => {
         content: 'TypeScript is great',
         entity_name: 'TypeScript',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       expect(result.content).toHaveLength(1);
       expect(result.content[0].type).toBe('text');
@@ -73,7 +76,7 @@ describe('MCP server tools', () => {
         entity_name: 'TypeScript',
         entity_type: 'technology',
         agent_id: 'test-agent',
-      });
+      }, stmts);
 
       const entity = db.prepare('SELECT * FROM entities WHERE name = ?').get('TypeScript') as {
         session_id: string; agent_id: string; source_type: string; confidence: number;
@@ -91,7 +94,7 @@ describe('MCP server tools', () => {
         content: 'TypeScript is great',
         entity_name: 'TypeScript',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       const entity = db.prepare('SELECT * FROM entities WHERE name = ?').get('TypeScript') as {
         created_at: string; updated_at: string;
@@ -108,7 +111,7 @@ describe('MCP server tools', () => {
         entity_name: 'TypeScript',
         entity_type: 'technology',
         agent_id: 'test-agent',
-      });
+      }, stmts);
 
       const entity = db.prepare('SELECT * FROM entities WHERE name = ?').get('TypeScript') as {
         agent_id: string;
@@ -126,7 +129,7 @@ describe('MCP server tools', () => {
         content: 'TypeScript is great',
         entity_name: 'TypeScript',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       const entity = db.prepare('SELECT * FROM entities WHERE name = ?').get('TypeScript') as {
         agent_id: string;
@@ -151,7 +154,7 @@ describe('MCP server tools', () => {
             relation_type: 'is_superset_of',
           },
         ],
-      });
+      }, stmts);
 
       const target = db.prepare('SELECT * FROM entities WHERE name = ?').get('JavaScript') as {
         id: string; name: string; type: string;
@@ -173,13 +176,13 @@ describe('MCP server tools', () => {
         content: 'First observation',
         entity_name: 'TypeScript',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       await rememberEntity(db, {
         content: 'Second observation',
         entity_name: 'TypeScript',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       const entities = db.prepare('SELECT * FROM entities WHERE name = ?').all('TypeScript') as unknown[];
       const observations = db.prepare('SELECT * FROM observations WHERE entity_id = (SELECT id FROM entities WHERE name = ?)').all('TypeScript') as unknown[];
@@ -193,7 +196,7 @@ describe('MCP server tools', () => {
         content: 'TypeScript is great',
         entity_name: 'TypeScript',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       const entity = db.prepare('SELECT id FROM entities WHERE name = ?').get('TypeScript') as { id: string };
       const obs = db.prepare('SELECT id FROM observations WHERE entity_id = ?').get(entity.id) as { id: string };
@@ -213,7 +216,7 @@ describe('MCP server tools', () => {
         content: 'TypeScript is great',
         entity_name: 'TypeScript',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       const entity = db.prepare('SELECT id FROM entities WHERE name = ?').get('TypeScript') as { id: string };
       const obs = db.prepare('SELECT needs_embedding FROM observations WHERE entity_id = ?').get(entity.id) as {
@@ -238,9 +241,9 @@ describe('MCP server tools', () => {
         content: 'TypeScript supports generics and interfaces',
         entity_name: 'TypeScript',
         entity_type: 'technology',
-      });
+      }, stmts);
 
-      const result = await recallKnowledge(db, { query: 'TypeScript', limit: 10 });
+      const result = await recallKnowledge(db, { query: 'TypeScript', limit: 10 }, stmts);
       spy.mockRestore();
       const parsed = JSON.parse(result.content[0].text) as {
         results: Array<{ entity_name: string; observation: string; confidence: number; relevance_score: number }>;
@@ -254,7 +257,7 @@ describe('MCP server tools', () => {
     });
 
     it('returns empty results when no matching observations', async () => {
-      const result = await recallKnowledge(db, { query: 'xyzzy nonexistent content', limit: 10 });
+      const result = await recallKnowledge(db, { query: 'xyzzy nonexistent content', limit: 10 }, stmts);
       const parsed = JSON.parse(result.content[0].text) as {
         results: unknown[];
         metadata: { method: string; count: number };
@@ -265,9 +268,9 @@ describe('MCP server tools', () => {
     });
 
     it('recall does not return episodes (episode isolation - EPSD-03)', async () => {
-      await logEpisode(db, { event_type: 'secret_event', payload: { task: 'secret' } });
+      await logEpisode(db, { event_type: 'secret_event', payload: { task: 'secret' } }, stmts);
 
-      const result = await recallKnowledge(db, { query: 'secret_event', limit: 10 });
+      const result = await recallKnowledge(db, { query: 'secret_event', limit: 10 }, stmts);
       const parsed = JSON.parse(result.content[0].text) as {
         results: Array<{ entity_name: string; observation: string }>;
       };
@@ -286,9 +289,9 @@ describe('MCP server tools', () => {
         content: 'A statically typed language',
         entity_name: 'TestEntity',
         entity_type: 'technology',
-      });
+      }, stmts);
 
-      const result = queryEntities(db, { entity_name: 'TestEntity' });
+      const result = queryEntities(db, { entity_name: 'TestEntity' }, stmts);
       const parsed = JSON.parse(result.content[0].text) as {
         results: Array<{ entity_name: string; observation_count: number; observations: unknown[] }>;
         metadata: { count: number };
@@ -304,15 +307,15 @@ describe('MCP server tools', () => {
         content: 'A programming language',
         entity_name: 'Rust',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       await rememberEntity(db, {
         content: 'A person',
         entity_name: 'Alice',
         entity_type: 'person',
-      });
+      }, stmts);
 
-      const result = queryEntities(db, { entity_type: 'technology' });
+      const result = queryEntities(db, { entity_type: 'technology' }, stmts);
       const parsed = JSON.parse(result.content[0].text) as {
         results: Array<{ entity_name: string; entity_type: string }>;
       };
@@ -327,15 +330,15 @@ describe('MCP server tools', () => {
         content: 'First entity',
         entity_name: 'EntityA',
         entity_type: 'concept',
-      });
+      }, stmts);
 
       await rememberEntity(db, {
         content: 'Second entity',
         entity_name: 'EntityB',
         entity_type: 'concept',
-      });
+      }, stmts);
 
-      const result = queryEntities(db, {});
+      const result = queryEntities(db, {}, stmts);
       const parsed = JSON.parse(result.content[0].text) as {
         results: Array<{ entity_name: string }>;
         metadata: { count: number };
@@ -350,7 +353,7 @@ describe('MCP server tools', () => {
       const result = await logEpisode(db, {
         event_type: 'test_event',
         payload: { key: 'value' },
-      });
+      }, stmts);
 
       const parsed = JSON.parse(result.content[0].text) as {
         id: string;
@@ -380,13 +383,13 @@ describe('MCP server tools', () => {
         event_type: 'agent_a_event',
         payload: { task: 'build' },
         agent_id: 'agent-alpha',
-      });
+      }, stmts);
 
       await logEpisode(db, {
         event_type: 'agent_b_event',
         payload: { task: 'test' },
         agent_id: 'agent-beta',
-      });
+      }, stmts);
 
       const rows = db.prepare('SELECT agent_id FROM episodes ORDER BY created_at').all() as Array<{ agent_id: string }>;
 
@@ -401,7 +404,7 @@ describe('MCP server tools', () => {
 
   describe('reEmbedPending', () => {
     it('returns 0 when no pending rows', async () => {
-      const count = await reEmbedPending(db);
+      const count = await reEmbedPending(db, stmts);
       expect(count).toBe(0);
     });
 
@@ -411,11 +414,11 @@ describe('MCP server tools', () => {
         content: 'Pending embedding content',
         entity_name: 'PendingEntity',
         entity_type: 'concept',
-      });
+      }, stmts);
 
       // In test env, embedText returns null — reEmbedPending attempts but Ollama is down
       // Should not throw and returns 0 (Ollama unavailable mid-sweep stops early)
-      const count = await reEmbedPending(db);
+      const count = await reEmbedPending(db, stmts);
       expect(count).toBeGreaterThanOrEqual(0);
     });
   });

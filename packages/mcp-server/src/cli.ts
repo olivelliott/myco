@@ -8,7 +8,7 @@
 
 import { loadConfig } from '@myco/core';
 loadConfig();
-import { openDatabase } from '@myco/core';
+import { openDatabase, prepareStatements } from '@myco/core';
 import { runConsolidation } from './consolidator.js';
 import { rememberEntity } from './tools.js';
 
@@ -40,9 +40,10 @@ function parseArgs(args: string[]): Record<string, string> {
 
 async function cmdConsolidate(): Promise<void> {
   const db = openDatabase();
+  const stmts = prepareStatements(db);
   try {
     console.error('[myco-cli] Starting consolidation…');
-    const summary = await runConsolidation(db);
+    const summary = await runConsolidation(db, stmts);
     console.log(`Consolidation complete.
 Episodes processed: ${summary.totalProcessed}
 Facts extracted:    ${summary.totalExtracted}
@@ -59,14 +60,9 @@ function cmdListApprovals(args: string[]): void {
   const limit = flags['limit'] ? parseInt(flags['limit'], 10) : 20;
 
   const db = openDatabase();
+  const stmts = prepareStatements(db);
   try {
-    const rows = db.prepare(
-      `SELECT id, item_type, reason, metadata, created_at
-       FROM approval_queue
-       WHERE status = 'pending'
-       ORDER BY created_at
-       LIMIT ?`
-    ).all(limit) as Array<{
+    const rows = stmts.selectPendingApprovals.all(limit) as Array<{
       id: string;
       item_type: string;
       reason: string | null;
@@ -138,11 +134,10 @@ async function cmdResolveApproval(args: string[]): Promise<void> {
   }
 
   const db = openDatabase();
+  const stmts = prepareStatements(db);
   try {
     // Fetch pending item
-    const item = db.prepare(
-      'SELECT id, item_type, metadata, status FROM approval_queue WHERE id = ?'
-    ).get(id) as { id: string; item_type: string; metadata: string | null; status: string } | undefined;
+    const item = stmts.selectApprovalById.get(id) as { id: string; item_type: string; metadata: string | null; status: string } | undefined;
 
     if (!item) {
       console.error(`Error: Approval item ${id} not found.`);
@@ -157,9 +152,7 @@ async function cmdResolveApproval(args: string[]): Promise<void> {
     const now = new Date().toISOString();
 
     if (action === 'reject') {
-      db.prepare(
-        'UPDATE approval_queue SET status = ?, resolved_at = ? WHERE id = ?'
-      ).run('rejected', now, id);
+      stmts.updateApprovalStatus.run('rejected', now, id);
       console.log(`Rejected approval item ${id}.`);
       return;
     }
@@ -187,16 +180,14 @@ async function cmdResolveApproval(args: string[]): Promise<void> {
     // Handle merge_candidate items: reassign observations+relationships from secondary to primary
     // ('reject' returned early above — action is 'approve' or 'edit' here)
     if (item.item_type === 'proposed_fact' && meta.merge_candidate_ids && meta.merge_candidate_ids.length > 0) {
-      const primaryEntity = db.prepare(
-        'SELECT id FROM entities WHERE name = ? AND type = ?'
-      ).get(meta.fact.entity_name, meta.fact.entity_type) as { id: string } | undefined;
+      const primaryEntity = stmts.selectEntityByNameType.get(meta.fact.entity_name, meta.fact.entity_type) as { id: string } | undefined;
 
       if (primaryEntity) {
         for (const secondaryId of meta.merge_candidate_ids) {
-          db.prepare('UPDATE observations SET entity_id = ? WHERE entity_id = ?').run(primaryEntity.id, secondaryId);
-          db.prepare('UPDATE relationships SET from_id = ? WHERE from_id = ?').run(primaryEntity.id, secondaryId);
-          db.prepare('UPDATE relationships SET to_id = ? WHERE to_id = ?').run(primaryEntity.id, secondaryId);
-          db.prepare('DELETE FROM entities WHERE id = ?').run(secondaryId);
+          stmts.updateObservationEntityId.run(primaryEntity.id, secondaryId);
+          stmts.updateRelationshipFromId.run(primaryEntity.id, secondaryId);
+          stmts.updateRelationshipToId.run(primaryEntity.id, secondaryId);
+          stmts.deleteEntityById.run(secondaryId);
         }
         console.error(`[myco-cli] Merged ${meta.merge_candidate_ids.length} secondary entity/entities into ${meta.fact.entity_name}`);
       }
@@ -214,11 +205,9 @@ async function cmdResolveApproval(args: string[]): Promise<void> {
         target_type: r.type,
         relation_type: r.relation_type,
       })),
-    });
+    }, stmts);
 
-    db.prepare(
-      'UPDATE approval_queue SET status = ?, resolved_at = ? WHERE id = ?'
-    ).run('approved', now, id);
+    stmts.updateApprovalStatus.run('approved', now, id);
 
     console.log(`Approved item ${id}.
 Entity: ${meta.fact.entity_name} (${meta.fact.entity_type})

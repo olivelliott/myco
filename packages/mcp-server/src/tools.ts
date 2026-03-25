@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type Database from 'better-sqlite3';
 import { generateSessionId, buildProvenance } from '@myco/core';
 import type { SourceType } from '@myco/core';
+import type { MycoStatements } from '@myco/core';
 import { nanoid } from 'nanoid';
 import { embedText, embedBatch } from './embed-client.js';
 import { runConsolidation } from './consolidator.js';
@@ -70,7 +71,11 @@ export interface LogEpisodeResult {
  * Core write logic extracted for direct testability.
  * The MCP tool handler is a thin wrapper around this function.
  */
-export async function rememberEntity(db: Database.Database, params: RememberParams): Promise<RememberResult> {
+export async function rememberEntity(
+  db: Database.Database,
+  params: RememberParams,
+  stmts: MycoStatements,
+): Promise<RememberResult> {
   const {
     content,
     entity_name,
@@ -84,17 +89,12 @@ export async function rememberEntity(db: Database.Database, params: RememberPara
   const prov = buildProvenance(SESSION_ID, agent_id, source_type, confidence);
 
   // Upsert entity: find existing by name+type or create new
-  const existingEntity = db
-    .prepare('SELECT id FROM entities WHERE name = ? AND type = ?')
-    .get(entity_name, entity_type) as { id: string } | undefined;
+  const existingEntity = stmts.selectEntityByNameType.get(entity_name, entity_type) as { id: string } | undefined;
 
   const entityId = existingEntity?.id ?? nanoid();
 
   if (!existingEntity) {
-    db.prepare(`
-      INSERT INTO entities (id, name, type, summary, metadata, session_id, agent_id, source_type, confidence, created_at, updated_at)
-      VALUES (?, ?, ?, NULL, '{}', ?, ?, ?, ?, ?, ?)
-    `).run(
+    stmts.insertEntity.run(
       entityId, entity_name, entity_type,
       prov.session_id, prov.agent_id, prov.source_type, prov.confidence,
       prov.created_at, prov.created_at,
@@ -104,32 +104,23 @@ export async function rememberEntity(db: Database.Database, params: RememberPara
 
   // Always add the observation
   const obsId = nanoid();
-  db.prepare(`
-    INSERT INTO observations (id, entity_id, content, metadata, session_id, agent_id, source_type, confidence, created_at)
-    VALUES (?, ?, ?, '{}', ?, ?, ?, ?, ?)
-  `).run(
+  stmts.insertObservation.run(
     obsId, entityId, content,
     prov.session_id, prov.agent_id, prov.source_type, prov.confidence, prov.created_at,
   );
 
   // Insert into FTS5 index for full-text search fallback
-  db.prepare(`
-    INSERT INTO fts_observations (content, observation_id) VALUES (?, ?)
-  `).run(content, obsId);
+  stmts.insertFtsObservation.run(content, obsId);
 
   // Attempt embedding via Ollama (SRCH-01 inline embedding)
   const embedding = await embedText(content);
 
   if (embedding !== null) {
     const vec = new Float32Array(embedding);
-    db.prepare(`
-      INSERT INTO vec_embeddings (item_id, item_type, embedding) VALUES (?, ?, ?)
-    `).run(obsId, 'observation', vec);
+    stmts.insertVecEmbedding.run(obsId, 'observation', vec);
   } else {
     // Ollama unavailable — flag for later re-embedding (SRCH-04)
-    db.prepare(`
-      UPDATE observations SET needs_embedding = 1 WHERE id = ?
-    `).run(obsId);
+    stmts.flagObservationNeedsEmbedding.run(obsId);
   }
 
   // Handle optional relations
@@ -137,17 +128,12 @@ export async function rememberEntity(db: Database.Database, params: RememberPara
     for (const rel of relations) {
       const targetType = rel.target_type ?? 'concept';
 
-      const existingTarget = db
-        .prepare('SELECT id FROM entities WHERE name = ? AND type = ?')
-        .get(rel.target_name, targetType) as { id: string } | undefined;
+      const existingTarget = stmts.selectEntityByNameType.get(rel.target_name, targetType) as { id: string } | undefined;
 
       const targetId = existingTarget?.id ?? nanoid();
 
       if (!existingTarget) {
-        db.prepare(`
-          INSERT INTO entities (id, name, type, summary, metadata, session_id, agent_id, source_type, confidence, created_at, updated_at)
-          VALUES (?, ?, ?, NULL, '{}', ?, ?, ?, ?, ?, ?)
-        `).run(
+        stmts.insertEntity.run(
           targetId, rel.target_name, targetType,
           prov.session_id, prov.agent_id, prov.source_type, prov.confidence,
           prov.created_at, prov.created_at,
@@ -155,10 +141,7 @@ export async function rememberEntity(db: Database.Database, params: RememberPara
       }
 
       const relId = nanoid();
-      db.prepare(`
-        INSERT OR IGNORE INTO relationships (id, from_id, to_id, type, metadata, session_id, agent_id, source_type, confidence, created_at)
-        VALUES (?, ?, ?, ?, '{}', ?, ?, ?, ?, ?)
-      `).run(
+      stmts.insertRelationship.run(
         relId, entityId, targetId, rel.relation_type,
         prov.session_id, prov.agent_id, prov.source_type, prov.confidence, prov.created_at,
       );
@@ -167,11 +150,11 @@ export async function rememberEntity(db: Database.Database, params: RememberPara
 
   // Auto-discover relationships from observation text and embedding
   const embeddingVec = embedding !== null ? new Float32Array(embedding) : null;
-  await discoverRelationships(db, entityId, content, embeddingVec);
+  await discoverRelationships(db, entityId, content, embeddingVec, stmts);
 
   // If this is a new entity, create back-links from existing observations
   if (!existingEntity) {
-    createBackLinks(db, entityId, entity_name);
+    createBackLinks(db, entityId, entity_name, stmts);
   }
 
   return {
@@ -187,6 +170,7 @@ export async function rememberEntity(db: Database.Database, params: RememberPara
 export async function recallKnowledge(
   db: Database.Database,
   params: { query: string; limit: number },
+  stmts: MycoStatements,
 ): Promise<RecallResult> {
   const { query, limit } = params;
 
@@ -196,26 +180,7 @@ export async function recallKnowledge(
   if (queryEmbedding !== null) {
     // Semantic KNN search via sqlite-vec
     const queryVec = new Float32Array(queryEmbedding);
-    const rows = db.prepare(`
-      WITH knn AS (
-        SELECT item_id, distance
-        FROM vec_embeddings
-        WHERE embedding MATCH ?
-          AND k = ?
-          AND item_type = 'observation'
-      )
-      SELECT
-        o.id        AS observation_id,
-        o.content,
-        o.confidence,
-        e.name      AS entity_name,
-        e.type      AS entity_type,
-        knn.distance AS relevance_score
-      FROM knn
-      JOIN observations o ON o.id = knn.item_id
-      JOIN entities e ON e.id = o.entity_id
-      ORDER BY knn.distance
-    `).all(queryVec, limit) as RecallRow[];
+    const rows = stmts.knnSearchObservations.all(queryVec, limit) as RecallRow[];
 
     return {
       content: [{
@@ -240,21 +205,7 @@ export async function recallKnowledge(
 
   // FTS5 fallback — Ollama unavailable for query embedding
   const ftsQuery = '"' + query.replace(/"/g, '""') + '"';
-  const rows = db.prepare(`
-    SELECT
-      o.id        AS observation_id,
-      o.content,
-      o.confidence,
-      e.name      AS entity_name,
-      e.type      AS entity_type,
-      fts.rank    AS relevance_score
-    FROM fts_observations fts
-    JOIN observations o ON o.id = fts.observation_id
-    JOIN entities e ON e.id = o.entity_id
-    WHERE fts_observations MATCH ?
-    ORDER BY fts.rank
-    LIMIT ?
-  `).all(ftsQuery, limit) as RecallRow[];
+  const rows = stmts.ftsSearchObservations.all(ftsQuery, limit) as RecallRow[];
 
   return {
     content: [{
@@ -280,6 +231,7 @@ export async function recallKnowledge(
 export function queryEntities(
   db: Database.Database,
   params: { entity_name?: string; entity_type?: string; relation_type?: string },
+  stmts: MycoStatements,
 ): RecallResult {
   const { entity_name, entity_type, relation_type } = params;
 
@@ -305,6 +257,7 @@ export function queryEntities(
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
+  // Dynamic WHERE — cannot be pre-prepared (STMT-02 exception: query-time preparation with bound params)
   const entities = db.prepare(`
     SELECT
       e.id, e.name, e.type, e.summary, e.confidence,
@@ -315,12 +268,7 @@ export function queryEntities(
     LIMIT 50
   `).all(...queryParams) as QueryEntityRow[];
 
-  // For each entity, fetch its observations
-  const getObservations = db.prepare(`
-    SELECT id, content, confidence, created_at
-    FROM observations WHERE entity_id = ? ORDER BY created_at DESC LIMIT 20
-  `);
-
+  // For each entity, fetch its observations using the pre-compiled statement
   const results = entities.map(ent => ({
     entity_name: ent.name,
     entity_type: ent.type,
@@ -328,7 +276,7 @@ export function queryEntities(
     confidence: ent.confidence,
     observation_count: ent.observation_count,
     relationship_count: ent.relationship_count,
-    observations: (getObservations.all(ent.id) as QueryObservationRow[]).map(obs => ({
+    observations: (stmts.selectObservationsByEntityId.all(ent.id) as QueryObservationRow[]).map(obs => ({
       content: obs.content,
       confidence: obs.confidence,
       created_at: obs.created_at,
@@ -349,15 +297,13 @@ export function queryEntities(
 export async function logEpisode(
   db: Database.Database,
   params: { event_type: string; payload: object; agent_id?: string },
+  stmts: MycoStatements,
 ): Promise<LogEpisodeResult> {
   const { event_type, payload, agent_id } = params;
   const prov = buildProvenance(SESSION_ID, agent_id, 'agent_session', 1.0);
   const id = nanoid();
 
-  db.prepare(`
-    INSERT INTO episodes (id, session_id, agent_id, event_type, payload, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(id, prov.session_id, prov.agent_id, event_type, JSON.stringify(payload), prov.created_at);
+  stmts.insertEpisode.run(id, prov.session_id, prov.agent_id, event_type, JSON.stringify(payload), prov.created_at);
 
   return {
     content: [{ type: 'text' as const, text: JSON.stringify({ id, session_id: prov.session_id }) }],
@@ -366,13 +312,8 @@ export async function logEpisode(
 
 const RE_EMBED_BATCH_SIZE = 50;
 
-export async function reEmbedPending(db: Database.Database): Promise<number> {
-  const rows = db.prepare(`
-    SELECT o.id, o.content
-    FROM observations o
-    WHERE o.needs_embedding = 1
-    LIMIT ?
-  `).all(RE_EMBED_BATCH_SIZE) as Array<{ id: string; content: string }>;
+export async function reEmbedPending(db: Database.Database, stmts: MycoStatements): Promise<number> {
+  const rows = stmts.selectPendingEmbeddings.all(RE_EMBED_BATCH_SIZE) as Array<{ id: string; content: string }>;
 
   if (rows.length === 0) return 0;
 
@@ -381,25 +322,19 @@ export async function reEmbedPending(db: Database.Database): Promise<number> {
   const embeddings = await embedBatch(texts);
 
   let embedded = 0;
-  const insertVec = db.prepare(
-    'INSERT INTO vec_embeddings (item_id, item_type, embedding) VALUES (?, ?, ?)'
-  );
-  const clearFlag = db.prepare(
-    'UPDATE observations SET needs_embedding = 0 WHERE id = ?'
-  );
 
   for (let i = 0; i < rows.length; i++) {
     const embedding = embeddings[i];
     if (embedding === null) continue; // skip failed individual embeddings
     const vec = new Float32Array(embedding);
-    insertVec.run(rows[i].id, 'observation', vec);
-    clearFlag.run(rows[i].id);
+    stmts.insertVecEmbedding.run(rows[i].id, 'observation', vec);
+    stmts.clearObservationEmbeddingFlag.run(rows[i].id);
     embedded++;
   }
   return embedded;
 }
 
-export function registerTools(server: McpServer, db: Database.Database): void {
+export function registerTools(server: McpServer, db: Database.Database, stmts: MycoStatements): void {
   server.registerTool(
     'remember',
     {
@@ -443,7 +378,7 @@ export function registerTools(server: McpServer, db: Database.Database): void {
         agent_id,
         confidence,
         relations,
-      });
+      }, stmts);
     },
   );
 
@@ -457,7 +392,7 @@ export function registerTools(server: McpServer, db: Database.Database): void {
       },
     },
     async ({ query, limit }) => {
-      return recallKnowledge(db, { query, limit });
+      return recallKnowledge(db, { query, limit }, stmts);
     },
   );
 
@@ -472,7 +407,7 @@ export function registerTools(server: McpServer, db: Database.Database): void {
       },
     },
     async ({ entity_name, entity_type, relation_type }) => {
-      return queryEntities(db, { entity_name, entity_type, relation_type });
+      return queryEntities(db, { entity_name, entity_type, relation_type }, stmts);
     },
   );
 
@@ -487,7 +422,7 @@ export function registerTools(server: McpServer, db: Database.Database): void {
       },
     },
     async ({ event_type, payload, agent_id }) => {
-      return logEpisode(db, { event_type, payload, agent_id });
+      return logEpisode(db, { event_type, payload, agent_id }, stmts);
     },
   );
 
@@ -499,7 +434,7 @@ export function registerTools(server: McpServer, db: Database.Database): void {
     },
     async () => {
       console.error('[consolidation] manual trigger via MCP tool');
-      const summary = await runConsolidation(db);
+      const summary = await runConsolidation(db, stmts);
       return {
         content: [{
           type: 'text' as const,
@@ -518,13 +453,7 @@ export function registerTools(server: McpServer, db: Database.Database): void {
       },
     },
     async ({ limit }) => {
-      const rows = db.prepare(`
-        SELECT id, item_type, item_id, status, reason, metadata, created_at
-        FROM approval_queue
-        WHERE status = 'pending'
-        ORDER BY created_at
-        LIMIT ?
-      `).all(limit) as Array<{
+      const rows = stmts.selectPendingApprovals.all(limit) as Array<{
         id: string;
         item_type: string;
         item_id: string;
@@ -563,9 +492,7 @@ export function registerTools(server: McpServer, db: Database.Database): void {
     },
     async ({ id, action, edited_content }) => {
       // Fetch the pending item
-      const item = db.prepare(
-        'SELECT id, item_type, metadata, status FROM approval_queue WHERE id = ?'
-      ).get(id) as { id: string; item_type: string; metadata: string | null; status: string } | undefined;
+      const item = stmts.selectApprovalById.get(id) as { id: string; item_type: string; metadata: string | null; status: string } | undefined;
 
       if (!item) {
         return {
@@ -588,9 +515,7 @@ export function registerTools(server: McpServer, db: Database.Database): void {
       const now = new Date().toISOString();
 
       if (action === 'reject') {
-        db.prepare(
-          'UPDATE approval_queue SET status = ?, resolved_at = ? WHERE id = ?'
-        ).run('rejected', now, id);
+        stmts.updateApprovalStatus.run('rejected', now, id);
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ status: 'rejected', id }) }],
         };
@@ -621,19 +546,17 @@ export function registerTools(server: McpServer, db: Database.Database): void {
       // (action is 'approve' or 'edit' at this point — 'reject' returned early above)
       if (item.item_type === 'proposed_fact' && meta.merge_candidate_ids && meta.merge_candidate_ids.length > 0) {
         // The fact's entity is the primary; merge candidates are secondaries
-        const primaryEntity = db.prepare(
-          'SELECT id FROM entities WHERE name = ? AND type = ?'
-        ).get(meta.fact.entity_name, meta.fact.entity_type) as { id: string } | undefined;
+        const primaryEntity = stmts.selectEntityByNameType.get(meta.fact.entity_name, meta.fact.entity_type) as { id: string } | undefined;
 
         if (primaryEntity) {
           for (const secondaryId of meta.merge_candidate_ids) {
             // Reassign observations
-            db.prepare('UPDATE observations SET entity_id = ? WHERE entity_id = ?').run(primaryEntity.id, secondaryId);
+            stmts.updateObservationEntityId.run(primaryEntity.id, secondaryId);
             // Reassign relationships
-            db.prepare('UPDATE relationships SET from_id = ? WHERE from_id = ?').run(primaryEntity.id, secondaryId);
-            db.prepare('UPDATE relationships SET to_id = ? WHERE to_id = ?').run(primaryEntity.id, secondaryId);
+            stmts.updateRelationshipFromId.run(primaryEntity.id, secondaryId);
+            stmts.updateRelationshipToId.run(primaryEntity.id, secondaryId);
             // Delete secondary entity
-            db.prepare('DELETE FROM entities WHERE id = ?').run(secondaryId);
+            stmts.deleteEntityById.run(secondaryId);
           }
         }
       }
@@ -650,11 +573,9 @@ export function registerTools(server: McpServer, db: Database.Database): void {
           target_type: r.type,
           relation_type: r.relation_type,
         })),
-      });
+      }, stmts);
 
-      db.prepare(
-        'UPDATE approval_queue SET status = ?, resolved_at = ? WHERE id = ?'
-      ).run('approved', now, id);
+      stmts.updateApprovalStatus.run('approved', now, id);
 
       return {
         content: [{

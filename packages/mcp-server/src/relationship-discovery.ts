@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3';
 import { nanoid } from 'nanoid';
 import { generateSessionId, buildProvenance } from '@myco/core';
+import type { MycoStatements } from '@myco/core';
 
 const SESSION_ID = generateSessionId();
 
@@ -18,11 +19,11 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function getEntityNames(db: Database.Database): Map<string, string> {
+function getEntityNames(db: Database.Database, stmts: MycoStatements): Map<string, string> {
   if (entityCache && lastGeneration === cacheGeneration) {
     return entityCache;
   }
-  const rows = db.prepare('SELECT id, name FROM entities').all() as Array<{ id: string; name: string }>;
+  const rows = stmts.selectAllEntityNames.all() as Array<{ id: string; name: string }>;
   entityCache = new Map();
   for (const row of rows) {
     if (row.name.length >= 3) {
@@ -47,10 +48,11 @@ export async function discoverRelationships(
   entityId: string,
   observationText: string,
   embedding: Float32Array | null,
+  stmts: MycoStatements,
 ): Promise<void> {
   try {
     const prov = buildProvenance(SESSION_ID, undefined, 'auto_discovery', 0.7);
-    const entityNames = getEntityNames(db);
+    const entityNames = getEntityNames(db, stmts);
     let created = 0;
     const MAX_NEW = 3;
 
@@ -62,16 +64,13 @@ export async function discoverRelationships(
       const pattern = new RegExp('\\b' + escapeRegex(name) + '\\b', 'i');
       if (pattern.test(observationText)) {
         // Check if relationship already exists
-        const existing = db.prepare(
-          `SELECT 1 FROM relationships WHERE
-           (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)`
-        ).get(entityId, targetId, targetId, entityId);
+        const existing = stmts.selectRelationshipExists.get(entityId, targetId, targetId, entityId);
 
         if (!existing) {
-          db.prepare(`
-            INSERT OR IGNORE INTO relationships (id, from_id, to_id, type, metadata, session_id, agent_id, source_type, confidence, created_at)
-            VALUES (?, ?, ?, 'related_to', '{}', ?, ?, ?, ?, ?)
-          `).run(nanoid(), entityId, targetId, prov.session_id, prov.agent_id, prov.source_type, prov.confidence, prov.created_at);
+          stmts.insertRelationship.run(
+            nanoid(), entityId, targetId, 'related_to',
+            prov.session_id, prov.agent_id, prov.source_type, prov.confidence, prov.created_at,
+          );
           created++;
         }
       }
@@ -79,36 +78,19 @@ export async function discoverRelationships(
 
     // 2. Semantic similarity (if embedding available and budget remains)
     if (embedding && created < MAX_NEW) {
-      const rows = db.prepare(`
-        WITH knn AS (
-          SELECT item_id, distance
-          FROM vec_embeddings
-          WHERE embedding MATCH ?
-            AND k = 5
-            AND item_type = 'observation'
-        )
-        SELECT DISTINCT o.entity_id, knn.distance
-        FROM knn
-        JOIN observations o ON o.id = knn.item_id
-        WHERE o.entity_id != ?
-          AND knn.distance < 0.25
-        ORDER BY knn.distance
-      `).all(embedding, entityId) as Array<{ entity_id: string; distance: number }>;
+      const rows = stmts.knnSearchForRelationships.all(embedding, entityId) as Array<{ entity_id: string; distance: number }>;
 
       for (const row of rows) {
         if (created >= MAX_NEW) break;
 
-        const existing = db.prepare(
-          `SELECT 1 FROM relationships WHERE
-           (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)`
-        ).get(entityId, row.entity_id, row.entity_id, entityId);
+        const existing = stmts.selectRelationshipExists.get(entityId, row.entity_id, row.entity_id, entityId);
 
         if (!existing) {
           const confidence = Math.round((1.0 - row.distance) * 100) / 100;
-          db.prepare(`
-            INSERT OR IGNORE INTO relationships (id, from_id, to_id, type, metadata, session_id, agent_id, source_type, confidence, created_at)
-            VALUES (?, ?, ?, 'semantically_related', '{}', ?, ?, 'auto_discovery', ?, ?)
-          `).run(nanoid(), entityId, row.entity_id, prov.session_id, prov.agent_id, confidence, prov.created_at);
+          stmts.insertRelationship.run(
+            nanoid(), entityId, row.entity_id, 'semantically_related',
+            prov.session_id, prov.agent_id, 'auto_discovery', confidence, prov.created_at,
+          );
           created++;
         }
       }
@@ -126,6 +108,7 @@ export function createBackLinks(
   db: Database.Database,
   entityId: string,
   entityName: string,
+  stmts: MycoStatements,
 ): void {
   if (entityName.length < 3) return;
 
@@ -134,27 +117,18 @@ export function createBackLinks(
 
     // Use FTS5 to find observations mentioning the entity name
     const ftsQuery = '"' + entityName.replace(/"/g, '""') + '"';
-    const rows = db.prepare(`
-      SELECT DISTINCT o.entity_id
-      FROM fts_observations fts
-      JOIN observations o ON o.id = fts.observation_id
-      WHERE fts_observations MATCH ?
-      LIMIT 100
-    `).all(ftsQuery) as Array<{ entity_id: string }>;
+    const rows = stmts.ftsSearchEntityMentions.all(ftsQuery) as Array<{ entity_id: string }>;
 
     for (const row of rows) {
       if (row.entity_id === entityId) continue;
 
-      const existing = db.prepare(
-        `SELECT 1 FROM relationships WHERE
-         (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)`
-      ).get(row.entity_id, entityId, entityId, row.entity_id);
+      const existing = stmts.selectRelationshipExists.get(row.entity_id, entityId, entityId, row.entity_id);
 
       if (!existing) {
-        db.prepare(`
-          INSERT OR IGNORE INTO relationships (id, from_id, to_id, type, metadata, session_id, agent_id, source_type, confidence, created_at)
-          VALUES (?, ?, ?, 'related_to', '{}', ?, ?, ?, ?, ?)
-        `).run(nanoid(), row.entity_id, entityId, prov.session_id, prov.agent_id, prov.source_type, prov.confidence, prov.created_at);
+        stmts.insertRelationship.run(
+          nanoid(), row.entity_id, entityId, 'related_to',
+          prov.session_id, prov.agent_id, prov.source_type, prov.confidence, prov.created_at,
+        );
       }
     }
   } catch (err) {

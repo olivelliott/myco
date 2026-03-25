@@ -5,6 +5,7 @@ import type { ZodType } from 'zod';
 import type Database from 'better-sqlite3';
 import { nanoid } from 'nanoid';
 import type { ConsolidationSummary, ExtractedFact, Episode } from '@myco/core';
+import type { MycoStatements } from '@myco/core';
 import { rememberEntity } from './tools.js';
 import { embedText } from './embed-client.js';
 
@@ -81,8 +82,12 @@ export function isMergeCandidate(nameA: string, nameB: string): boolean {
  * Returns all entities where isMergeCandidate(entityName, existing.name) is true,
  * excluding exact-name matches (which are upserts, not merges).
  */
-export function findMergeCandidates(db: Database.Database, entityName: string): Array<{ id: string; name: string }> {
-  const allEntities = db.prepare('SELECT id, name FROM entities').all() as Array<{ id: string; name: string }>;
+export function findMergeCandidates(
+  db: Database.Database,
+  entityName: string,
+  stmts: MycoStatements,
+): Array<{ id: string; name: string }> {
+  const allEntities = stmts.selectAllEntityNames.all() as Array<{ id: string; name: string }>;
   return allEntities.filter(e =>
     e.name !== entityName && isMergeCandidate(entityName, e.name)
   );
@@ -101,27 +106,14 @@ export async function detectContradiction(
   db: Database.Database,
   entityId: string,
   factText: string,
+  stmts: MycoStatements,
   threshold = CONTRADICTION_DISTANCE_THRESHOLD,
 ): Promise<boolean> {
   const embedding = await embedText(factText);
   if (embedding === null) return false; // Ollama unavailable — don't block
 
   const vec = new Float32Array(embedding);
-  const rows = db.prepare(`
-    WITH knn AS (
-      SELECT item_id, distance
-      FROM vec_embeddings
-      WHERE embedding MATCH ?
-        AND k = 5
-        AND item_type = 'observation'
-    )
-    SELECT knn.distance
-    FROM knn
-    JOIN observations o ON o.id = knn.item_id
-    WHERE o.entity_id = ?
-    ORDER BY knn.distance
-    LIMIT 1
-  `).all(vec, entityId) as Array<{ distance: number }>;
+  const rows = stmts.knnSearchForContradiction.all(vec, entityId) as Array<{ distance: number }>;
 
   return rows.some(r => r.distance < threshold);
 }
@@ -183,7 +175,10 @@ Extract all meaningful facts. Be precise with evidence quotes — they must be v
  *
  * All logging goes to stderr — stdout is reserved for MCP transport.
  */
-export async function runConsolidation(db: Database.Database): Promise<ConsolidationSummary> {
+export async function runConsolidation(
+  db: Database.Database,
+  stmts: MycoStatements,
+): Promise<ConsolidationSummary> {
   const summary: ConsolidationSummary = {
     totalProcessed: 0,
     totalExtracted: 0,
@@ -194,13 +189,7 @@ export async function runConsolidation(db: Database.Database): Promise<Consolida
 
   while (true) {
     // Fetch next batch of unconsolidated episodes
-    const batch = db.prepare(`
-      SELECT id, session_id, agent_id, event_type, payload, created_at
-      FROM episodes
-      WHERE consolidated_at IS NULL
-      ORDER BY created_at
-      LIMIT ?
-    `).all(BATCH_SIZE) as Episode[];
+    const batch = stmts.selectUnconsolidatedEpisodes.all(BATCH_SIZE) as Episode[];
 
     if (batch.length === 0) break;
 
@@ -230,18 +219,16 @@ export async function runConsolidation(db: Database.Database): Promise<Consolida
 
     for (const fact of facts) {
       // Look up existing entity by name + type
-      const existingEntity = db
-        .prepare('SELECT id FROM entities WHERE name = ? AND type = ?')
-        .get(fact.entity_name, fact.entity_type) as { id: string } | undefined;
+      const existingEntity = stmts.selectEntityByNameType.get(fact.entity_name, fact.entity_type) as { id: string } | undefined;
 
       // Check for potential entity merges
-      const mergeCandidates = findMergeCandidates(db, fact.entity_name);
+      const mergeCandidates = findMergeCandidates(db, fact.entity_name, stmts);
       const hasMergeCandidates = mergeCandidates.length > 0;
 
       // Check for contradiction (only if entity exists)
       let hasContradiction = false;
       if (existingEntity) {
-        hasContradiction = await detectContradiction(db, existingEntity.id, fact.observation);
+        hasContradiction = await detectContradiction(db, existingEntity.id, fact.observation, stmts);
       }
 
       // Route decision: auto-approve or queue
@@ -264,7 +251,7 @@ export async function runConsolidation(db: Database.Database): Promise<Consolida
               target_type: r.type,
               relation_type: r.relation_type,
             })),
-          });
+          }, stmts);
           summary.totalAutoApproved++;
         } catch (err) {
           console.error('[consolidation] rememberEntity failed:', err instanceof Error ? err.message : err);
@@ -280,10 +267,7 @@ export async function runConsolidation(db: Database.Database): Promise<Consolida
           ...(hasMergeCandidates ? { merge_candidate_ids: mergeCandidates.map(c => c.id) } : {}),
         });
 
-        db.prepare(`
-          INSERT INTO approval_queue (id, item_type, item_id, status, reason, metadata, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(
+        stmts.insertApprovalQueueItem.run(
           nanoid(),
           'proposed_fact',
           nanoid(),
@@ -324,6 +308,7 @@ function determineQueueReason(
 function markBatchConsolidated(db: Database.Database, batch: Episode[]): void {
   const now = new Date().toISOString();
   const placeholders = batch.map(() => '?').join(', ');
+  // Dynamic IN() — cannot be pre-prepared (STMT-02 exception: variable-length parameter list)
   db.prepare(`
     UPDATE episodes SET consolidated_at = ? WHERE id IN (${placeholders})
   `).run(now, ...batch.map(e => e.id));

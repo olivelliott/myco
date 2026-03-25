@@ -2,8 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rmSync, mkdirSync } from 'node:fs';
-import { openDatabase } from '@myco/core';
+import { openDatabase, prepareStatements } from '@myco/core';
 import type Database from 'better-sqlite3';
+import type { MycoStatements } from '@myco/core';
 import { discoverRelationships, createBackLinks } from '../src/relationship-discovery.js';
 import { rememberEntity } from '../src/tools.js';
 
@@ -11,10 +12,12 @@ const testDir = join(tmpdir(), 'myco-reldiscovery-test-' + process.pid);
 
 describe('relationship-discovery', () => {
   let db: Database.Database;
+  let stmts: MycoStatements;
 
   beforeEach(() => {
     mkdirSync(testDir, { recursive: true });
     db = openDatabase(join(testDir, 'test.db'));
+    stmts = prepareStatements(db);
   });
 
   afterEach(() => {
@@ -29,19 +32,19 @@ describe('relationship-discovery', () => {
         content: 'A JavaScript UI library',
         entity_name: 'React',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       // Create a new entity "Vite" with observation that mentions "React"
       await rememberEntity(db, {
         content: 'Vite is a build tool',
         entity_name: 'Vite',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       const viteEntity = db.prepare('SELECT id FROM entities WHERE name = ?').get('Vite') as { id: string };
 
       // Act: discover relationships for the Vite observation
-      await discoverRelationships(db, viteEntity.id, 'Vite works great with React for fast HMR', null);
+      await discoverRelationships(db, viteEntity.id, 'Vite works great with React for fast HMR', null, stmts);
 
       // Assert: should have created a related_to relationship from Vite to React
       const rels = db.prepare(
@@ -57,16 +60,16 @@ describe('relationship-discovery', () => {
         content: 'A programming language',
         entity_name: 'Go',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       await rememberEntity(db, {
         content: 'Testing stuff',
         entity_name: 'TestLib',
         entity_type: 'library',
-      });
+      }, stmts);
 
       const testEntity = db.prepare('SELECT id FROM entities WHERE name = ?').get('TestLib') as { id: string };
-      await discoverRelationships(db, testEntity.id, 'We should go ahead and test it', null);
+      await discoverRelationships(db, testEntity.id, 'We should go ahead and test it', null, stmts);
 
       const rels = db.prepare(
         `SELECT * FROM relationships WHERE from_id = ?`
@@ -80,11 +83,11 @@ describe('relationship-discovery', () => {
         content: 'A JavaScript UI library',
         entity_name: 'React',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       const viteEntity = db.prepare('SELECT id FROM entities WHERE name = ?').get('React') as { id: string };
       // Calling twice with same mention should not create duplicates
-      await discoverRelationships(db, viteEntity.id, 'React is great', null);
+      await discoverRelationships(db, viteEntity.id, 'React is great', null, stmts);
       // Self-mention should be ignored (entity mentions itself)
       const rels = db.prepare(
         `SELECT * FROM relationships WHERE from_id = ? AND type = 'related_to'`
@@ -101,20 +104,20 @@ describe('relationship-discovery', () => {
         content: 'We use Vite for fast builds in this project',
         entity_name: 'ProjectX',
         entity_type: 'project',
-      });
+      }, stmts);
 
       // Now create the "Vite" entity
       await rememberEntity(db, {
         content: 'A build tool',
         entity_name: 'Vite',
         entity_type: 'technology',
-      });
+      }, stmts);
 
       const viteEntity = db.prepare('SELECT id FROM entities WHERE name = ?').get('Vite') as { id: string };
       const projectEntity = db.prepare('SELECT id FROM entities WHERE name = ?').get('ProjectX') as { id: string };
 
       // Act
-      createBackLinks(db, viteEntity.id, 'Vite');
+      createBackLinks(db, viteEntity.id, 'Vite', stmts);
 
       // Assert
       const rels = db.prepare(

@@ -3,15 +3,16 @@ import { loadConfig } from '@myco/core';
 loadConfig();
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { openDatabase } from '@myco/core';
+import { openDatabase, prepareStatements } from '@myco/core';
 import { registerTools, reEmbedPending } from './tools.js';
 import { scheduleDailyConsolidation } from './scheduler.js';
 
 const db = openDatabase();
+const stmts = prepareStatements(db);
 
 // Startup re-embed sweep: backfill embeddings for observations flagged during Ollama outage
 // Runs async — does not block server startup
-reEmbedPending(db).then(count => {
+reEmbedPending(db, stmts).then(count => {
   if (count > 0) {
     console.error(`Re-embedded ${count} pending observations at startup`);
   }
@@ -24,10 +25,10 @@ const server = new McpServer({
   version: '0.1.0',
 });
 
-registerTools(server, db);
+registerTools(server, db, stmts);
 
 // Schedule nightly consolidation at 2am EST — does not block startup
-const consolidationCron = scheduleDailyConsolidation(db);
+const consolidationCron = scheduleDailyConsolidation(db, stmts);
 console.error('[scheduler] nightly consolidation scheduled (2am America/New_York)');
 
 const transport = new StdioServerTransport();
