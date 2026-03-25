@@ -41,9 +41,9 @@ Requirements for performance & architecture optimization. Each maps to roadmap p
 
 ### Error Handling
 
-- [ ] **ERR-01**: API routes validate input with Zod schemas
-- [ ] **ERR-02**: API routes return structured error responses with status codes
-- [ ] **ERR-03**: MCP tool errors follow consistent format
+- [x] **ERR-01**: API routes validate input with Zod schemas
+- [x] **ERR-02**: API routes return structured error responses with status codes
+- [x] **ERR-03**: MCP tool errors follow consistent format
 
 ## Validated (Prior Milestones)
 
@@ -99,9 +99,9 @@ Deferred to v3.1+. Tracked but not in current roadmap.
 | QUERY-02 | Phase 11 | Complete |
 | QUERY-03 | Phase 11 | Complete |
 | QUERY-04 | Phase 11 | Complete |
-| ERR-01 | Phase 11 | Pending |
-| ERR-02 | Phase 11 | Pending |
-| ERR-03 | Phase 11 | Pending |
+| ERR-01 | Phase 11 | Complete |
+| ERR-02 | Phase 11 | Complete |
+| ERR-03 | Phase 11 | Complete |
 | NS-01 | Phase 12 | Pending |
 | NS-02 | Phase 12 | Pending |
 | NS-03 | Phase 12 | Pending |

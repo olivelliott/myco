@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Performance & Architecture Optimization
-status: Ready to execute
-stopped_at: Completed 11-01-PLAN.md — recall filter params (entity_type, min_confidence, project)
-last_updated: "2026-03-25T22:43:38.759Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 11-02-PLAN.md — structured error handling (validation hook, global onError, MCP try/catch)
+last_updated: "2026-03-25T22:48:35.300Z"
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -49,6 +49,7 @@ Plan: 2 of 2
 | Phase 10-prepared-statements P01 | 0 | 2 tasks | 9 files |
 | Phase 10-prepared-statements P02 | 5 | 2 tasks | 8 files |
 | Phase 11 P01 | 174 | 1 tasks | 2 files |
+| Phase 11 P02 | 181 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,9 @@ Recent decisions affecting current work:
 - [Phase 10-prepared-statements]: All 18 new API server SQL statements added to core statements.ts — keeps all SQL in one auditable location
 - [Phase 11]: STMT-02 exception pattern used for recall filters — dynamic WHERE only when filters present, prepared stmt fast path preserved
 - [Phase 11]: project filter accepted in recall schema but returns metadata warning only — SQL wiring deferred to Phase 12 when project column added
+- [Phase 11]: validationErrorHook shared across all route files — single source of truth for INVALID_INPUT error shape
+- [Phase 11]: MCP tool try/catch at handler level only — core business functions remain unwrapped for testability
+- [Phase 11]: z.coerce.number() used for query params (strings need coercion), not z.number()
 
 ### Pending Todos
 
@@ -87,6 +91,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-25T22:43:38.754Z
-Stopped at: Completed 11-01-PLAN.md — recall filter params (entity_type, min_confidence, project)
+Last session: 2026-03-25T22:48:35.296Z
+Stopped at: Completed 11-02-PLAN.md — structured error handling (validation hook, global onError, MCP try/catch)
 Resume file: None
