@@ -1,38 +1,59 @@
 # Requirements: Myco
 
-**Defined:** 2026-03-22
+**Defined:** 2026-03-25
 **Core Value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
 
-## v2.0 Requirements
+## v3.0 Requirements
 
-Requirements for public open source release. Each maps to roadmap phases.
+Requirements for performance & architecture optimization. Each maps to roadmap phases.
 
-### Rename
+### Embedding Performance
 
-- [x] **REN-01**: All package names renamed from `@ai-workbots/*` to `@myco/*`
-- [x] **REN-02**: All internal imports and cross-package references updated to `@myco/*`
-- [x] **REN-03**: CLI commands renamed from `brain-mcp`/`brain-cli` to `myco`/`myco-cli`
-- [x] **REN-04**: Default database path changed from `~/.local/share/ai-workbots/` to `~/.local/share/myco/`
-- [x] **REN-05**: MCP server name, tool descriptions, and user-facing strings updated to "Myco"
-- [x] **REN-06**: Dashboard title, branding, and PWA manifest updated to "Myco"
+- [ ] **EMBED-01**: Ollama client is a singleton reused across all embedding calls
+- [ ] **EMBED-02**: Failed Ollama connections trigger 30s cooldown before retrying
+- [ ] **EMBED-03**: Batch embedding uses Ollama's string[] input for multiple texts in one call
+- [ ] **EMBED-04**: reEmbedPending processes all pending observations in a single batch call
 
-### Open Source
+### Configuration
 
-- [x] **OSS-01**: Apache 2.0 LICENSE file in repo root
-- [x] **OSS-02**: README.md with project description, architecture diagram, quick start, MCP tool reference, and knowledge graph visualization showcase
-- [x] **OSS-03**: CONTRIBUTING.md with development setup, PR guidelines, and code style expectations
-- [x] **OSS-04**: CODE_OF_CONDUCT.md (Contributor Covenant)
-- [x] **OSS-05**: GitHub issue and PR templates (`.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md`)
+- [ ] **CONFIG-01**: Server loads .env file at startup via dotenv before reading any env vars
+- [ ] **CONFIG-02**: Resolved configuration is logged to stderr at startup
+- [ ] **CONFIG-03**: .env.example documents all supported environment variables
 
-### Tech Debt
+### Query Filtering
 
-- [x] **DEBT-01**: Fix `/api/episodes` response shape to match `fetchEpisodes()` client expectations
-- [x] **DEBT-02**: Remove dead `fetchEpisodes` export from `api.ts`
-- [x] **DEBT-03**: Verify fresh-clone `npm install --legacy-peer-deps && npm run build` succeeds with no errors
+- [ ] **QUERY-01**: recall tool accepts optional entity_type filter parameter
+- [ ] **QUERY-02**: recall tool accepts optional min_confidence filter parameter
+- [ ] **QUERY-03**: recall tool accepts optional project filter parameter
+- [ ] **QUERY-04**: All query filters use parameterized SQL (no string interpolation)
+
+### Prepared Statements
+
+- [ ] **STMT-01**: All hot-path SQL queries use prepared statements created once at startup
+- [ ] **STMT-02**: No db.prepare() calls exist inside request/tool handler functions
+
+### Namespace Isolation
+
+- [ ] **NS-01**: Entities table has a project column with DEFAULT 'default'
+- [ ] **NS-02**: remember tool accepts optional project parameter
+- [ ] **NS-03**: recall/query tools scope results by project when specified
+- [ ] **NS-04**: Existing data remains accessible when no project filter is specified
+
+### Error Handling
+
+- [ ] **ERR-01**: API routes validate input with Zod schemas
+- [ ] **ERR-02**: API routes return structured error responses with status codes
+- [ ] **ERR-03**: MCP tool errors follow consistent format
+
+## Validated (Prior Milestones)
+
+- [x] **REN-01** through **REN-06**: Package rename to @myco/* — *v2.0*
+- [x] **OSS-01** through **OSS-05**: Open source packaging — *v2.0*
+- [x] **DEBT-01** through **DEBT-03**: Tech debt cleanup — *v2.0*
 
 ## Future Requirements
 
-Deferred to v2.1+. Tracked but not in current roadmap.
+Deferred to v3.1+. Tracked but not in current roadmap.
 
 ### Agent Intelligence
 - **AGENT-01**: Agents query the brain at session start for project context
@@ -52,36 +73,45 @@ Deferred to v2.1+. Tracked but not in current roadmap.
 
 | Feature | Reason |
 |---------|--------|
-| New MCP tools or capabilities | v2.0 is packaging only — new features are v2.1+ |
+| Generic filter DSL ($gt/$lt/$and/$or) | LLMs can't reliably construct operator queries — use typed params instead |
+| Separate DB files per project | Maintenance nightmare — logical partition via column is sufficient |
+| Config file (YAML/JSON) | Env vars + dotenv sufficient for single-user local server |
+| Connection pooling | better-sqlite3 is synchronous, single connection is correct |
+| Logging library (pino/winston) | console.error to stderr is the MCP convention |
+| Dashboard changes | v3.0 is backend optimization only — dashboard consumes API unchanged |
 | Cloud storage or external APIs | Core constraint — everything local |
 | Multi-user / team features | Single user, single machine |
-| npm publish | Not yet — get the repo public first, publish later |
-| Directory/repo rename on disk | User will handle GitHub repo creation separately |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REN-01 | Phase 6 | Complete |
-| REN-02 | Phase 6 | Complete |
-| REN-03 | Phase 6 | Complete |
-| REN-04 | Phase 6 | Complete |
-| REN-05 | Phase 6 | Complete |
-| REN-06 | Phase 6 | Complete |
-| DEBT-01 | Phase 7 | Complete |
-| DEBT-02 | Phase 7 | Complete |
-| DEBT-03 | Phase 7 | Complete |
-| OSS-01 | Phase 8 | Complete |
-| OSS-02 | Phase 8 | Complete |
-| OSS-03 | Phase 8 | Complete |
-| OSS-04 | Phase 8 | Complete |
-| OSS-05 | Phase 8 | Complete |
+| EMBED-01 | TBD | Pending |
+| EMBED-02 | TBD | Pending |
+| EMBED-03 | TBD | Pending |
+| EMBED-04 | TBD | Pending |
+| CONFIG-01 | TBD | Pending |
+| CONFIG-02 | TBD | Pending |
+| CONFIG-03 | TBD | Pending |
+| QUERY-01 | TBD | Pending |
+| QUERY-02 | TBD | Pending |
+| QUERY-03 | TBD | Pending |
+| QUERY-04 | TBD | Pending |
+| STMT-01 | TBD | Pending |
+| STMT-02 | TBD | Pending |
+| NS-01 | TBD | Pending |
+| NS-02 | TBD | Pending |
+| NS-03 | TBD | Pending |
+| NS-04 | TBD | Pending |
+| ERR-01 | TBD | Pending |
+| ERR-02 | TBD | Pending |
+| ERR-03 | TBD | Pending |
 
 **Coverage:**
-- v2.0 requirements: 14 total
-- Mapped to phases: 14
-- Unmapped: 0
+- v3.0 requirements: 20 total
+- Mapped to phases: 0
+- Unmapped: 20 ⚠️
 
 ---
-*Requirements defined: 2026-03-22*
-*Last updated: 2026-03-22 after roadmap creation*
+*Requirements defined: 2026-03-25*
+*Last updated: 2026-03-25 after initial definition*
