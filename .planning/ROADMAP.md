@@ -37,7 +37,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`
 **Milestone Goal:** Harden the MCP server with performance optimizations, flexible configuration, richer query capabilities, and project isolation — informed by audit against Chroma MCP and comparable repos.
 
 - [x] **Phase 9: Config + Embedding Performance** — dotenv configuration, singleton embedding client with health-check cooldown, and batch embedding support (completed 2026-03-25)
-- [ ] **Phase 10: Prepared Statements** — Statement factory pattern extracts all inline db.prepare() calls to startup, eliminating per-request compilation overhead
+- [x] **Phase 10: Prepared Statements** — Statement factory pattern extracts all inline db.prepare() calls to startup, eliminating per-request compilation overhead (completed 2026-03-25)
 - [ ] **Phase 11: Query Filters + Error Handling** — Typed filter parameters on recall, Zod validation on API routes, and consistent error response format
 - [ ] **Phase 12: Namespace Isolation** — Schema migration adds project column to entities, enabling per-project logical partitioning with full backward compatibility
 
@@ -68,7 +68,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 10-01-PLAN.md — Statement factory in core + MCP server refactor (tools, consolidator, relationship-discovery, cli)
-- [ ] 10-02-PLAN.md — API server refactor (all route files use prepared statements)
+- [x] 10-02-PLAN.md — API server refactor (all route files use prepared statements)
 
 ### Phase 11: Query Filters + Error Handling
 **Goal**: The recall tool accepts typed filter parameters that narrow results, and all API routes and MCP tools return structured, consistently-formatted errors
@@ -105,6 +105,6 @@ Plans:
 | 7. Tech Debt | v2.0 | 1/1 | Complete | 2026-03-22 |
 | 8. Open Source Packaging | v2.0 | 2/2 | Complete | 2026-03-22 |
 | 9. Config + Embedding Performance | v3.0 | 2/2 | Complete   | 2026-03-25 |
-| 10. Prepared Statements | v3.0 | 1/2 | In Progress|  |
+| 10. Prepared Statements | v3.0 | 2/2 | Complete   | 2026-03-25 |
 | 11. Query Filters + Error Handling | v3.0 | 0/TBD | Not started | - |
 | 12. Namespace Isolation | v3.0 | 0/TBD | Not started | - |

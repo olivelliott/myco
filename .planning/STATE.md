@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Performance & Architecture Optimization
-status: Ready to execute
-stopped_at: Completed 10-01-PLAN.md — prepared statement factory + MCP server refactor
-last_updated: "2026-03-25T21:39:01.685Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 10-02-PLAN.md — API server prepared statement refactor
+last_updated: "2026-03-25T21:44:36.522Z"
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -47,6 +47,7 @@ Plan: 2 of 2
 | Phase 09 P02 | 111 | 2 tasks | 2 files |
 | Phase 09-config-embedding-performance P01 | 5 | 2 tasks | 8 files |
 | Phase 10-prepared-statements P01 | 0 | 2 tasks | 9 files |
+| Phase 10-prepared-statements P02 | 5 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 10-prepared-statements]: Dynamic WHERE (queryEntities) and dynamic IN() (markBatchConsolidated) kept as inline db.prepare() — STMT-02 exceptions for variable SQL structure
 - [Phase 10-prepared-statements]: stmts passed as explicit parameter through call chain (not module singleton) — keeps functions independently testable
 - [Phase 10-prepared-statements]: MycoStatements exported from @myco/core so api-server (Plan 02) can import without redeclaring types
+- [Phase 10-prepared-statements]: db kept as first parameter in route factories even after stmts added — required for db.transaction() in approvals PATCH handler
+- [Phase 10-prepared-statements]: All 18 new API server SQL statements added to core statements.ts — keeps all SQL in one auditable location
 
 ### Pending Todos
 
@@ -81,6 +84,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-25T21:39:01.682Z
-Stopped at: Completed 10-01-PLAN.md — prepared statement factory + MCP server refactor
+Last session: 2026-03-25T21:44:36.518Z
+Stopped at: Completed 10-02-PLAN.md — API server prepared statement refactor
 Resume file: None
