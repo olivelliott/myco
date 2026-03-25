@@ -22,10 +22,10 @@ Requirements for performance & architecture optimization. Each maps to roadmap p
 
 ### Query Filtering
 
-- [ ] **QUERY-01**: recall tool accepts optional entity_type filter parameter
-- [ ] **QUERY-02**: recall tool accepts optional min_confidence filter parameter
-- [ ] **QUERY-03**: recall tool accepts optional project filter parameter
-- [ ] **QUERY-04**: All query filters use parameterized SQL (no string interpolation)
+- [x] **QUERY-01**: recall tool accepts optional entity_type filter parameter
+- [x] **QUERY-02**: recall tool accepts optional min_confidence filter parameter
+- [x] **QUERY-03**: recall tool accepts optional project filter parameter
+- [x] **QUERY-04**: All query filters use parameterized SQL (no string interpolation)
 
 ### Prepared Statements
 
@@ -95,10 +95,10 @@ Deferred to v3.1+. Tracked but not in current roadmap.
 | EMBED-04 | Phase 9 | Complete |
 | STMT-01 | Phase 10 | Complete |
 | STMT-02 | Phase 10 | Complete |
-| QUERY-01 | Phase 11 | Pending |
-| QUERY-02 | Phase 11 | Pending |
-| QUERY-03 | Phase 11 | Pending |
-| QUERY-04 | Phase 11 | Pending |
+| QUERY-01 | Phase 11 | Complete |
+| QUERY-02 | Phase 11 | Complete |
+| QUERY-03 | Phase 11 | Complete |
+| QUERY-04 | Phase 11 | Complete |
 | ERR-01 | Phase 11 | Pending |
 | ERR-02 | Phase 11 | Pending |
 | ERR-03 | Phase 11 | Pending |

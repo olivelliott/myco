@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Performance & Architecture Optimization
-status: Ready to plan
-stopped_at: Completed 10-02-PLAN.md — API server prepared statement refactor
-last_updated: "2026-03-25T21:48:10.411Z"
+status: Ready to execute
+stopped_at: Completed 11-01-PLAN.md — recall filter params (entity_type, min_confidence, project)
+last_updated: "2026-03-25T22:43:38.759Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 10 — prepared-statements
+**Current focus:** Phase 11 — query-filters-error-handling
 
 ## Current Position
 
-Phase: 11
-Plan: Not started
+Phase: 11 (query-filters-error-handling) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Plan: Not started
 | Phase 09-config-embedding-performance P01 | 5 | 2 tasks | 8 files |
 | Phase 10-prepared-statements P01 | 0 | 2 tasks | 9 files |
 | Phase 10-prepared-statements P02 | 5 | 2 tasks | 8 files |
+| Phase 11 P01 | 174 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Recent decisions affecting current work:
 - [Phase 10-prepared-statements]: MycoStatements exported from @myco/core so api-server (Plan 02) can import without redeclaring types
 - [Phase 10-prepared-statements]: db kept as first parameter in route factories even after stmts added — required for db.transaction() in approvals PATCH handler
 - [Phase 10-prepared-statements]: All 18 new API server SQL statements added to core statements.ts — keeps all SQL in one auditable location
+- [Phase 11]: STMT-02 exception pattern used for recall filters — dynamic WHERE only when filters present, prepared stmt fast path preserved
+- [Phase 11]: project filter accepted in recall schema but returns metadata warning only — SQL wiring deferred to Phase 12 when project column added
 
 ### Pending Todos
 
@@ -84,6 +87,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-25T21:44:36.518Z
-Stopped at: Completed 10-02-PLAN.md — API server prepared statement refactor
+Last session: 2026-03-25T22:43:38.754Z
+Stopped at: Completed 11-01-PLAN.md — recall filter params (entity_type, min_confidence, project)
 Resume file: None

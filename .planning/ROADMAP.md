@@ -81,7 +81,7 @@ Plans:
   4. An MCP tool error returns a structured response with consistent shape (not an unhandled exception or freeform string)
 **Plans**: 2 plans
 Plans:
-- [ ] 11-01-PLAN.md — Recall tool filter parameters (entity_type, min_confidence, project no-op)
+- [x] 11-01-PLAN.md — Recall tool filter parameters (entity_type, min_confidence, project no-op)
 - [ ] 11-02-PLAN.md — Error handling: Zod validation on API routes, global error handler, MCP tool try/catch
 
 ### Phase 12: Namespace Isolation
@@ -109,5 +109,5 @@ Plans:
 | 8. Open Source Packaging | v2.0 | 2/2 | Complete | 2026-03-22 |
 | 9. Config + Embedding Performance | v3.0 | 2/2 | Complete   | 2026-03-25 |
 | 10. Prepared Statements | v3.0 | 2/2 | Complete    | 2026-03-25 |
-| 11. Query Filters + Error Handling | v3.0 | 0/2 | Not started | - |
+| 11. Query Filters + Error Handling | v3.0 | 1/2 | In Progress|  |
 | 12. Namespace Isolation | v3.0 | 0/TBD | Not started | - |
