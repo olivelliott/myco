@@ -50,7 +50,26 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 
 ### Active
 
-*No active requirements — planning next milestone.*
+- [ ] Embedding client singleton with health check caching (30s cooldown on Ollama failure)
+- [ ] Batch embedding support for reEmbedPending using Ollama's string[] input
+- [ ] dotenv configuration support for OLLAMA_HOST, MYCO_DB_PATH, BRAIN_CONSOLIDATION_MODEL
+- [ ] Query filtering operators on recall tool (entity_type, min_confidence, metadata)
+- [ ] Namespace/project isolation via project column on entities
+- [ ] Prepared statement caching for hot-path queries
+- [ ] Error handling hardening and API input validation
+
+## Current Milestone: v3.0 Performance & Architecture Optimization
+
+**Goal:** Harden the MCP server with performance optimizations, flexible configuration, richer query capabilities, and project isolation — informed by audit against Chroma MCP and comparable repos.
+
+**Target features:**
+- Embedding client singleton + health check caching
+- Batch embedding support
+- dotenv configuration support
+- Query filtering operators on recall
+- Namespace/project isolation
+- Prepared statement caching
+- Error handling hardening + API input validation
 
 ### Out of Scope
 
@@ -114,4 +133,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-22 after v2.0 milestone completion*
+*Last updated: 2026-03-25 after v3.0 milestone start*

@@ -1,30 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Open Source Release
-status: unknown
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-22T18:12:31.103Z"
+milestone: v3.0
+milestone_name: Performance & Architecture Optimization
+status: defining_requirements
+stopped_at: Milestone v3.0 started
+last_updated: "2026-03-25T00:00:00.000Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-22)
+See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 08 — open-source-packaging
+**Current focus:** Defining requirements for v3.0 — Performance & Architecture Optimization
 
 ## Current Position
 
-Phase: 08
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-25 — Milestone v3.0 started
 
 ## Performance Metrics
 
@@ -41,11 +43,6 @@ Plan: Not started
 | - | - | - | - |
 
 *Updated after each plan completion*
-| Phase 06-rename P02 | 1 | 2 tasks | 7 files |
-| Phase 06-rename P01 | 2 | 2 tasks | 15 files |
-| Phase 06-rename P03 | 15 | 2 tasks | 5 files |
-| Phase 07-tech-debt P01 | 115 | 2 tasks | 3 files |
-| Phase 08-open-source-packaging P01 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -54,18 +51,13 @@ Plan: Not started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Rename from "AI Workbots Brain" to "Mnemo" for public release (Phase 6)
-- Apache 2.0 license chosen for patent grant protection over MIT (Phase 8)
-- Tech debt resolved before open source packaging so README describes a working system (Phase 7 before 8)
-- [Phase 06-rename]: BRAIN_DB_PATH preserved as fallback in hook alongside new MYCO_DB_PATH to avoid breaking existing installations
-- [Phase 06-rename]: Database filename stays brain.db — only directory changes from ai-workbots to myco
-- [Phase 06-rename]: BRAIN_DB_PATH preserved as fallback env var for backward compatibility with existing users
-- [Phase 06-rename]: Stale tsbuildinfo files caused tsc to skip core rebuild - cleared all tsbuildinfo to force clean compilation
-- [Phase 06-rename]: GETTING-STARTED.md path examples updated to myco directory name reflecting intended open-source repo rename
-- [Phase 07-tech-debt]: Wrap /api/episodes response in { episodes: [...] } object to match expected client contract
-- [Phase 07-tech-debt]: Remove EpisodeEntry interface alongside fetchEpisodes to avoid orphaned types
-- [Phase 08-01]: README uses generic paths (path/to/myco/...) so documentation works for any cloner without edits
-- [Phase 08-01]: Apache 2.0 LICENSE with Copyright 2026 Olive added as the project's open source license
+- v3.0 driven by comparative audit against Chroma MCP and other MCP servers
+- Embedding client needs singleton pattern + health caching (current: new instance per call)
+- Ollama batch embedding API (string[]) should replace one-at-a-time reEmbedPending
+- dotenv support needed for configuration flexibility
+- Query filtering operators needed on recall tool
+- Namespace/project isolation via project column on entities
+- Prepared statements for hot-path query performance
 
 ### Pending Todos
 
@@ -77,6 +69,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T17:32:09.386Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-03-25
+Stopped at: Milestone v3.0 started
 Resume file: None
