@@ -1,14 +1,19 @@
 import type Database from 'better-sqlite3';
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 import type { Episode, MycoStatements } from '@myco/core';
+import { validationErrorHook } from '../validation.js';
+
+const episodesQuerySchema = z.object({
+  limit: z.coerce.number().min(1).max(200).default(50).optional(),
+});
 
 export function episodesRoutes(db: Database.Database, stmts: MycoStatements): Hono {
   const app = new Hono();
 
-  app.get('/', (c) => {
-    const limitParam = c.req.query('limit');
-    const rawLimit = limitParam ? parseInt(limitParam, 10) : 50;
-    const limit = Math.min(Math.max(1, isNaN(rawLimit) ? 50 : rawLimit), 200);
+  app.get('/', zValidator('query', episodesQuerySchema, validationErrorHook), (c) => {
+    const { limit = 50 } = c.req.valid('query');
 
     const episodes = stmts.selectEpisodesPaginated.all(limit) as Episode[];
 

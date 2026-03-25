@@ -1,6 +1,9 @@
 import type Database from 'better-sqlite3';
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 import type { Entity, Observation, MycoStatements } from '@myco/core';
+import { validationErrorHook } from '../validation.js';
 
 interface ConnectedEntity {
   relation_type: string;
@@ -11,16 +14,16 @@ interface ConnectedEntity {
   type: string;
 }
 
+const entitiesQuerySchema = z.object({
+  limit: z.coerce.number().min(1).max(200).default(50).optional(),
+  offset: z.coerce.number().min(0).default(0).optional(),
+});
+
 export function entitiesRoutes(db: Database.Database, stmts: MycoStatements): Hono {
   const app = new Hono();
 
-  app.get('/', (c) => {
-    const limitParam = c.req.query('limit');
-    const offsetParam = c.req.query('offset');
-    const rawLimit = limitParam ? parseInt(limitParam, 10) : 50;
-    const rawOffset = offsetParam ? parseInt(offsetParam, 10) : 0;
-    const limit = Math.min(Math.max(1, isNaN(rawLimit) ? 50 : rawLimit), 200);
-    const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
+  app.get('/', zValidator('query', entitiesQuerySchema, validationErrorHook), (c) => {
+    const { limit = 50, offset = 0 } = c.req.valid('query');
 
     const entities = stmts.selectEntitiesPaginated.all(limit, offset) as Pick<Entity, 'id' | 'name' | 'type' | 'confidence' | 'created_at'>[];
 
@@ -33,7 +36,7 @@ export function entitiesRoutes(db: Database.Database, stmts: MycoStatements): Ho
     const entity = stmts.selectEntityById.get(id) as Entity | undefined;
 
     if (!entity) {
-      return c.json({ error: 'Entity not found' }, 404);
+      return c.json({ error: { message: 'Entity not found', code: 'NOT_FOUND', status: 404 } }, 404);
     }
 
     const observations = stmts.selectObservationsByEntity.all(id) as Observation[];

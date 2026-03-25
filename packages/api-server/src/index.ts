@@ -22,6 +22,21 @@ app.use('/api/*', cors({
   allowHeaders: ['Content-Type'],
 }));
 
+// Global error handler — catches unhandled throws from all routes
+app.onError((err, c) => {
+  console.error('[api-server] unhandled error:', err);
+  return c.json(
+    {
+      error: {
+        message: 'An unexpected error occurred',
+        code: 'INTERNAL_ERROR',
+        status: 500,
+      },
+    },
+    500,
+  );
+});
+
 // Mount route groups
 app.route('/api/dashboard', dashboardRoutes(db, stmts));
 app.route('/api/approvals', approvalsRoutes(db, stmts));

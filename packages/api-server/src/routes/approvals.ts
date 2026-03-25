@@ -4,6 +4,7 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
 import type { ApprovalQueueItem, ExtractedFact, MycoStatements } from '@myco/core';
+import { validationErrorHook } from '../validation.js';
 
 const resolveSchema = z.object({
   status: z.enum(['approved', 'rejected']),
@@ -33,18 +34,18 @@ export function approvalsRoutes(db: Database.Database, stmts: MycoStatements): H
   });
 
   // PATCH /:id — resolve an approval item
-  app.patch('/:id', zValidator('json', resolveSchema), (c) => {
+  app.patch('/:id', zValidator('json', resolveSchema, validationErrorHook), (c) => {
     const id = c.req.param('id');
     const data = c.req.valid('json');
 
     const item = stmts.selectApprovalById.get(id) as ApprovalRow | undefined;
 
     if (!item) {
-      return c.json({ error: 'Approval item not found' }, 404);
+      return c.json({ error: { message: 'Approval item not found', code: 'NOT_FOUND', status: 404 } }, 404);
     }
 
     if (item.status !== 'pending') {
-      return c.json({ error: 'Item already resolved' }, 409);
+      return c.json({ error: { message: 'Item already resolved', code: 'CONFLICT', status: 409 } }, 409);
     }
 
     const now = new Date().toISOString();
@@ -57,7 +58,7 @@ export function approvalsRoutes(db: Database.Database, stmts: MycoStatements): H
 
     // Approve path
     if (!item.metadata) {
-      return c.json({ error: 'Item has no metadata — cannot determine what to approve' }, 422);
+      return c.json({ error: { message: 'Item has no metadata — cannot determine what to approve', code: 'UNPROCESSABLE', status: 422 } }, 422);
     }
 
     const meta = JSON.parse(item.metadata) as {
