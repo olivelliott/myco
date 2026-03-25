@@ -86,32 +86,32 @@ Deferred to v3.1+. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EMBED-01 | TBD | Pending |
-| EMBED-02 | TBD | Pending |
-| EMBED-03 | TBD | Pending |
-| EMBED-04 | TBD | Pending |
-| CONFIG-01 | TBD | Pending |
-| CONFIG-02 | TBD | Pending |
-| CONFIG-03 | TBD | Pending |
-| QUERY-01 | TBD | Pending |
-| QUERY-02 | TBD | Pending |
-| QUERY-03 | TBD | Pending |
-| QUERY-04 | TBD | Pending |
-| STMT-01 | TBD | Pending |
-| STMT-02 | TBD | Pending |
-| NS-01 | TBD | Pending |
-| NS-02 | TBD | Pending |
-| NS-03 | TBD | Pending |
-| NS-04 | TBD | Pending |
-| ERR-01 | TBD | Pending |
-| ERR-02 | TBD | Pending |
-| ERR-03 | TBD | Pending |
+| CONFIG-01 | Phase 9 | Pending |
+| CONFIG-02 | Phase 9 | Pending |
+| CONFIG-03 | Phase 9 | Pending |
+| EMBED-01 | Phase 9 | Pending |
+| EMBED-02 | Phase 9 | Pending |
+| EMBED-03 | Phase 9 | Pending |
+| EMBED-04 | Phase 9 | Pending |
+| STMT-01 | Phase 10 | Pending |
+| STMT-02 | Phase 10 | Pending |
+| QUERY-01 | Phase 11 | Pending |
+| QUERY-02 | Phase 11 | Pending |
+| QUERY-03 | Phase 11 | Pending |
+| QUERY-04 | Phase 11 | Pending |
+| ERR-01 | Phase 11 | Pending |
+| ERR-02 | Phase 11 | Pending |
+| ERR-03 | Phase 11 | Pending |
+| NS-01 | Phase 12 | Pending |
+| NS-02 | Phase 12 | Pending |
+| NS-03 | Phase 12 | Pending |
+| NS-04 | Phase 12 | Pending |
 
 **Coverage:**
 - v3.0 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20 ⚠️
+- Mapped to phases: 20
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-25*
-*Last updated: 2026-03-25 after initial definition*
+*Last updated: 2026-03-25 — traceability mapped to Phases 9-12*
