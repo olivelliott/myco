@@ -18,7 +18,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 **Codebase:** ~14,000 LOC TypeScript across 4 packages
 **Tech Stack:** Node.js 22, TypeScript 5.9, better-sqlite3, sqlite-vec, Ollama, Hono, React 19, Vite 8, Tailwind v4, shadcn/ui
 **License:** Apache 2.0
-**68 tests** passing across 3 test files
+**85 tests** passing across 5 test files
 
 ### Architecture
 - `packages/core` — shared DB, schema, types, provenance
@@ -47,15 +47,15 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] All packages renamed to @myco/* with myco/myco-cli binaries — *v2.0*
 - [x] Apache 2.0 LICENSE, README, CONTRIBUTING, CODE_OF_CONDUCT, GitHub templates — *v2.0*
 - [x] Known tech debt resolved (episodes API, dead exports, clean build) — *v2.0*
+- [x] Embedding client singleton with health check caching (30s cooldown on Ollama failure) — *v3.0 Phase 9*
+- [x] Batch embedding support for reEmbedPending using Ollama's string[] input — *v3.0 Phase 9*
+- [x] dotenv configuration support for OLLAMA_HOST, MYCO_DB_PATH, BRAIN_CONSOLIDATION_MODEL — *v3.0 Phase 9*
+- [x] Prepared statement caching for hot-path queries — *v3.0 Phase 10*
 
 ### Active
 
-- [ ] Embedding client singleton with health check caching (30s cooldown on Ollama failure)
-- [ ] Batch embedding support for reEmbedPending using Ollama's string[] input
-- [ ] dotenv configuration support for OLLAMA_HOST, MYCO_DB_PATH, BRAIN_CONSOLIDATION_MODEL
 - [ ] Query filtering operators on recall tool (entity_type, min_confidence, metadata)
 - [ ] Namespace/project isolation via project column on entities
-- [ ] Prepared statement caching for hot-path queries
 - [ ] Error handling hardening and API input validation
 
 ## Current Milestone: v3.0 Performance & Architecture Optimization
