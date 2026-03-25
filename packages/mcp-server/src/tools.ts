@@ -4,7 +4,7 @@ import type Database from 'better-sqlite3';
 import { generateSessionId, buildProvenance } from '@myco/core';
 import type { SourceType } from '@myco/core';
 import { nanoid } from 'nanoid';
-import { embedText } from './embed-client.js';
+import { embedText, embedBatch } from './embed-client.js';
 import { runConsolidation } from './consolidator.js';
 import { discoverRelationships, createBackLinks, invalidateEntityCache } from './relationship-discovery.js';
 
@@ -374,20 +374,26 @@ export async function reEmbedPending(db: Database.Database): Promise<number> {
     LIMIT ?
   `).all(RE_EMBED_BATCH_SIZE) as Array<{ id: string; content: string }>;
 
+  if (rows.length === 0) return 0;
+
+  // EMBED-04: Batch all texts in a single Ollama API call
+  const texts = rows.map(r => r.content);
+  const embeddings = await embedBatch(texts);
+
   let embedded = 0;
-  for (const row of rows) {
-    const embedding = await embedText(row.content);
-    if (embedding === null) {
-      // Ollama went down mid-sweep — stop early
-      break;
-    }
+  const insertVec = db.prepare(
+    'INSERT INTO vec_embeddings (item_id, item_type, embedding) VALUES (?, ?, ?)'
+  );
+  const clearFlag = db.prepare(
+    'UPDATE observations SET needs_embedding = 0 WHERE id = ?'
+  );
+
+  for (let i = 0; i < rows.length; i++) {
+    const embedding = embeddings[i];
+    if (embedding === null) continue; // skip failed individual embeddings
     const vec = new Float32Array(embedding);
-    db.prepare(`
-      INSERT INTO vec_embeddings (item_id, item_type, embedding) VALUES (?, ?, ?)
-    `).run(row.id, 'observation', vec);
-    db.prepare(`
-      UPDATE observations SET needs_embedding = 0 WHERE id = ?
-    `).run(row.id);
+    insertVec.run(rows[i].id, 'observation', vec);
+    clearFlag.run(rows[i].id);
     embedded++;
   }
   return embedded;
