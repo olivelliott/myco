@@ -18,7 +18,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 **Codebase:** ~14,000 LOC TypeScript across 4 packages
 **Tech Stack:** Node.js 22, TypeScript 5.9, better-sqlite3, sqlite-vec, Ollama, Hono, React 19, Vite 8, Tailwind v4, shadcn/ui
 **License:** Apache 2.0
-**85 tests** passing across 5 test files
+**90 tests** passing across 6 test files
 
 ### Architecture
 - `packages/core` — shared DB, schema, types, provenance
@@ -51,12 +51,12 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] Batch embedding support for reEmbedPending using Ollama's string[] input — *v3.0 Phase 9*
 - [x] dotenv configuration support for OLLAMA_HOST, MYCO_DB_PATH, BRAIN_CONSOLIDATION_MODEL — *v3.0 Phase 9*
 - [x] Prepared statement caching for hot-path queries — *v3.0 Phase 10*
+- [x] Query filtering operators on recall tool (entity_type, min_confidence) — *v3.0 Phase 11*
+- [x] Error handling hardening and API input validation (Zod, structured errors) — *v3.0 Phase 11*
 
 ### Active
 
-- [ ] Query filtering operators on recall tool (entity_type, min_confidence, metadata)
 - [ ] Namespace/project isolation via project column on entities
-- [ ] Error handling hardening and API input validation
 
 ## Current Milestone: v3.0 Performance & Architecture Optimization
 
