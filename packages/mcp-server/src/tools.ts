@@ -447,14 +447,27 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
       },
     },
     async ({ content, entity_name, entity_type, agent_id, confidence, relations }) => {
-      return rememberEntity(db, {
-        content,
-        entity_name,
-        entity_type,
-        agent_id,
-        confidence,
-        relations,
-      }, stmts);
+      try {
+        return await rememberEntity(db, {
+          content,
+          entity_name,
+          entity_type,
+          agent_id,
+          confidence,
+          relations,
+        }, stmts);
+      } catch (err) {
+        console.error('[remember] tool error:', err);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              error: 'An unexpected error occurred',
+              code: 'INTERNAL_ERROR',
+            }),
+          }],
+        };
+      }
     },
   );
 
@@ -471,7 +484,20 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
       },
     },
     async ({ query, limit, entity_type, min_confidence, project }) => {
-      return recallKnowledge(db, { query, limit, entity_type, min_confidence, project }, stmts);
+      try {
+        return await recallKnowledge(db, { query, limit, entity_type, min_confidence, project }, stmts);
+      } catch (err) {
+        console.error('[recall] tool error:', err);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              error: 'An unexpected error occurred',
+              code: 'INTERNAL_ERROR',
+            }),
+          }],
+        };
+      }
     },
   );
 
@@ -486,7 +512,20 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
       },
     },
     async ({ entity_name, entity_type, relation_type }) => {
-      return queryEntities(db, { entity_name, entity_type, relation_type }, stmts);
+      try {
+        return queryEntities(db, { entity_name, entity_type, relation_type }, stmts);
+      } catch (err) {
+        console.error('[query] tool error:', err);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              error: 'An unexpected error occurred',
+              code: 'INTERNAL_ERROR',
+            }),
+          }],
+        };
+      }
     },
   );
 
@@ -501,7 +540,20 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
       },
     },
     async ({ event_type, payload, agent_id }) => {
-      return logEpisode(db, { event_type, payload, agent_id }, stmts);
+      try {
+        return await logEpisode(db, { event_type, payload, agent_id }, stmts);
+      } catch (err) {
+        console.error('[log_episode] tool error:', err);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              error: 'An unexpected error occurred',
+              code: 'INTERNAL_ERROR',
+            }),
+          }],
+        };
+      }
     },
   );
 
@@ -512,14 +564,27 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
       inputSchema: {},
     },
     async () => {
-      console.error('[consolidation] manual trigger via MCP tool');
-      const summary = await runConsolidation(db, stmts);
-      return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify(summary),
-        }],
-      };
+      try {
+        console.error('[consolidation] manual trigger via MCP tool');
+        const summary = await runConsolidation(db, stmts);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify(summary),
+          }],
+        };
+      } catch (err) {
+        console.error('[consolidate] tool error:', err);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              error: 'An unexpected error occurred',
+              code: 'INTERNAL_ERROR',
+            }),
+          }],
+        };
+      }
     },
   );
 
@@ -532,30 +597,43 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
       },
     },
     async ({ limit }) => {
-      const rows = stmts.selectPendingApprovals.all(limit) as Array<{
-        id: string;
-        item_type: string;
-        item_id: string;
-        status: string;
-        reason: string | null;
-        metadata: string | null;
-        created_at: string;
-      }>;
+      try {
+        const rows = stmts.selectPendingApprovals.all(limit) as Array<{
+          id: string;
+          item_type: string;
+          item_id: string;
+          status: string;
+          reason: string | null;
+          metadata: string | null;
+          created_at: string;
+        }>;
 
-      const items = rows.map(row => ({
-        id: row.id,
-        item_type: row.item_type,
-        reason: row.reason,
-        created_at: row.created_at,
-        ...(row.metadata ? { details: JSON.parse(row.metadata) } : {}),
-      }));
+        const items = rows.map(row => ({
+          id: row.id,
+          item_type: row.item_type,
+          reason: row.reason,
+          created_at: row.created_at,
+          ...(row.metadata ? { details: JSON.parse(row.metadata) } : {}),
+        }));
 
-      return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({ items, count: items.length }),
-        }],
-      };
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({ items, count: items.length }),
+          }],
+        };
+      } catch (err) {
+        console.error('[list_pending_approvals] tool error:', err);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              error: 'An unexpected error occurred',
+              code: 'INTERNAL_ERROR',
+            }),
+          }],
+        };
+      }
     },
   );
 
@@ -570,98 +648,111 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
       },
     },
     async ({ id, action, edited_content }) => {
-      // Fetch the pending item
-      const item = stmts.selectApprovalById.get(id) as { id: string; item_type: string; metadata: string | null; status: string } | undefined;
+      try {
+        // Fetch the pending item
+        const item = stmts.selectApprovalById.get(id) as { id: string; item_type: string; metadata: string | null; status: string } | undefined;
 
-      if (!item) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ error: `Approval item ${id} not found` }) }],
+        if (!item) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({ error: `Approval item ${id} not found` }) }],
+          };
+        }
+
+        if (item.status !== 'pending') {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({ error: `Item ${id} already resolved (${item.status})` }) }],
+          };
+        }
+
+        if (action === 'edit' && !edited_content) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({ error: 'edited_content is required for edit action' }) }],
+          };
+        }
+
+        const now = new Date().toISOString();
+
+        if (action === 'reject') {
+          stmts.updateApprovalStatus.run('rejected', now, id);
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({ status: 'rejected', id }) }],
+          };
+        }
+
+        // approve or edit — write to knowledge graph
+        if (!item.metadata) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Item has no metadata — cannot determine what to approve' }) }],
+          };
+        }
+
+        const meta = JSON.parse(item.metadata) as {
+          fact: {
+            entity_name: string;
+            entity_type: string;
+            observation: string;
+            confidence: number;
+            evidence_quote: string;
+            related_entities: Array<{ name: string; type: string; relation_type: string }>;
+          };
+          merge_candidate_ids?: string[];
         };
-      }
 
-      if (item.status !== 'pending') {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ error: `Item ${id} already resolved (${item.status})` }) }],
-        };
-      }
+        const observation = action === 'edit' ? edited_content! : meta.fact.observation;
 
-      if (action === 'edit' && !edited_content) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'edited_content is required for edit action' }) }],
-        };
-      }
+        // Handle merge_candidate items: reassign observations from secondary entity to primary
+        // (action is 'approve' or 'edit' at this point — 'reject' returned early above)
+        if (item.item_type === 'proposed_fact' && meta.merge_candidate_ids && meta.merge_candidate_ids.length > 0) {
+          // The fact's entity is the primary; merge candidates are secondaries
+          const primaryEntity = stmts.selectEntityByNameType.get(meta.fact.entity_name, meta.fact.entity_type) as { id: string } | undefined;
 
-      const now = new Date().toISOString();
-
-      if (action === 'reject') {
-        stmts.updateApprovalStatus.run('rejected', now, id);
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ status: 'rejected', id }) }],
-        };
-      }
-
-      // approve or edit — write to knowledge graph
-      if (!item.metadata) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Item has no metadata — cannot determine what to approve' }) }],
-        };
-      }
-
-      const meta = JSON.parse(item.metadata) as {
-        fact: {
-          entity_name: string;
-          entity_type: string;
-          observation: string;
-          confidence: number;
-          evidence_quote: string;
-          related_entities: Array<{ name: string; type: string; relation_type: string }>;
-        };
-        merge_candidate_ids?: string[];
-      };
-
-      const observation = action === 'edit' ? edited_content! : meta.fact.observation;
-
-      // Handle merge_candidate items: reassign observations from secondary entity to primary
-      // (action is 'approve' or 'edit' at this point — 'reject' returned early above)
-      if (item.item_type === 'proposed_fact' && meta.merge_candidate_ids && meta.merge_candidate_ids.length > 0) {
-        // The fact's entity is the primary; merge candidates are secondaries
-        const primaryEntity = stmts.selectEntityByNameType.get(meta.fact.entity_name, meta.fact.entity_type) as { id: string } | undefined;
-
-        if (primaryEntity) {
-          for (const secondaryId of meta.merge_candidate_ids) {
-            // Reassign observations
-            stmts.updateObservationEntityId.run(primaryEntity.id, secondaryId);
-            // Reassign relationships
-            stmts.updateRelationshipFromId.run(primaryEntity.id, secondaryId);
-            stmts.updateRelationshipToId.run(primaryEntity.id, secondaryId);
-            // Delete secondary entity
-            stmts.deleteEntityById.run(secondaryId);
+          if (primaryEntity) {
+            for (const secondaryId of meta.merge_candidate_ids) {
+              // Reassign observations
+              stmts.updateObservationEntityId.run(primaryEntity.id, secondaryId);
+              // Reassign relationships
+              stmts.updateRelationshipFromId.run(primaryEntity.id, secondaryId);
+              stmts.updateRelationshipToId.run(primaryEntity.id, secondaryId);
+              // Delete secondary entity
+              stmts.deleteEntityById.run(secondaryId);
+            }
           }
         }
+
+        // Write the fact to the knowledge graph
+        await rememberEntity(db, {
+          content: observation,
+          entity_name: meta.fact.entity_name,
+          entity_type: meta.fact.entity_type,
+          confidence: meta.fact.confidence,
+          source_type: 'consolidation',
+          relations: meta.fact.related_entities.map(r => ({
+            target_name: r.name,
+            target_type: r.type,
+            relation_type: r.relation_type,
+          })),
+        }, stmts);
+
+        stmts.updateApprovalStatus.run('approved', now, id);
+
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({ status: 'approved', id, action, entity: meta.fact.entity_name }),
+          }],
+        };
+      } catch (err) {
+        console.error('[resolve_approval] tool error:', err);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              error: 'An unexpected error occurred',
+              code: 'INTERNAL_ERROR',
+            }),
+          }],
+        };
       }
-
-      // Write the fact to the knowledge graph
-      await rememberEntity(db, {
-        content: observation,
-        entity_name: meta.fact.entity_name,
-        entity_type: meta.fact.entity_type,
-        confidence: meta.fact.confidence,
-        source_type: 'consolidation',
-        relations: meta.fact.related_entities.map(r => ({
-          target_name: r.name,
-          target_type: r.type,
-          relation_type: r.relation_type,
-        })),
-      }, stmts);
-
-      stmts.updateApprovalStatus.run('approved', now, id);
-
-      return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({ status: 'approved', id, action, entity: meta.fact.entity_name }),
-        }],
-      };
     },
   );
 }
