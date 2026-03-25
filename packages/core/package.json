@@ -4,7 +4,13 @@
   "description": "Shared database, schema, types, and provenance layer for Myco",
   "license": "Apache-2.0",
   "author": "Olive",
-  "keywords": ["myco", "knowledge-graph", "sqlite", "mcp", "memory"],
+  "keywords": [
+    "myco",
+    "knowledge-graph",
+    "sqlite",
+    "mcp",
+    "memory"
+  ],
   "type": "module",
   "exports": {
     ".": {
@@ -12,11 +18,14 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "better-sqlite3": "^12.8.0",
-    "sqlite-vec": "^0.1.7",
+    "dotenv": "^17.3.1",
     "nanoid": "^5.1.7",
+    "sqlite-vec": "^0.1.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {
