@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rmSync, mkdirSync } from 'node:fs';
 import { openDatabase } from '@myco/core';
 import type Database from 'better-sqlite3';
 import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending } from '../src/tools.js';
+import * as embedClient from '../src/embed-client.js';
 
 const testDir = join(tmpdir(), 'myco-mcp-test-' + process.pid);
 
@@ -230,7 +231,9 @@ describe('MCP server tools', () => {
 
   describe('recallKnowledge', () => {
     it('returns FTS5 results with method "fts" when Ollama is unavailable', async () => {
-      // Store an observation (Ollama unavailable in tests — FTS5 path exercised)
+      // Force FTS5 path by mocking embedText to return null (Ollama unavailable)
+      const spy = vi.spyOn(embedClient, 'embedText').mockResolvedValue(null);
+
       await rememberEntity(db, {
         content: 'TypeScript supports generics and interfaces',
         entity_name: 'TypeScript',
@@ -238,6 +241,7 @@ describe('MCP server tools', () => {
       });
 
       const result = await recallKnowledge(db, { query: 'TypeScript', limit: 10 });
+      spy.mockRestore();
       const parsed = JSON.parse(result.content[0].text) as {
         results: Array<{ entity_name: string; observation: string; confidence: number; relevance_score: number }>;
         metadata: { method: string; count: number; query: string };
