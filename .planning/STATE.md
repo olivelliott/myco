@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Performance & Architecture Optimization
-status: Ready to execute
-stopped_at: Completed 09-02-PLAN.md
-last_updated: "2026-03-25T19:13:48.425Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 09-01-PLAN.md — config layer with dotenv + stderr logging
+last_updated: "2026-03-25T19:17:01.896Z"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -45,6 +45,7 @@ Plan: 2 of 2
 
 *Updated after each plan completion*
 | Phase 09 P02 | 111 | 2 tasks | 2 files |
+| Phase 09-config-embedding-performance P01 | 5 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,8 @@ Recent decisions affecting current work:
 - Ollama batch embed fails entirely on error — need fallback to sequential embedding on batch failure
 - [Phase 09]: Used Promise.race for per-call timeouts in embed-client — avoids needing two Ollama client instances for different timeout values (2s single, 10s batch)
 - [Phase 09]: reEmbedPending now skips null embeddings with continue (not break) — allows partial success when embedBatch falls back to sequential
+- [Phase 09-config-embedding-performance]: dotenv loads before env-dependent modules via loadConfig() at entry points; lazy getters prevent ESM hoisting pitfall
+- [Phase 09-config-embedding-performance]: API server port now driven by MYCO_API_PORT env var via config.apiPort; default 3001 maintained
 
 ### Pending Todos
 
@@ -74,6 +77,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-25T19:13:48.421Z
-Stopped at: Completed 09-02-PLAN.md
+Last session: 2026-03-25T19:17:01.893Z
+Stopped at: Completed 09-01-PLAN.md — config layer with dotenv + stderr logging
 Resume file: None

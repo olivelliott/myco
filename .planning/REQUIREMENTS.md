@@ -16,9 +16,9 @@ Requirements for performance & architecture optimization. Each maps to roadmap p
 
 ### Configuration
 
-- [ ] **CONFIG-01**: Server loads .env file at startup via dotenv before reading any env vars
-- [ ] **CONFIG-02**: Resolved configuration is logged to stderr at startup
-- [ ] **CONFIG-03**: .env.example documents all supported environment variables
+- [x] **CONFIG-01**: Server loads .env file at startup via dotenv before reading any env vars
+- [x] **CONFIG-02**: Resolved configuration is logged to stderr at startup
+- [x] **CONFIG-03**: .env.example documents all supported environment variables
 
 ### Query Filtering
 
@@ -86,9 +86,9 @@ Deferred to v3.1+. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONFIG-01 | Phase 9 | Pending |
-| CONFIG-02 | Phase 9 | Pending |
-| CONFIG-03 | Phase 9 | Pending |
+| CONFIG-01 | Phase 9 | Complete |
+| CONFIG-02 | Phase 9 | Complete |
+| CONFIG-03 | Phase 9 | Complete |
 | EMBED-01 | Phase 9 | Complete |
 | EMBED-02 | Phase 9 | Complete |
 | EMBED-03 | Phase 9 | Complete |
