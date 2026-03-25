@@ -79,7 +79,10 @@ Plans:
   2. Calling recall with min_confidence=0.8 excludes entities below that threshold
   3. An invalid API request body returns a JSON error response with the appropriate HTTP status code (400/422) and a human-readable message
   4. An MCP tool error returns a structured response with consistent shape (not an unhandled exception or freeform string)
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 11-01-PLAN.md — Recall tool filter parameters (entity_type, min_confidence, project no-op)
+- [ ] 11-02-PLAN.md — Error handling: Zod validation on API routes, global error handler, MCP tool try/catch
 
 ### Phase 12: Namespace Isolation
 **Goal**: Entities can be scoped to a named project, and existing data remains fully accessible without specifying a project — enabling true multi-project use without data leakage
@@ -106,5 +109,5 @@ Plans:
 | 8. Open Source Packaging | v2.0 | 2/2 | Complete | 2026-03-22 |
 | 9. Config + Embedding Performance | v3.0 | 2/2 | Complete   | 2026-03-25 |
 | 10. Prepared Statements | v3.0 | 2/2 | Complete    | 2026-03-25 |
-| 11. Query Filters + Error Handling | v3.0 | 0/TBD | Not started | - |
+| 11. Query Filters + Error Handling | v3.0 | 0/2 | Not started | - |
 | 12. Namespace Isolation | v3.0 | 0/TBD | Not started | - |
