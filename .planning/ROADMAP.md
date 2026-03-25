@@ -67,8 +67,8 @@ Plans:
   2. The MCP server starts up and all tools function correctly using the pre-compiled statement set
 **Plans**: 2 plans
 Plans:
-- [ ] 09-01-PLAN.md — Config layer: dotenv loading, config module, .env.example, entry point wiring
-- [x] 09-02-PLAN.md — Embedding client: singleton, health cooldown, batch API, reEmbedPending batch
+- [ ] 10-01-PLAN.md — Statement factory in core + MCP server refactor (tools, consolidator, relationship-discovery, cli)
+- [ ] 10-02-PLAN.md — API server refactor (all route files use prepared statements)
 
 ### Phase 11: Query Filters + Error Handling
 **Goal**: The recall tool accepts typed filter parameters that narrow results, and all API routes and MCP tools return structured, consistently-formatted errors
@@ -79,10 +79,7 @@ Plans:
   2. Calling recall with min_confidence=0.8 excludes entities below that threshold
   3. An invalid API request body returns a JSON error response with the appropriate HTTP status code (400/422) and a human-readable message
   4. An MCP tool error returns a structured response with consistent shape (not an unhandled exception or freeform string)
-**Plans**: 2 plans
-Plans:
-- [ ] 09-01-PLAN.md — Config layer: dotenv loading, config module, .env.example, entry point wiring
-- [ ] 09-02-PLAN.md — Embedding client: singleton, health cooldown, batch API, reEmbedPending batch
+**Plans**: TBD
 
 ### Phase 12: Namespace Isolation
 **Goal**: Entities can be scoped to a named project, and existing data remains fully accessible without specifying a project — enabling true multi-project use without data leakage
@@ -93,10 +90,7 @@ Plans:
   2. Calling recall with project="myco" returns only entities from that project
   3. Calling recall without a project filter returns entities across all projects (backward-compatible behavior)
   4. Existing entities stored before this migration remain accessible with no data loss
-**Plans**: 2 plans
-Plans:
-- [ ] 09-01-PLAN.md — Config layer: dotenv loading, config module, .env.example, entry point wiring
-- [ ] 09-02-PLAN.md — Embedding client: singleton, health cooldown, batch API, reEmbedPending batch
+**Plans**: TBD
 
 ## Progress
 
@@ -111,6 +105,6 @@ Plans:
 | 7. Tech Debt | v2.0 | 1/1 | Complete | 2026-03-22 |
 | 8. Open Source Packaging | v2.0 | 2/2 | Complete | 2026-03-22 |
 | 9. Config + Embedding Performance | v3.0 | 2/2 | Complete   | 2026-03-25 |
-| 10. Prepared Statements | v3.0 | 0/TBD | Not started | - |
+| 10. Prepared Statements | v3.0 | 0/2 | Not started | - |
 | 11. Query Filters + Error Handling | v3.0 | 0/TBD | Not started | - |
 | 12. Namespace Isolation | v3.0 | 0/TBD | Not started | - |
