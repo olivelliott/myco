@@ -95,7 +95,7 @@ Plans:
   4. Existing entities stored before this migration remain accessible with no data loss
 **Plans**: 2 plans
 Plans:
-- [ ] 12-01-PLAN.md — Core layer + MCP tools: schema migration, types, statements, remember/recall/query project param
+- [x] 12-01-PLAN.md — Core layer + MCP tools: schema migration, types, statements, remember/recall/query project param
 - [ ] 12-02-PLAN.md — API routes: project query param on entities, graph, and dashboard endpoints
 
 ## Progress
@@ -113,4 +113,4 @@ Plans:
 | 9. Config + Embedding Performance | v3.0 | 2/2 | Complete   | 2026-03-25 |
 | 10. Prepared Statements | v3.0 | 2/2 | Complete    | 2026-03-25 |
 | 11. Query Filters + Error Handling | v3.0 | 2/2 | Complete    | 2026-03-25 |
-| 12. Namespace Isolation | v3.0 | 0/2 | Not started | - |
+| 12. Namespace Isolation | v3.0 | 1/2 | In Progress|  |

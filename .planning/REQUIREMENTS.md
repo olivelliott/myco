@@ -34,10 +34,10 @@ Requirements for performance & architecture optimization. Each maps to roadmap p
 
 ### Namespace Isolation
 
-- [ ] **NS-01**: Entities table has a project column with DEFAULT 'default'
-- [ ] **NS-02**: remember tool accepts optional project parameter
-- [ ] **NS-03**: recall/query tools scope results by project when specified
-- [ ] **NS-04**: Existing data remains accessible when no project filter is specified
+- [x] **NS-01**: Entities table has a project column with DEFAULT 'default'
+- [x] **NS-02**: remember tool accepts optional project parameter
+- [x] **NS-03**: recall/query tools scope results by project when specified
+- [x] **NS-04**: Existing data remains accessible when no project filter is specified
 
 ### Error Handling
 
@@ -102,10 +102,10 @@ Deferred to v3.1+. Tracked but not in current roadmap.
 | ERR-01 | Phase 11 | Complete |
 | ERR-02 | Phase 11 | Complete |
 | ERR-03 | Phase 11 | Complete |
-| NS-01 | Phase 12 | Pending |
-| NS-02 | Phase 12 | Pending |
-| NS-03 | Phase 12 | Pending |
-| NS-04 | Phase 12 | Pending |
+| NS-01 | Phase 12 | Complete |
+| NS-02 | Phase 12 | Complete |
+| NS-03 | Phase 12 | Complete |
+| NS-04 | Phase 12 | Complete |
 
 **Coverage:**
 - v3.0 requirements: 20 total

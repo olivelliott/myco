@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Performance & Architecture Optimization
-status: Ready to plan
-stopped_at: Completed 11-02-PLAN.md — structured error handling (validation hook, global onError, MCP try/catch)
-last_updated: "2026-03-25T22:51:49.575Z"
+status: Ready to execute
+stopped_at: Completed 12-01-PLAN.md — project column migration + MCP tool wiring
+last_updated: "2026-03-26T18:21:57.203Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 11 — query-filters-error-handling
+**Current focus:** Phase 12 — namespace-isolation
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
+Phase: 12 (namespace-isolation) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Plan: Not started
 | Phase 10-prepared-statements P02 | 5 | 2 tasks | 8 files |
 | Phase 11 P01 | 174 | 1 tasks | 2 files |
 | Phase 11 P02 | 181 | 2 tasks | 6 files |
+| Phase 12 P01 | 25 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Recent decisions affecting current work:
 - [Phase 11]: validationErrorHook shared across all route files — single source of truth for INVALID_INPUT error shape
 - [Phase 11]: MCP tool try/catch at handler level only — core business functions remain unwrapped for testability
 - [Phase 11]: z.coerce.number() used for query params (strings need coercion), not z.number()
+- [Phase 12]: DEFAULT NULL for project column — existing entities remain globally visible without data migration; NULL project means visible to all queries
+- [Phase 12]: project ?? null passed to both insertEntity call sites in rememberEntity (new entity + relation target); consolidation resolve_approval intentionally omits project for global facts
+- [Phase 12]: dist/ rebuild required between schema change and test run — @myco/core dist was stale with old 10-param insertEntity SQL; dist/ is gitignored and must be rebuilt from source
 
 ### Pending Todos
 
@@ -91,6 +95,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-25T22:48:35.296Z
-Stopped at: Completed 11-02-PLAN.md — structured error handling (validation hook, global onError, MCP try/catch)
+Last session: 2026-03-26T18:21:57.199Z
+Stopped at: Completed 12-01-PLAN.md — project column migration + MCP tool wiring
 Resume file: None
