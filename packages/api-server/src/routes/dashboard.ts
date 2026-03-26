@@ -1,34 +1,86 @@
 import type Database from 'better-sqlite3';
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 import type { Episode } from '@myco/core';
 import type { MycoStatements } from '@myco/core';
+import { validationErrorHook } from '../validation.js';
+
+const dashboardQuerySchema = z.object({
+  project: z.string().optional(),
+});
 
 export function dashboardRoutes(db: Database.Database, stmts: MycoStatements): Hono {
   const app = new Hono();
 
-  app.get('/', (c) => {
+  app.get('/', zValidator('query', dashboardQuerySchema, validationErrorHook), (c) => {
+    const { project } = c.req.valid('query');
+
     const pendingRow = stmts.countPendingApprovals.get() as { n: number };
-    const entitiesRow = stmts.countEntities.get() as { n: number };
-    const relationshipsRow = stmts.countRelationships.get() as { n: number };
-    const observationsRow = stmts.countObservations.get() as { n: number };
 
-    const recentEpisodes = stmts.selectRecentEpisodes.all() as Pick<Episode, 'id' | 'session_id' | 'agent_id' | 'event_type' | 'created_at'>[];
-
-    const topConnected = stmts.selectTopConnected.all() as Array<{ id: string; name: string; type: string; connection_count: number }>;
-
-    const typeBreakdown = stmts.selectTypeBreakdown.all() as Array<{ type: string; count: number }>;
+    let entitiesCount: number;
+    let relationshipsCount: number;
+    let observationsCount: number;
+    let entitiesLast7d: number;
+    let observationsLast7d: number;
+    let relationshipsLast7d: number;
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const entitiesLast7d = (stmts.countEntitiesAfter.get(sevenDaysAgo) as { n: number }).n;
-    const observationsLast7d = (stmts.countObservationsAfter.get(sevenDaysAgo) as { n: number }).n;
-    const relationshipsLast7d = (stmts.countRelationshipsAfter.get(sevenDaysAgo) as { n: number }).n;
+    if (project) {
+      // STMT-02 exception: dynamic WHERE for project filter
+      entitiesCount = (db.prepare(
+        `SELECT COUNT(*) as n FROM entities WHERE project = ?`
+      ).get(project) as { n: number }).n;
+
+      observationsCount = (db.prepare(
+        `SELECT COUNT(*) as n FROM observations o
+         JOIN entities e ON e.id = o.entity_id
+         WHERE e.project = ?`
+      ).get(project) as { n: number }).n;
+
+      relationshipsCount = (db.prepare(
+        `SELECT COUNT(*) as n FROM relationships r
+         JOIN entities e1 ON e1.id = r.from_id
+         JOIN entities e2 ON e2.id = r.to_id
+         WHERE e1.project = ? AND e2.project = ?`
+      ).get(project, project) as { n: number }).n;
+
+      entitiesLast7d = (db.prepare(
+        `SELECT COUNT(*) as n FROM entities WHERE project = ? AND created_at > ?`
+      ).get(project, sevenDaysAgo) as { n: number }).n;
+
+      observationsLast7d = (db.prepare(
+        `SELECT COUNT(*) as n FROM observations o
+         JOIN entities e ON e.id = o.entity_id
+         WHERE e.project = ? AND o.created_at > ?`
+      ).get(project, sevenDaysAgo) as { n: number }).n;
+
+      relationshipsLast7d = (db.prepare(
+        `SELECT COUNT(*) as n FROM relationships r
+         JOIN entities e1 ON e1.id = r.from_id
+         JOIN entities e2 ON e2.id = r.to_id
+         WHERE e1.project = ? AND e2.project = ? AND r.created_at > ?`
+      ).get(project, project, sevenDaysAgo) as { n: number }).n;
+    } else {
+      entitiesCount = (stmts.countEntities.get() as { n: number }).n;
+      relationshipsCount = (stmts.countRelationships.get() as { n: number }).n;
+      observationsCount = (stmts.countObservations.get() as { n: number }).n;
+      entitiesLast7d = (stmts.countEntitiesAfter.get(sevenDaysAgo) as { n: number }).n;
+      observationsLast7d = (stmts.countObservationsAfter.get(sevenDaysAgo) as { n: number }).n;
+      relationshipsLast7d = (stmts.countRelationshipsAfter.get(sevenDaysAgo) as { n: number }).n;
+    }
+
+    // These are always global (not project-scoped) per CONTEXT.md locked decision
+    const recentEpisodes = stmts.selectRecentEpisodes.all() as Pick<Episode, 'id' | 'session_id' | 'agent_id' | 'event_type' | 'created_at'>[];
+    const topConnected = stmts.selectTopConnected.all() as Array<{ id: string; name: string; type: string; connection_count: number }>;
+    const typeBreakdown = stmts.selectTypeBreakdown.all() as Array<{ type: string; count: number }>;
 
     return c.json({
       pending: pendingRow.n,
-      entities: entitiesRow.n,
-      relationships: relationshipsRow.n,
-      observations: observationsRow.n,
+      entities: entitiesCount,
+      relationships: relationshipsCount,
+      observations: observationsCount,
       recentEpisodes,
       topConnected,
       typeBreakdown,
