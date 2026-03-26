@@ -118,4 +118,18 @@ export function applySchema(db: Database.Database): void {
   } catch {
     // Column already exists
   }
+
+  // Migration: add project column for namespace isolation (Phase 12)
+  try {
+    db.exec(`ALTER TABLE entities ADD COLUMN project TEXT DEFAULT NULL`);
+  } catch {
+    // Column already exists
+  }
+
+  // Index for project-scoped queries
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_entities_project ON entities(project)`);
+  } catch {
+    // Index may already exist
+  }
 }

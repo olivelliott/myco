@@ -12,6 +12,7 @@ export interface Entity {
   confidence: number;
   created_at: string; // ISO 8601 UTC
   updated_at: string; // ISO 8601 UTC
+  project?: string | null; // NULL = global (visible to all queries)
 }
 
 export interface Observation {

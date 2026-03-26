@@ -4,9 +4,6 @@ import type { Statement } from 'better-sqlite3';
 /**
  * Typed interface for all pre-compiled prepared statements used across the
  * MCP server hot paths. Statements are grouped by domain.
- *
- * CRITICAL: No `project` column referenced here — that column does not exist
- * until Phase 12 (namespace isolation).
  */
 export interface MycoStatements {
   // ── Entity statements ────────────────────────────────────────────────────
@@ -93,8 +90,8 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     ),
 
     insertEntity: db.prepare(
-      `INSERT INTO entities (id, name, type, summary, metadata, session_id, agent_id, source_type, confidence, created_at, updated_at)
-       VALUES (?, ?, ?, NULL, '{}', ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO entities (id, name, type, summary, metadata, session_id, agent_id, source_type, confidence, created_at, updated_at, project)
+       VALUES (?, ?, ?, NULL, '{}', ?, ?, ?, ?, ?, ?, ?)`
     ),
 
     selectAllEntityNames: db.prepare(
