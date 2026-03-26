@@ -17,13 +17,24 @@ interface ConnectedEntity {
 const entitiesQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(200).default(50).optional(),
   offset: z.coerce.number().min(0).default(0).optional(),
+  project: z.string().optional(),
 });
 
 export function entitiesRoutes(db: Database.Database, stmts: MycoStatements): Hono {
   const app = new Hono();
 
   app.get('/', zValidator('query', entitiesQuerySchema, validationErrorHook), (c) => {
-    const { limit = 50, offset = 0 } = c.req.valid('query');
+    const { limit = 50, offset = 0, project } = c.req.valid('query');
+
+    if (project) {
+      // STMT-02 exception: dynamic WHERE for project filter
+      const entities = db.prepare(
+        `SELECT id, name, type, confidence, created_at
+         FROM entities WHERE project = ?
+         ORDER BY updated_at DESC LIMIT ? OFFSET ?`
+      ).all(project, limit, offset) as Pick<Entity, 'id' | 'name' | 'type' | 'confidence' | 'created_at'>[];
+      return c.json(entities);
+    }
 
     const entities = stmts.selectEntitiesPaginated.all(limit, offset) as Pick<Entity, 'id' | 'name' | 'type' | 'confidence' | 'created_at'>[];
 
