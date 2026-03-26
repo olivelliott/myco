@@ -54,9 +54,11 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] Query filtering operators on recall tool (entity_type, min_confidence) — *v3.0 Phase 11*
 - [x] Error handling hardening and API input validation (Zod, structured errors) — *v3.0 Phase 11*
 
+- [x] Namespace/project isolation via project column on entities — *v3.0 Phase 12*
+
 ### Active
 
-- [ ] Namespace/project isolation via project column on entities
+None — v3.0 milestone complete.
 
 ## Current Milestone: v3.0 Performance & Architecture Optimization
 
