@@ -93,7 +93,7 @@ export function approvalsRoutes(db: Database.Database, stmts: MycoStatements): H
         stmts.updateEntityTimestampConfidence.run(now, meta.fact.confidence, entityId);
       } else {
         entityId = nanoid();
-        stmts.insertEntity.run(entityId, meta.fact.entity_name, meta.fact.entity_type, 'api-server', 'api-server', 'consolidation', meta.fact.confidence, now, now);
+        stmts.insertEntity.run(entityId, meta.fact.entity_name, meta.fact.entity_type, 'api-server', 'api-server', 'consolidation', meta.fact.confidence, now, now, null);
       }
 
       // Insert observation with needs_embedding=1 (MCP server startup sweep handles embedding)
@@ -112,7 +112,7 @@ export function approvalsRoutes(db: Database.Database, stmts: MycoStatements): H
           relatedEntityId = relatedExisting.id;
         } else {
           relatedEntityId = nanoid();
-          stmts.insertEntity.run(relatedEntityId, related.name, related.type, 'api-server', 'api-server', 'consolidation', 0.5, now, now);
+          stmts.insertEntity.run(relatedEntityId, related.name, related.type, 'api-server', 'api-server', 'consolidation', 0.5, now, now, null);
         }
 
         // Insert relationship (ignore duplicates via INSERT OR IGNORE in the prepared statement)
