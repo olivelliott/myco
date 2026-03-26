@@ -39,7 +39,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`
 - [x] **Phase 9: Config + Embedding Performance** — dotenv configuration, singleton embedding client with health-check cooldown, and batch embedding support (completed 2026-03-25)
 - [x] **Phase 10: Prepared Statements** — Statement factory pattern extracts all inline db.prepare() calls to startup, eliminating per-request compilation overhead (completed 2026-03-25)
 - [x] **Phase 11: Query Filters + Error Handling** — Typed filter parameters on recall, Zod validation on API routes, and consistent error response format (completed 2026-03-25)
-- [ ] **Phase 12: Namespace Isolation** — Schema migration adds project column to entities, enabling per-project logical partitioning with full backward compatibility
+- [x] **Phase 12: Namespace Isolation** — Schema migration adds project column to entities, enabling per-project logical partitioning with full backward compatibility (completed 2026-03-26)
 
 ## Phase Details
 
@@ -96,7 +96,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 12-01-PLAN.md — Core layer + MCP tools: schema migration, types, statements, remember/recall/query project param
-- [ ] 12-02-PLAN.md — API routes: project query param on entities, graph, and dashboard endpoints
+- [x] 12-02-PLAN.md — API routes: project query param on entities, graph, and dashboard endpoints
 
 ## Progress
 
@@ -113,4 +113,4 @@ Plans:
 | 9. Config + Embedding Performance | v3.0 | 2/2 | Complete   | 2026-03-25 |
 | 10. Prepared Statements | v3.0 | 2/2 | Complete    | 2026-03-25 |
 | 11. Query Filters + Error Handling | v3.0 | 2/2 | Complete    | 2026-03-25 |
-| 12. Namespace Isolation | v3.0 | 1/2 | In Progress|  |
+| 12. Namespace Isolation | v3.0 | 2/2 | Complete   | 2026-03-26 |

@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Performance & Architecture Optimization
-status: Ready to execute
-stopped_at: Completed 12-01-PLAN.md — project column migration + MCP tool wiring
-last_updated: "2026-03-26T18:21:57.203Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 12-02-PLAN.md — API route project filtering
+last_updated: "2026-03-26T18:26:15.772Z"
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -51,6 +51,7 @@ Plan: 2 of 2
 | Phase 11 P01 | 174 | 1 tasks | 2 files |
 | Phase 11 P02 | 181 | 2 tasks | 6 files |
 | Phase 12 P01 | 25 | 2 tasks | 6 files |
+| Phase 12 P02 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,8 @@ Recent decisions affecting current work:
 - [Phase 12]: DEFAULT NULL for project column — existing entities remain globally visible without data migration; NULL project means visible to all queries
 - [Phase 12]: project ?? null passed to both insertEntity call sites in rememberEntity (new entity + relation target); consolidation resolve_approval intentionally omits project for global facts
 - [Phase 12]: dist/ rebuild required between schema change and test run — @myco/core dist was stale with old 10-param insertEntity SQL; dist/ is gitignored and must be rebuilt from source
+- [Phase 12]: STMT-02 exception pattern used for all three API routes project filtering — inline db.prepare() when project param set, prepared statements when omitted
+- [Phase 12]: Graph relationships filtered in JS by entity ID Set — no project column on relationships table, JS filter is correct and avoids complex SQL JOIN
 
 ### Pending Todos
 
@@ -95,6 +98,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-26T18:21:57.199Z
-Stopped at: Completed 12-01-PLAN.md — project column migration + MCP tool wiring
+Last session: 2026-03-26T18:26:07.310Z
+Stopped at: Completed 12-02-PLAN.md — API route project filtering
 Resume file: None
