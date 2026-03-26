@@ -4,7 +4,7 @@
 
 - ✅ **v1.0 AI Workbots Brain** — Phases 1-5 (shipped 2026-03-21)
 - ✅ **v2.0 Open Source Release** — Phases 6-8 (shipped 2026-03-22)
-- 🚧 **v3.0 Performance & Architecture Optimization** — Phases 9-12 (in progress)
+- ✅ **v3.0 Performance & Architecture Optimization** — Phases 9-12 (shipped 2026-03-26)
 
 ## Phases
 
@@ -32,71 +32,17 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`
 
 </details>
 
-### 🚧 v3.0 Performance & Architecture Optimization (In Progress)
+<details>
+<summary>✅ v3.0 Performance & Architecture Optimization (Phases 9-12) — SHIPPED 2026-03-26</summary>
 
-**Milestone Goal:** Harden the MCP server with performance optimizations, flexible configuration, richer query capabilities, and project isolation — informed by audit against Chroma MCP and comparable repos.
+- [x] Phase 9: Config + Embedding Performance (2/2 plans) — completed 2026-03-25
+- [x] Phase 10: Prepared Statements (2/2 plans) — completed 2026-03-25
+- [x] Phase 11: Query Filters + Error Handling (2/2 plans) — completed 2026-03-25
+- [x] Phase 12: Namespace Isolation (2/2 plans) — completed 2026-03-26
 
-- [x] **Phase 9: Config + Embedding Performance** — dotenv configuration, singleton embedding client with health-check cooldown, and batch embedding support (completed 2026-03-25)
-- [x] **Phase 10: Prepared Statements** — Statement factory pattern extracts all inline db.prepare() calls to startup, eliminating per-request compilation overhead (completed 2026-03-25)
-- [x] **Phase 11: Query Filters + Error Handling** — Typed filter parameters on recall, Zod validation on API routes, and consistent error response format (completed 2026-03-25)
-- [x] **Phase 12: Namespace Isolation** — Schema migration adds project column to entities, enabling per-project logical partitioning with full backward compatibility (completed 2026-03-26)
+Full details: `.planning/milestones/v3.0-ROADMAP.md`
 
-## Phase Details
-
-### Phase 9: Config + Embedding Performance
-**Goal**: The MCP server starts with a reproducible, logged configuration and the embedding client is resilient — singleton-managed, health-cached, and batch-capable
-**Depends on**: Phase 8
-**Requirements**: CONFIG-01, CONFIG-02, CONFIG-03, EMBED-01, EMBED-02, EMBED-03, EMBED-04
-**Success Criteria** (what must be TRUE):
-  1. Running `myco` with a .env file containing OLLAMA_HOST causes that host to be used without modifying code
-  2. The server prints resolved configuration values to stderr at startup (visible in MCP server logs)
-  3. A .env.example file exists at the project root documenting all supported environment variables
-  4. Embedding calls during a consolidation run share a single Ollama client instance (no repeated initialization)
-  5. When Ollama is unreachable, subsequent embedding calls within 30 seconds return a fast-fail error instead of attempting reconnection
-**Plans**: 2 plans
-Plans:
-- [x] 09-01-PLAN.md — Config layer: dotenv loading, config module, .env.example, entry point wiring
-- [x] 09-02-PLAN.md — Embedding client: singleton, health cooldown, batch API, reEmbedPending batch
-
-### Phase 10: Prepared Statements
-**Goal**: All hot-path database queries are compiled once at startup, eliminating per-request statement preparation overhead
-**Depends on**: Phase 9
-**Requirements**: STMT-01, STMT-02
-**Success Criteria** (what must be TRUE):
-  1. No db.prepare() call appears inside any tool handler or request handler function (auditable via grep)
-  2. The MCP server starts up and all tools function correctly using the pre-compiled statement set
-**Plans**: 2 plans
-Plans:
-- [x] 10-01-PLAN.md — Statement factory in core + MCP server refactor (tools, consolidator, relationship-discovery, cli)
-- [x] 10-02-PLAN.md — API server refactor (all route files use prepared statements)
-
-### Phase 11: Query Filters + Error Handling
-**Goal**: The recall tool accepts typed filter parameters that narrow results, and all API routes and MCP tools return structured, consistently-formatted errors
-**Depends on**: Phase 10
-**Requirements**: QUERY-01, QUERY-02, QUERY-03, QUERY-04, ERR-01, ERR-02, ERR-03
-**Success Criteria** (what must be TRUE):
-  1. Calling recall with entity_type="technology" returns only entities of that type
-  2. Calling recall with min_confidence=0.8 excludes entities below that threshold
-  3. An invalid API request body returns a JSON error response with the appropriate HTTP status code (400/422) and a human-readable message
-  4. An MCP tool error returns a structured response with consistent shape (not an unhandled exception or freeform string)
-**Plans**: 2 plans
-Plans:
-- [x] 11-01-PLAN.md — Recall tool filter parameters (entity_type, min_confidence, project no-op)
-- [x] 11-02-PLAN.md — Error handling: Zod validation on API routes, global error handler, MCP tool try/catch
-
-### Phase 12: Namespace Isolation
-**Goal**: Entities can be scoped to a named project, and existing data remains fully accessible without specifying a project — enabling true multi-project use without data leakage
-**Depends on**: Phase 11
-**Requirements**: NS-01, NS-02, NS-03, NS-04
-**Success Criteria** (what must be TRUE):
-  1. Calling remember with project="myco" stores the entity under that project namespace
-  2. Calling recall with project="myco" returns only entities from that project
-  3. Calling recall without a project filter returns entities across all projects (backward-compatible behavior)
-  4. Existing entities stored before this migration remain accessible with no data loss
-**Plans**: 2 plans
-Plans:
-- [x] 12-01-PLAN.md — Core layer + MCP tools: schema migration, types, statements, remember/recall/query project param
-- [x] 12-02-PLAN.md — API routes: project query param on entities, graph, and dashboard endpoints
+</details>
 
 ## Progress
 

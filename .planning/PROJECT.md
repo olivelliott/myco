@@ -14,14 +14,14 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 
 ## Current State
 
-**Shipped:** v2.0 — 2026-03-22
-**Codebase:** ~14,000 LOC TypeScript across 4 packages
+**Shipped:** v3.0 — 2026-03-26
+**Codebase:** ~5,000 LOC TypeScript across 4 packages
 **Tech Stack:** Node.js 22, TypeScript 5.9, better-sqlite3, sqlite-vec, Ollama, Hono, React 19, Vite 8, Tailwind v4, shadcn/ui
 **License:** Apache 2.0
 **90 tests** passing across 6 test files
 
 ### Architecture
-- `packages/core` — shared DB, schema, types, provenance
+- `packages/core` — shared DB, schema, types, provenance, prepared statement factory
 - `packages/mcp-server` — MCP tools (remember, recall, query, log_episode, consolidate, approvals), consolidation pipeline, cron scheduler, CLI
 - `packages/api-server` — Hono REST API on port 3001 (5 route groups)
 - `packages/dashboard` — React PWA with approval queue, knowledge graph explorer, activity dashboard
@@ -60,18 +60,11 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 
 None — v3.0 milestone complete.
 
-## Current Milestone: v3.0 Performance & Architecture Optimization
+## Completed Milestones
 
-**Goal:** Harden the MCP server with performance optimizations, flexible configuration, richer query capabilities, and project isolation — informed by audit against Chroma MCP and comparable repos.
-
-**Target features:**
-- Embedding client singleton + health check caching
-- Batch embedding support
-- dotenv configuration support
-- Query filtering operators on recall
-- Namespace/project isolation
-- Prepared statement caching
-- Error handling hardening + API input validation
+- **v1.0** (2026-03-21) — Core MCP server, knowledge graph, consolidation, PWA dashboard
+- **v2.0** (2026-03-22) — Rename to Myco, Apache 2.0 open source, tech debt cleanup
+- **v3.0** (2026-03-26) — Performance & architecture: config, prepared statements, query filters, error handling, namespace isolation
 
 ### Out of Scope
 
@@ -84,7 +77,8 @@ None — v3.0 milestone complete.
 
 - v1.0 shipped 2026-03-21 with all 15 requirements validated across 5 phases
 - v2.0 shipped 2026-03-22 — rename to Myco, open source packaging, tech debt cleanup
-- 68 tests passing across 3 test files (core, mcp-server, gsd-hook)
+- v3.0 shipped 2026-03-26 — 20 requirements validated across 4 phases (config, prepared statements, query filters, error handling, namespace isolation)
+- 90 tests passing across 6 test files (core, mcp-server, gsd-hook, statements, embed-client, recall-filters)
 - Vercel AI SDK v4.3.19 used for consolidation (v6 incompatible with ollama-ai-provider)
 - MCP SDK uses `registerTool()` with Zod v4
 - Named "Myco" from mycorrhizal networks — underground fungal webs connecting ecosystems
@@ -112,10 +106,16 @@ None — v3.0 milestone complete.
 | Separate api-server + dashboard | Decoupled concerns; WAL mode concurrent reads | ✓ Validated v1.0 |
 | Rename to "Myco" | Mycorrhizal network metaphor — underground knowledge web | ✓ Shipped v2.0 |
 | Apache 2.0 license | Permissive with patent grant, keeps commercial options open | ✓ Shipped v2.0 |
+| dotenv + stderr config logging | Reproducible config, visible in MCP logs | ✓ Shipped v3.0 |
+| Prepared statement factory | Compile SQL once at startup, not per-request | ✓ Shipped v3.0 |
+| STMT-02 exception for dynamic WHERE | queryEntities and recall filters need runtime SQL construction | ✓ Shipped v3.0 |
+| Nullable project column (DEFAULT NULL) | Backward compatible — NULL = globally visible, avoids data migration | ✓ Shipped v3.0 |
+| Graceful degradation for invalid filters | Warning in metadata, not 400 error — agents recover better | ✓ Shipped v3.0 |
 
 ## Known Tech Debt
 
 - Phase 3 (v1.0): 3 items awaiting manual testing with live Ollama (LLM extraction, merge detection, cron timing)
+- Phase 9 (v3.0): embed-client.ts hardcodes EMBED_MODEL='nomic-embed-text' instead of reading getConfig().ollamaModel
 
 ## Evolution
 
@@ -135,4 +135,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-25 after v3.0 milestone start*
+*Last updated: 2026-03-26 after v3.0 milestone*

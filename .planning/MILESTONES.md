@@ -1,5 +1,21 @@
 # Milestones
 
+## v3.0 Performance & Architecture Optimization (Shipped: 2026-03-26)
+
+**Phases completed:** 4 phases, 8 plans, 13 tasks
+
+**Key accomplishments:**
+
+- dotenv configuration layer with OLLAMA_HOST/MYCO_DB_PATH/BRAIN_CONSOLIDATION_MODEL support, stderr startup logging, and .env.example template
+- `prepareStatements(db)` factory in @myco/core centralizes all 32 hot-path SQL statements; MCP server refactored to compile statements once at startup instead of per-request
+- All 5 API route groups refactored to use pre-compiled prepared statements; 18 new dashboard/query statements added to the @myco/core factory
+- One-liner:
+- One-liner:
+- One-liner:
+- One-liner:
+
+---
+
 ## v2.0 Open Source Release (Shipped: 2026-03-22)
 
 **Phases completed:** 3 phases, 6 plans, 10 tasks
