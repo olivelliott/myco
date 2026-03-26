@@ -24,6 +24,7 @@ export interface RememberParams {
     target_type?: string;
     relation_type: string;
   }>;
+  project?: string;
 }
 
 export interface RememberResult {
@@ -84,6 +85,7 @@ export async function rememberEntity(
     confidence = 1.0,
     source_type = 'agent_session',
     relations,
+    project,
   } = params;
 
   const prov = buildProvenance(SESSION_ID, agent_id, source_type, confidence);
@@ -98,6 +100,7 @@ export async function rememberEntity(
       entityId, entity_name, entity_type,
       prov.session_id, prov.agent_id, prov.source_type, prov.confidence,
       prov.created_at, prov.created_at,
+      project ?? null,
     );
     invalidateEntityCache();
   }
@@ -137,6 +140,7 @@ export async function rememberEntity(
           targetId, rel.target_name, targetType,
           prov.session_id, prov.agent_id, prov.source_type, prov.confidence,
           prov.created_at, prov.created_at,
+          project ?? null,
         );
       }
 
@@ -180,12 +184,6 @@ export async function recallKnowledge(
 ): Promise<RecallResult> {
   const { query, limit, entity_type, min_confidence, project } = params;
 
-  // Build warnings for unsupported filters
-  const warnings: string[] = [];
-  if (project !== undefined) {
-    warnings.push('project filter is not yet supported — will be enabled in a future update');
-  }
-
   // Build filter conditions (STMT-02 exception pattern — dynamic WHERE)
   const conditions: string[] = [];
   const filterParams: unknown[] = [];
@@ -198,8 +196,10 @@ export async function recallKnowledge(
     conditions.push('o.confidence >= ?');
     filterParams.push(min_confidence);
   }
-
-  const metaExtra = warnings.length > 0 ? { warnings } : {};
+  if (project !== undefined) {
+    conditions.push('e.project = ?');
+    filterParams.push(project);
+  }
 
   // Try semantic search first
   const queryEmbedding = await embedText(query);
@@ -250,7 +250,6 @@ export async function recallKnowledge(
             method: 'semantic' as const,
             count: rows.length,
             query,
-            ...metaExtra,
           },
         }),
       }],
@@ -297,7 +296,6 @@ export async function recallKnowledge(
           method: 'fts' as const,
           count: rows.length,
           query,
-          ...metaExtra,
         },
       }),
     }],
@@ -306,10 +304,10 @@ export async function recallKnowledge(
 
 export function queryEntities(
   db: Database.Database,
-  params: { entity_name?: string; entity_type?: string; relation_type?: string },
+  params: { entity_name?: string; entity_type?: string; relation_type?: string; project?: string },
   stmts: MycoStatements,
 ): RecallResult {
-  const { entity_name, entity_type, relation_type } = params;
+  const { entity_name, entity_type, relation_type, project } = params;
 
   const conditions: string[] = [];
   const queryParams: unknown[] = [];
@@ -329,6 +327,10 @@ export function queryEntities(
         AND r.type = ?
     )`);
     queryParams.push(relation_type);
+  }
+  if (project) {
+    conditions.push('e.project = ?');
+    queryParams.push(project);
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -444,9 +446,10 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
           )
           .optional()
           .describe('Optional relationships to create'),
+        project: z.string().optional().describe('Project namespace to store entity under (omit for global)'),
       },
     },
-    async ({ content, entity_name, entity_type, agent_id, confidence, relations }) => {
+    async ({ content, entity_name, entity_type, agent_id, confidence, relations, project }) => {
       try {
         return await rememberEntity(db, {
           content,
@@ -455,6 +458,7 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
           agent_id,
           confidence,
           relations,
+          project,
         }, stmts);
       } catch (err) {
         console.error('[remember] tool error:', err);
@@ -480,7 +484,7 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
         limit: z.number().default(10).describe('Max results to return'),
         entity_type: z.string().optional().describe('Filter by entity type (e.g. "technology", "person")'),
         min_confidence: z.number().min(0).max(1).optional().describe('Minimum confidence score 0.0-1.0'),
-        project: z.string().optional().describe('Filter by project namespace (not yet supported — returns warning)'),
+        project: z.string().optional().describe('Filter by project namespace'),
       },
     },
     async ({ query, limit, entity_type, min_confidence, project }) => {
@@ -509,11 +513,12 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
         entity_name: z.string().optional().describe('Exact entity name'),
         entity_type: z.string().optional().describe('Filter by entity type'),
         relation_type: z.string().optional().describe('Filter by relationship type'),
+        project: z.string().optional().describe('Filter by project namespace'),
       },
     },
-    async ({ entity_name, entity_type, relation_type }) => {
+    async ({ entity_name, entity_type, relation_type, project }) => {
       try {
-        return queryEntities(db, { entity_name, entity_type, relation_type }, stmts);
+        return queryEntities(db, { entity_name, entity_type, relation_type, project }, stmts);
       } catch (err) {
         console.error('[query] tool error:', err);
         return {

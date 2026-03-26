@@ -101,7 +101,7 @@ describe('prepareStatements', () => {
     const id = 'test-entity-id-001';
 
     // Insert entity
-    stmts.insertEntity.run(id, 'TypeScript', 'technology', 'test-session', 'test-agent', 'agent_session', 0.9, now, now);
+    stmts.insertEntity.run(id, 'TypeScript', 'technology', 'test-session', 'test-agent', 'agent_session', 0.9, now, now, null);
 
     // Select it back
     const row = stmts.selectEntityByNameType.get('TypeScript', 'technology') as { id: string } | undefined;
@@ -116,7 +116,7 @@ describe('prepareStatements', () => {
     const obsId = 'test-obs-id-001';
 
     // Insert entity first (FK constraint)
-    stmts.insertEntity.run(entityId, 'Rust', 'technology', 'test-session', 'test-agent', 'agent_session', 1.0, now, now);
+    stmts.insertEntity.run(entityId, 'Rust', 'technology', 'test-session', 'test-agent', 'agent_session', 1.0, now, now, null);
 
     // Insert observation
     stmts.insertObservation.run(obsId, entityId, 'Rust is memory safe', 'test-session', 'test-agent', 'agent_session', 1.0, now);
@@ -164,7 +164,7 @@ describe('prepareStatements', () => {
     const entityId = 'test-entity-flag';
     const obsId = 'test-obs-flag';
 
-    stmts.insertEntity.run(entityId, 'FlagTest', 'concept', 'test-session', 'test-agent', 'agent_session', 1.0, now, now);
+    stmts.insertEntity.run(entityId, 'FlagTest', 'concept', 'test-session', 'test-agent', 'agent_session', 1.0, now, now, null);
     stmts.insertObservation.run(obsId, entityId, 'Test content', 'test-session', 'test-agent', 'agent_session', 1.0, now);
 
     // Flag for re-embedding
@@ -196,8 +196,8 @@ describe('prepareStatements', () => {
     const stmts = prepareStatements(db);
     const now = new Date().toISOString();
 
-    stmts.insertEntity.run('ent-a', 'EntityA', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now);
-    stmts.insertEntity.run('ent-b', 'EntityB', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now);
+    stmts.insertEntity.run('ent-a', 'EntityA', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+    stmts.insertEntity.run('ent-b', 'EntityB', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
     stmts.insertRelationship.run('rel-1', 'ent-a', 'ent-b', 'related_to', 'ses', 'ag', 'agent_session', 0.9, now);
 
     const exists = stmts.selectRelationshipExists.get('ent-a', 'ent-b', 'ent-b', 'ent-a');
@@ -210,7 +210,7 @@ describe('prepareStatements', () => {
     const entityId = 'ent-fts-1';
     const obsId = 'obs-fts-1';
 
-    stmts.insertEntity.run(entityId, 'FtsEntity', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now);
+    stmts.insertEntity.run(entityId, 'FtsEntity', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
     stmts.insertObservation.run(obsId, entityId, 'FtsEntity is useful', 'ses', 'ag', 'agent_session', 1.0, now);
     stmts.insertFtsObservation.run('FtsEntity is useful', obsId);
 
@@ -222,8 +222,8 @@ describe('prepareStatements', () => {
     const stmts = prepareStatements(db);
     const now = new Date().toISOString();
 
-    stmts.insertEntity.run('e1', 'Alpha', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now);
-    stmts.insertEntity.run('e2', 'Beta', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now);
+    stmts.insertEntity.run('e1', 'Alpha', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+    stmts.insertEntity.run('e2', 'Beta', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
 
     const rows = stmts.selectAllEntityNames.all() as Array<{ id: string; name: string }>;
     expect(rows.length).toBeGreaterThanOrEqual(2);

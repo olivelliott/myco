@@ -183,28 +183,41 @@ describe('recallKnowledge filter params', () => {
     expect(hasTechLow).toBe(false);
   });
 
-  it('Test 4: project filter produces warning in metadata', async () => {
+  it('Test 4: project filter scopes results to matching project namespace', async () => {
+    // Store one entity under project 'myco'
     await rememberEntity(db, {
-      content: 'Some entity content',
-      entity_name: 'SomeEntity',
+      content: 'scoped knowledge belongs to myco namespace only',
+      entity_name: 'ScopedKnowledge',
+      entity_type: 'concept',
+      project: 'myco',
+    }, stmts);
+
+    // Store another entity with no project (global)
+    await rememberEntity(db, {
+      content: 'global knowledge has no project namespace',
+      entity_name: 'GlobalKnowledge',
       entity_type: 'concept',
     }, stmts);
 
+    // Recall with project filter — should only return myco-scoped entities
     const result = await recallKnowledge(db, {
-      query: 'entity',
+      query: 'scoped knowledge',
       limit: 10,
       project: 'myco',
     }, stmts);
 
     const parsed = JSON.parse(result.content[0].text) as {
-      results: unknown[];
+      results: Array<{ entity_name: string }>;
       metadata: { method: string; count: number; warnings?: string[] };
     };
 
-    expect(parsed.metadata.warnings).toBeDefined();
-    expect(Array.isArray(parsed.metadata.warnings)).toBe(true);
-    const warningText = parsed.metadata.warnings?.join(' ') ?? '';
-    expect(warningText).toContain('project filter is not yet supported');
+    // No warnings should be emitted — project filter is now functional
+    expect(parsed.metadata.warnings).toBeUndefined();
+
+    // Only ScopedKnowledge (project='myco') should appear; GlobalKnowledge (NULL project) should not
+    const names = parsed.results.map(r => r.entity_name);
+    expect(names).toContain('ScopedKnowledge');
+    expect(names).not.toContain('GlobalKnowledge');
   });
 
   it('Test 5: no filters = backward compatible behavior', async () => {
