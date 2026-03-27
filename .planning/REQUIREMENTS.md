@@ -20,8 +20,8 @@ Requirements for Dashboard & Graph Experience milestone. Each maps to roadmap ph
 
 ### Dashboard Theme
 
-- [ ] **THME-01**: All dashboard pages use bioluminescent deep-sea visual theme with consistent CSS variables
-- [ ] **THME-02**: All "brain" language throughout dashboard updated to "Myco"
+- [x] **THME-01**: All dashboard pages use bioluminescent deep-sea visual theme with consistent CSS variables
+- [x] **THME-02**: All "brain" language throughout dashboard updated to "Myco"
 
 ### Home Page
 
@@ -71,8 +71,8 @@ Requirements for Dashboard & Graph Experience milestone. Each maps to roadmap ph
 | GRPH-06 | Phase 15 | Pending |
 | GRPH-07 | Phase 14 | Pending |
 | GRPH-08 | Phase 14 | Pending |
-| THME-01 | Phase 13 | Pending |
-| THME-02 | Phase 13 | Pending |
+| THME-01 | Phase 13 | Complete |
+| THME-02 | Phase 13 | Complete |
 | HOME-01 | Phase 16 | Pending |
 | HOME-02 | Phase 16 | Pending |
 | HOME-03 | Phase 16 | Pending |

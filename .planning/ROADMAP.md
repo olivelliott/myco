@@ -49,7 +49,7 @@ Full details: `.planning/milestones/v3.0-ROADMAP.md`
 
 **Milestone Goal:** Transform the Myco dashboard into a polished, bioluminescent analytics experience with a deeply interactive knowledge graph, enriched home page, and a streamlined approvals flow.
 
-- [ ] **Phase 13: Theme + Language Foundation** - Bioluminescent CSS variables and "Myco" language pass across all dashboard pages
+- [x] **Phase 13: Theme + Language Foundation** - Bioluminescent CSS variables and "Myco" language pass across all dashboard pages (completed 2026-03-27)
 - [ ] **Phase 14: Graph Core Features** - Stable interaction mode system, confidence filter, cluster visualization, neighborhood explorer, search zoom, LOD rendering
 - [ ] **Phase 15: Timeline Animation** - requestAnimationFrame-driven timeline playback with animated node entry
 - [ ] **Phase 16: Home Page Enhancements** - Knowledge growth chart, rich activity stream, health metrics, interactive graph preview
@@ -66,9 +66,9 @@ Full details: `.planning/milestones/v3.0-ROADMAP.md`
   2. CSS variables for the theme are defined in one place and applied consistently — changing a variable updates all pages
   3. No visible "brain" string remains in the dashboard UI — all copy reads "Myco" (headings, labels, empty states, tooltips)
   4. Branded empty states exist for the graph view and approvals page, matching the deep-sea aesthetic
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 13-01-PLAN.md — Migrate all slate-* hardcoded classes to CSS variables and verify no "brain" terminology remains
+- [x] 13-01-PLAN.md — Migrate all slate-* hardcoded classes to CSS variables and verify no "brain" terminology remains
 **UI hint**: yes
 
 ### Phase 14: Graph Core Features
@@ -138,7 +138,7 @@ Plans:
 | 10. Prepared Statements | v3.0 | 2/2 | Complete | 2026-03-25 |
 | 11. Query Filters + Error Handling | v3.0 | 2/2 | Complete | 2026-03-25 |
 | 12. Namespace Isolation | v3.0 | 2/2 | Complete | 2026-03-26 |
-| 13. Theme + Language Foundation | v4.0 | 0/1 | Not started | - |
+| 13. Theme + Language Foundation | v4.0 | 1/1 | Complete   | 2026-03-27 |
 | 14. Graph Core Features | v4.0 | 0/? | Not started | - |
 | 15. Timeline Animation | v4.0 | 0/? | Not started | - |
 | 16. Home Page Enhancements | v4.0 | 0/? | Not started | - |
