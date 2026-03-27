@@ -146,6 +146,6 @@ Plans:
 | 12. Namespace Isolation | v3.0 | 2/2 | Complete | 2026-03-26 |
 | 13. Theme + Language Foundation | v4.0 | 1/1 | Complete    | 2026-03-27 |
 | 14. Graph Core Features | v4.0 | 3/3 | Complete    | 2026-03-27 |
-| 15. Timeline Animation | v4.0 | 1/1 | Complete   | 2026-03-27 |
+| 15. Timeline Animation | v4.0 | 1/1 | Complete    | 2026-03-27 |
 | 16. Home Page Enhancements | v4.0 | 0/? | Not started | - |
 | 17. Approvals Overhaul | v4.0 | 0/? | Not started | - |
