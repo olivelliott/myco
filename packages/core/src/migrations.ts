@@ -54,6 +54,74 @@ const migrations: Migration[] = [
       db.exec(`CREATE INDEX IF NOT EXISTS idx_entities_project ON entities(project)`);
     },
   },
+  {
+    id: 5,
+    name: 'add_temporal_columns',
+    up: (db) => {
+      try {
+        db.exec(`ALTER TABLE observations ADD COLUMN valid_from TEXT DEFAULT NULL`);
+      } catch {
+        // Column already exists
+      }
+      try {
+        db.exec(`ALTER TABLE observations ADD COLUMN valid_until TEXT DEFAULT NULL`);
+      } catch {
+        // Column already exists
+      }
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_observations_valid_from ON observations(valid_from)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_observations_valid_until ON observations(valid_until) WHERE valid_until IS NOT NULL`);
+    },
+  },
+  {
+    id: 6,
+    name: 'add_decay_columns',
+    up: (db) => {
+      try {
+        db.exec(`ALTER TABLE observations ADD COLUMN last_accessed_at TEXT DEFAULT NULL`);
+      } catch {
+        // Column already exists
+      }
+      try {
+        db.exec(`ALTER TABLE observations ADD COLUMN decay_exempt INTEGER NOT NULL DEFAULT 0`);
+      } catch {
+        // Column already exists
+      }
+      try {
+        db.exec(`ALTER TABLE observations ADD COLUMN reinforcement_count INTEGER NOT NULL DEFAULT 1`);
+      } catch {
+        // Column already exists
+      }
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_observations_last_accessed ON observations(last_accessed_at)`);
+    },
+  },
+  {
+    id: 7,
+    name: 'add_relationship_strength',
+    up: (db) => {
+      try {
+        db.exec(`ALTER TABLE relationships ADD COLUMN strength REAL NOT NULL DEFAULT 1.0`);
+      } catch {
+        // Column already exists
+      }
+      try {
+        db.exec(`ALTER TABLE relationships ADD COLUMN reinforcement_count INTEGER NOT NULL DEFAULT 1`);
+      } catch {
+        // Column already exists
+      }
+    },
+  },
+  {
+    id: 8,
+    name: 'add_entity_merged_into',
+    up: (db) => {
+      try {
+        db.exec(`ALTER TABLE entities ADD COLUMN merged_into TEXT DEFAULT NULL`);
+      } catch {
+        // Column already exists
+      }
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_entities_merged_into ON entities(merged_into) WHERE merged_into IS NOT NULL`);
+    },
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
