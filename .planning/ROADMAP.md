@@ -81,7 +81,9 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
   2. A `schema_migrations` table exists in the database and contains one row per migration that has been applied, with a timestamp
   3. All v5.0 columns (`valid_from`, `valid_until`, `last_accessed_at`, `decay_exempt`, `strength`, `reinforcement_count`, `merged_into`) exist on their respective tables after startup
   4. TypeScript interfaces in `packages/core/src/types.ts` reflect the new columns — no `any` casts required to access them
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
 
 ### Phase 19: Temporal Versioning + Dedup Resolution
 **Goal**: Facts carry version history so the graph is never silently overwritten, and every incoming memory is classified as a new addition, an update to an existing fact, or a duplicate before it is committed
@@ -93,7 +95,9 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
   3. When the same observation is submitted twice, the second call is classified as NOOP and does not create a duplicate row in the observations table
   4. When a conflicting fact is submitted (different value for same attribute), the old observation is soft-retired and the new one is inserted in a single atomic operation
   5. Entity merges use a `merged_into` column soft-delete — after a merge, the source entity still exists in the database with its `merged_into` field set, and prior observations remain queryable
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
 
 ### Phase 20: Relationship Strength Scoring
 **Goal**: Every relationship in the knowledge graph carries a strength score that grows each time it is reinforced by a `remember` call, and the dashboard graph visualizes edge weight via line thickness
@@ -103,7 +107,9 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
   1. Calling `remember` with the same entity relationship multiple times increases the relationship's `strength` score and `reinforcement_count` — a single `remember` does not reset the count to 1
   2. The upsert is idempotent — calling `remember` for a relationship that already exists updates strength rather than creating a duplicate relationship row
   3. The dashboard knowledge graph renders edges with varying line thickness proportional to relationship strength — a newly created relationship is visually thinner than a reinforced one
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
 **UI hint**: yes
 
 ### Phase 21: Memory Importance Decay
@@ -114,7 +120,9 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
   1. Two observations with the same base confidence score rank differently in recall results if one was accessed recently and the other has not been accessed in 30+ days
   2. The `computeEffectiveConfidence` function takes `last_accessed_at` and `reinforcement_count` as inputs and returns a value without reading from or writing to the database — it is a pure computation
   3. Entities marked as `decay_exempt` (preference, constraint, decision, architecture types) return their base confidence score unchanged regardless of access recency
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
 
 ### Phase 22: Core Refactor + REST Write Routes + Import/Export
 **Goal**: Business logic is accessible to both MCP tools and REST clients from a shared `packages/core/memory-ops.ts` module, the REST API exposes full write operations with OpenAPI documentation and optional auth, and users can export or import their entire knowledge graph via MCP tool or HTTP endpoint
@@ -126,7 +134,9 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
   3. An agent with a valid `MYCO_API_KEY` configured can authenticate write requests; requests without the key are rejected with 401 when auth is enabled
   4. Calling the `export_graph` MCP tool or `GET /api/export` produces a JSON file that, when imported with `import_graph` or `POST /api/import`, restores the exact same set of entities, observations, and relationships with no data loss or duplication
   5. The import tool accepts a Mem0-format JSON or the Anthropic reference server JSONL format and successfully loads its entries into the Myco knowledge graph
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
 
 ### Phase 23: Auto-Extraction + Incremental Consolidation
 **Goal**: Every `log_episode` call passively captures entities and relationships from the conversation context via LLM extraction without blocking the response, and high-confidence episodes trigger a micro-consolidation immediately rather than waiting for the nightly 2am cycle
@@ -138,7 +148,9 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
   3. Calling `log_episode` 10 times in rapid succession results in exactly one consolidation run, not 10 — the consolidation lock prevents duplicate processing
   4. After the nightly cron fires, the consolidation log shows relationship inference and contradiction detection steps that do not appear in the incremental micro-consolidation output
   5. When both an incremental trigger and the nightly cron attempt to consolidate simultaneously, one waits for the lock and runs after — no episodes are processed twice
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
 
 ## Progress
 
