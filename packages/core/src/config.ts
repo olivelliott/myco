@@ -22,10 +22,10 @@ export function loadConfig(): MycoConfig {
   dotenv.config();
 
   const config: MycoConfig = {
-    dbPath: process.env.MYCO_DB_PATH ?? process.env.BRAIN_DB_PATH ?? null,
+    dbPath: process.env.MYCO_DB_PATH ?? null,
     ollamaHost: process.env.OLLAMA_HOST ?? 'http://127.0.0.1:11434',
     ollamaModel: process.env.OLLAMA_EMBED_MODEL ?? 'nomic-embed-text',
-    consolidationModel: process.env.BRAIN_CONSOLIDATION_MODEL ?? 'llama3.2',
+    consolidationModel: process.env.MYCO_CONSOLIDATION_MODEL ?? 'llama3.2',
     apiPort: parseInt(process.env.MYCO_API_PORT ?? '3001', 10),
     logLevel: process.env.MYCO_LOG_LEVEL ?? 'info',
   };

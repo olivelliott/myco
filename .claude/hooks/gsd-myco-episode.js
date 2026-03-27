@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// gsd-brain-episode.js
+// gsd-myco-episode.js
 // PostToolUse hook — fires after every Bash tool use.
 // Detects `gsd-tools phase complete` commands and writes a structured episode
-// to brain.db using direct better-sqlite3 INSERT (same SQL as logEpisode()).
+// to myco.db using direct better-sqlite3 INSERT (same SQL as logEpisode()).
 //
 // Design principles:
 // - Fire-and-forget: every failure path exits 0 silently
@@ -21,11 +21,11 @@ const os = require('os');
 // ---------------------------------------------------------------------------
 
 function getDbPath() {
-  const envPath = process.env.MYCO_DB_PATH || process.env.BRAIN_DB_PATH;
+  const envPath = process.env.MYCO_DB_PATH;
   if (envPath) return envPath;
   const xdgData = process.env.XDG_DATA_HOME ||
     path.join(os.homedir(), '.local', 'share');
-  return path.join(xdgData, 'myco', 'brain.db');
+  return path.join(xdgData, 'myco', 'myco.db');
 }
 
 // ---------------------------------------------------------------------------
@@ -208,10 +208,10 @@ process.stdin.on('end', () => {
     const cwd = data.cwd || process.cwd();
     const sessionId = data.session_id || 'unknown';
 
-    // Resolve brain.db path
+    // Resolve myco.db path
     const dbPath = getDbPath();
 
-    // CRITICAL: Do NOT auto-create brain.db — exit silently if it doesn't exist
+    // CRITICAL: Do NOT auto-create myco.db — exit silently if it doesn't exist
     if (!fs.existsSync(dbPath)) {
       process.exit(0);
     }
@@ -237,7 +237,7 @@ process.stdin.on('end', () => {
     try {
       Database = require(path.join(projectRoot, 'node_modules', 'better-sqlite3'));
     } catch (requireErr) {
-      console.error('[gsd-brain-episode] Could not load better-sqlite3:', requireErr.message);
+      console.error('[gsd-myco-episode] Could not load better-sqlite3:', requireErr.message);
       process.exit(0);
     }
 
@@ -246,7 +246,7 @@ process.stdin.on('end', () => {
     try {
       db = new Database(dbPath);
     } catch (dbErr) {
-      console.error('[gsd-brain-episode] Could not open brain.db:', dbErr.message);
+      console.error('[gsd-myco-episode] Could not open myco.db:', dbErr.message);
       process.exit(0);
     }
 
@@ -265,7 +265,7 @@ process.stdin.on('end', () => {
         new Date().toISOString()
       );
     } catch (insertErr) {
-      console.error('[gsd-brain-episode] INSERT failed:', insertErr.message);
+      console.error('[gsd-myco-episode] INSERT failed:', insertErr.message);
     } finally {
       try { db.close(); } catch (e) { /* ignore close errors */ }
     }

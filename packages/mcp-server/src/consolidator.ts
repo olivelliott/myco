@@ -16,7 +16,7 @@ const CONFIDENCE_THRESHOLD = 0.85;
 const CONTRADICTION_DISTANCE_THRESHOLD = 0.3;
 const LLM_TIMEOUT_MS = 60_000;
 function getConsolidationModel(): string {
-  return process.env.BRAIN_CONSOLIDATION_MODEL ?? 'llama3.2';
+  return process.env.MYCO_CONSOLIDATION_MODEL ?? 'llama3.2';
 }
 
 // ─── Ollama provider ──────────────────────────────────────────────────────────
