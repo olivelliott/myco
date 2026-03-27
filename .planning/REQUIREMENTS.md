@@ -52,8 +52,8 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 
 ### Memory Decay
 
-- [ ] **DECAY-01**: Observation importance score decays over time based on age and reinforcement frequency
-- [ ] **DECAY-02**: Decay is computed lazily at read time (not stored, no write-path overhead)
+- [x] **DECAY-01**: Observation importance score decays over time based on age and reinforcement frequency
+- [x] **DECAY-02**: Decay is computed lazily at read time (not stored, no write-path overhead)
 - [ ] **DECAY-03**: Recall results factor in importance decay when ranking
 
 ### Relationship Strength

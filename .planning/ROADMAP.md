@@ -124,7 +124,7 @@ Plans:
   3. Entities marked as `decay_exempt` (preference, constraint, decision, architecture types) return their base confidence score unchanged regardless of access recency
 **Plans**: 2 plans
 Plans:
-- [ ] 21-01-PLAN.md — Pure decay function (computeEffectiveConfidence) + unit tests + core export
+- [x] 21-01-PLAN.md — Pure decay function (computeEffectiveConfidence) + unit tests + core export
 - [ ] 21-02-PLAN.md — Integrate decay scoring into recall/query pipelines + lazy last_accessed_at write
 
 ### Phase 22: Core Refactor + REST Write Routes + Import/Export
@@ -178,7 +178,7 @@ Plans:
 | 17. Approvals Overhaul | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 18. Schema Foundation | v5.0 | 1/1 | Complete    | 2026-03-27 |
 | 19. Temporal Versioning + Dedup Resolution | v5.0 | 3/3 | Complete    | 2026-03-27 |
-| 20. Relationship Strength Scoring | v5.0 | 1/1 | Complete   | 2026-03-27 |
-| 21. Memory Importance Decay | v5.0 | 0/2 | Not started | - |
+| 20. Relationship Strength Scoring | v5.0 | 1/1 | Complete    | 2026-03-27 |
+| 21. Memory Importance Decay | v5.0 | 1/2 | In Progress|  |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |

@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Phase complete — ready for verification
-stopped_at: Completed 20-01-PLAN.md — relationship strength scoring
-last_updated: "2026-03-27T22:49:36.100Z"
+status: Ready to execute
+stopped_at: Completed 21-01-PLAN.md — memory importance decay pure function
+last_updated: "2026-03-27T22:57:00.474Z"
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 20 — relationship-strength-scoring
+**Current focus:** Phase 21 — memory-importance-decay
 
 ## Current Position
 
-Phase: 20 (relationship-strength-scoring) — EXECUTING
-Plan: 1 of 1
+Phase: 21 (memory-importance-decay) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -46,6 +46,7 @@ Plan: 1 of 1
 | Phase 19 P02 | 4 | 1 tasks | 1 files |
 | Phase 19 P03 | 7 | 2 tasks | 3 files |
 | Phase 20-relationship-strength-scoring P01 | 8 | 2 tasks | 4 files |
+| Phase 21-memory-importance-decay P01 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 19-03]: as_of queryEntities uses inline db.prepare() (STMT-02 exception) — runtime SQL construction required
 - [Phase 20]: ON CONFLICT targets (from_id, to_id, type) matching migration 001_baseline UNIQUE constraint — no new constraint needed for strength upsert
 - [Phase 20]: strengthWidth replaces confidence-based formula — edge visual weight reflects reinforcement frequency, not semantic confidence
+- [Phase 21]: computeEffectiveConfidence is pure (no DB handle) — DECAY-02 design confirmed
+- [Phase 21]: null lastAccessedAt defaults to 30 days — conservative decay for never-accessed observations
 
 ### Pending Todos
 
@@ -87,6 +90,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T22:49:36.096Z
-Stopped at: Completed 20-01-PLAN.md — relationship strength scoring
+Last session: 2026-03-27T22:57:00.469Z
+Stopped at: Completed 21-01-PLAN.md — memory importance decay pure function
 Resume file: None
