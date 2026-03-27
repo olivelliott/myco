@@ -339,7 +339,7 @@ export function queryEntities(
 ): RecallResult {
   const { entity_name, entity_type, relation_type, project } = params;
 
-  const conditions: string[] = [];
+  const conditions: string[] = ['e.merged_into IS NULL'];
   const queryParams: unknown[] = [];
 
   if (entity_name) {
@@ -864,22 +864,24 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
 
         const observation = action === 'edit' ? edited_content! : meta.fact.observation;
 
-        // Handle merge_candidate items: reassign observations from secondary entity to primary
+        // Handle merge_candidate items: soft-delete secondary entities, re-point relationships to primary
         // (action is 'approve' or 'edit' at this point — 'reject' returned early above)
         if (item.item_type === 'proposed_fact' && meta.merge_candidate_ids && meta.merge_candidate_ids.length > 0) {
           // The fact's entity is the primary; merge candidates are secondaries
           const primaryEntity = stmts.selectEntityByNameType.get(meta.fact.entity_name, meta.fact.entity_type) as { id: string } | undefined;
 
           if (primaryEntity) {
-            for (const secondaryId of meta.merge_candidate_ids) {
-              // Reassign observations
-              stmts.updateObservationEntityId.run(primaryEntity.id, secondaryId);
-              // Reassign relationships
-              stmts.updateRelationshipFromId.run(primaryEntity.id, secondaryId);
-              stmts.updateRelationshipToId.run(primaryEntity.id, secondaryId);
-              // Delete secondary entity
-              stmts.deleteEntityById.run(secondaryId);
-            }
+            db.transaction(() => {
+              for (const secondaryId of meta.merge_candidate_ids) {
+                // Re-point relationships to primary entity (graph navigation needs this)
+                stmts.updateRelationshipFromId.run(primaryEntity.id, secondaryId);
+                stmts.updateRelationshipToId.run(primaryEntity.id, secondaryId);
+                // Soft-delete: mark as merged, DO NOT reassign observations, DO NOT delete entity
+                // Observations stay on secondaryId — they remain queryable for history
+                db.prepare(`UPDATE entities SET merged_into = ? WHERE id = ?`)
+                  .run(primaryEntity.id, secondaryId);
+              }
+            })();
           }
         }
 
