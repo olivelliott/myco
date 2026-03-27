@@ -10,7 +10,7 @@ export function QuickApprove() {
     return (
       <div className="space-y-2">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="animate-pulse bg-slate-800 h-10 rounded" />
+          <div key={i} className="animate-pulse h-10 rounded" style={{ backgroundColor: 'var(--bg-elevated)' }} />
         ))}
       </div>
     )
@@ -21,8 +21,8 @@ export function QuickApprove() {
   if (items.length === 0) {
     return (
       <div className="text-center py-8">
-        <h3 className="text-lg font-semibold text-slate-100">All caught up</h3>
-        <p className="text-sm text-slate-500 mt-1">
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>All caught up</h3>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
           No pending items. The next consolidation run will populate this queue.
         </p>
       </div>
@@ -37,19 +37,20 @@ export function QuickApprove() {
         return (
           <div
             key={item.id}
-            className="flex items-center gap-3 p-3 rounded-lg bg-slate-800 border border-slate-700"
+            className="flex items-center gap-3 p-3 rounded-lg"
+            style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-100 truncate">
+              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
                 {entityName}
               </p>
-              <p className="text-xs text-slate-400 truncate">{observation}</p>
+              <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{observation}</p>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-emerald-500 hover:text-emerald-400 hover:bg-slate-700"
+                className="h-8 w-8 text-emerald-500 hover:text-emerald-400"
                 aria-label={`Approve observation for ${entityName}`}
                 onClick={() => resolve({ id: item.id, status: 'approved' })}
               >
@@ -58,7 +59,7 @@ export function QuickApprove() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-slate-700"
+                className="h-8 w-8 text-red-500 hover:text-red-400"
                 aria-label={`Reject observation for ${entityName}`}
                 onClick={() => resolve({ id: item.id, status: 'rejected' })}
               >

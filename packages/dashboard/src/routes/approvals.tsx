@@ -22,8 +22,8 @@ function ApprovalsPage() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-lg font-semibold text-slate-100">Cannot reach API server</h2>
-        <p className="text-sm text-slate-500 mt-2">
+        <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Cannot reach API server</h2>
+        <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
           Start the api-server with <code className="font-mono">npm run api</code> and refresh.
         </p>
       </div>
@@ -35,8 +35,8 @@ function ApprovalsPage() {
   if (!isLoading && items.length === 0) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-lg font-semibold text-slate-100">All caught up</h2>
-        <p className="text-sm text-slate-500 mt-2">
+        <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>All caught up</h2>
+        <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
           No pending items. The next consolidation run will populate this queue.
         </p>
       </div>
@@ -45,11 +45,11 @@ function ApprovalsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-semibold text-slate-100">Approval Queue</h1>
+      <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Approval Queue</h1>
       <div className="space-y-3">
         {isLoading &&
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-32 bg-slate-800 rounded-lg animate-pulse" />
+            <div key={i} className="h-32 rounded-lg animate-pulse" style={{ backgroundColor: 'var(--bg-elevated)' }} />
           ))}
         {items.map((item) => {
           const isMerge =

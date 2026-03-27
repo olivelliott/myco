@@ -18,8 +18,8 @@ export function ActivityFeed({ episodes }: ActivityFeedProps) {
   if (episodes.length === 0) {
     return (
       <div className="text-center py-8">
-        <h3 className="text-lg font-semibold text-slate-100">No activity yet</h3>
-        <p className="text-sm text-slate-500 mt-1">
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>No activity yet</h3>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
           Agent sessions will appear here once episodes are logged.
         </p>
       </div>
@@ -39,9 +39,9 @@ export function ActivityFeed({ episodes }: ActivityFeedProps) {
       {Object.entries(groups).map(([date, items]) => (
         <div key={date}>
           <div className="flex items-center gap-3 mb-2">
-            <Separator className="flex-1 bg-slate-800" />
-            <span className="text-xs font-normal text-slate-500 flex-shrink-0">{date}</span>
-            <Separator className="flex-1 bg-slate-800" />
+            <Separator className="flex-1 bg-[var(--bg-elevated)]" />
+            <span className="text-xs font-normal flex-shrink-0" style={{ color: 'var(--text-muted)' }}>{date}</span>
+            <Separator className="flex-1 bg-[var(--bg-elevated)]" />
           </div>
           <div className="space-y-2">
             {items.map((ep) => (
@@ -50,13 +50,14 @@ export function ActivityFeed({ episodes }: ActivityFeedProps) {
                 className="flex items-center gap-3 py-1.5 text-sm"
               >
                 <Badge
-                  className="text-xs bg-slate-700 border-slate-600 text-slate-300 font-normal flex-shrink-0"
+                  className="text-xs font-normal flex-shrink-0"
                   variant="outline"
+                  style={{ backgroundColor: 'var(--border-glow)', borderColor: 'var(--border-glow)', color: 'var(--text-secondary)' }}
                 >
                   {ep.event_type}
                 </Badge>
-                <span className="text-slate-400 flex-1 truncate">{ep.agent_id}</span>
-                <span className="text-xs text-slate-500 flex-shrink-0">
+                <span className="flex-1 truncate" style={{ color: 'var(--text-secondary)' }}>{ep.agent_id}</span>
+                <span className="text-xs flex-shrink-0" style={{ color: 'var(--text-muted)' }}>
                   {formatDistanceToNow(new Date(ep.created_at), { addSuffix: true })}
                 </span>
               </div>
