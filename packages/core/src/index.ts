@@ -1,5 +1,7 @@
 export { openDatabase } from './db.js';
 export { applySchema } from './schema.js';
+export { runMigrations } from './migrations.js';
+export type { Migration } from './migrations.js';
 export { generateSessionId, buildProvenance } from './provenance.js';
 export { loadConfig, getConfig } from './config.js';
 export type { MycoConfig } from './config.js';
