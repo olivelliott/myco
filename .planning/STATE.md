@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Dashboard & Graph Experience
 status: Ready to execute
-stopped_at: Completed 14-01-PLAN.md
-last_updated: "2026-03-27T18:58:12.636Z"
+stopped_at: Completed 14-03-PLAN.md
+last_updated: "2026-03-27T19:04:37.121Z"
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 14 (graph-core-features) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -43,6 +43,7 @@ Plan: 2 of 3
 *Updated after each plan completion*
 | Phase 13 P01 | 12 | 2 tasks | 12 files |
 | Phase 14 P01 | 352 | 2 tasks | 5 files |
+| Phase 14 P03 | 4 minutes | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,8 @@ Recent decisions affecting current work:
 - [Phase 14]: computeGraphDataKey memoizes graphData by sorted node/link ID sets — only structural changes reheat simulation (Pitfall 1 fix)
 - [Phase 14]: GraphModeState discriminated union replaces pathMode boolean — single source of truth for explore/path/neighborhood/search modes
 - [Phase 14]: cooldownTicks(0) in handleEngineStop permanently freezes simulation after initial layout — prevents hover drift (GRPH-01)
+- [Phase 14]: Double-click detected via lastClickRef timestamp (400ms) in ForceGraph2D custom canvas model
+- [Phase 14]: activeNodes/activeLinks derived in GraphView from neighborhoodData prop — filtering co-located with rendering
 
 ### Pending Todos
 
@@ -81,6 +84,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-27T18:58:12.632Z
-Stopped at: Completed 14-01-PLAN.md
+Last session: 2026-03-27T19:04:37.113Z
+Stopped at: Completed 14-03-PLAN.md
 Resume file: None
