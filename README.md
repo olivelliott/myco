@@ -94,7 +94,7 @@ Add the MCP server to your **global** Claude Code settings so every project has 
 ```json
 {
   "mcpServers": {
-    "brain": {
+    "myco": {
       "command": "node",
       "args": ["path/to/myco/packages/mcp-server/dist/index.js"]
     }
@@ -104,25 +104,25 @@ Add the MCP server to your **global** Claude Code settings so every project has 
 
 **Option B — Use `claude mcp add`:**
 ```bash
-claude mcp add brain -s user -- node path/to/myco/packages/mcp-server/dist/index.js
+claude mcp add myco -s user -- node path/to/myco/packages/mcp-server/dist/index.js
 ```
 
-Restart Claude Code after adding. You will see `brain` in your MCP server list.
+Restart Claude Code after adding. You will see `myco` in your MCP server list.
 
 ### Try It
 
 Start a Claude Code session in any project and run:
 
 ```
-Use brain remember to store: "Project prefers minimal UI and dark themes"
+Use myco remember to store: "Project prefers minimal UI and dark themes"
 ```
 
 ```
-Use brain recall to search for "UI preferences"
+Use myco recall to search for "UI preferences"
 ```
 
 ```
-Use brain query to list all entities of type "preference"
+Use myco query to list all entities of type "preference"
 ```
 
 ### Dashboard (Optional)
@@ -150,6 +150,7 @@ cd packages/dashboard && npm run dev
 | `consolidate` | Trigger the consolidation pipeline (extracts facts from episodes) | none |
 | `list_pending_approvals` | List items awaiting human review | `limit` |
 | `resolve_approval` | Approve, reject, or edit a queued item | `id`, `action`, `edited_content` |
+| `forget` | Remove an entity, observation, or relationship from the knowledge graph | `entity_name?`, `entity_type?`, `observation_id?`, `relationship_id?` |
 
 ## Project Structure
 

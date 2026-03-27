@@ -45,7 +45,7 @@ Add the MCP server to your **global** Claude Code settings so every project has 
 ```json
 {
   "mcpServers": {
-    "brain": {
+    "myco": {
       "command": "node",
       "args": ["/path/to/myco/packages/mcp-server/dist/index.js"]
     }
@@ -55,10 +55,10 @@ Add the MCP server to your **global** Claude Code settings so every project has 
 
 **Option B — Use `claude mcp add`:**
 ```bash
-claude mcp add brain -s user -- node /path/to/myco/packages/mcp-server/dist/index.js
+claude mcp add myco -s user -- node /path/to/myco/packages/mcp-server/dist/index.js
 ```
 
-After adding, restart Claude Code. You'll see `brain` in your MCP server list.
+After adding, restart Claude Code. You'll see `myco` in your MCP server list.
 
 ### Start the Dashboard (Optional)
 
@@ -109,15 +109,15 @@ Your existing workflows (GSD phases, trade journal, market analysis) continue ex
 Start a Claude Code session in any project and try:
 
 ```
-Use the brain remember tool to store: "I prefer minimal UI, dark themes, and concise responses"
+Use the myco remember tool to store: "I prefer minimal UI, dark themes, and concise responses"
 ```
 
 ```
-Use brain recall to search for "UI preferences"
+Use myco recall to search for "UI preferences"
 ```
 
 ```
-Use brain query to list all entities of type "person"
+Use myco query to list all entities of type "person"
 ```
 
 **What to verify:**
@@ -138,12 +138,12 @@ myco-cli consolidate
 
 Or from a Claude session:
 ```
-Use brain log_episode with event_type "decision" and payload {"context": "swing-trader", "decision": "Use 20-period EMA as primary trend filter", "reason": "backtested across 500 tickers with 62% win rate"}
+Use myco log_episode with event_type "decision" and payload {"context": "swing-trader", "decision": "Use 20-period EMA as primary trend filter", "reason": "backtested across 500 tickers with 62% win rate"}
 ```
 
 Then trigger consolidation:
 ```
-Use brain consolidate tool
+Use myco consolidate tool
 ```
 
 **What to verify:**

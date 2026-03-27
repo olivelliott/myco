@@ -26,16 +26,16 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] Store a basic fact:
   ```
-  Use brain remember with content "TypeScript supports static typing" and entity_name "TypeScript" and entity_type "technology"
+  Use myco remember with content "TypeScript supports static typing" and entity_name "TypeScript" and entity_type "technology"
   ```
 - [ ] Verify it returns a success message with entity ID
 - [ ] Store a fact with relationships:
   ```
-  Use brain remember with content "React uses JSX for templating" entity_name "React" entity_type "technology" with relations to target_name "JSX" target_type "concept" relation_type "uses"
+  Use myco remember with content "React uses JSX for templating" entity_name "React" entity_type "technology" with relations to target_name "JSX" target_type "concept" relation_type "uses"
   ```
 - [ ] Store a fact mentioning an existing entity name to test **auto-relationship discovery**:
   ```
-  Use brain remember with content "Vite works great with React for fast HMR" entity_name "Vite" entity_type "technology"
+  Use myco remember with content "Vite works great with React for fast HMR" entity_name "Vite" entity_type "technology"
   ```
   → Should auto-create a `related_to` relationship from Vite to React (name-mention scanning)
 
@@ -43,27 +43,27 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] Semantic search:
   ```
-  Use brain recall with query "JavaScript frameworks"
+  Use myco recall with query "JavaScript frameworks"
   ```
   → Should return React, TypeScript, or similar. Check `method: "semantic"`
 - [ ] Recall with entity_type filter:
   ```
-  Use brain recall with query "frameworks" and entity_type "technology"
+  Use myco recall with query "frameworks" and entity_type "technology"
   ```
   → Should return only entities of type "technology"
 - [ ] Recall with min_confidence filter:
   ```
-  Use brain recall with query "frameworks" and min_confidence 0.8
+  Use myco recall with query "frameworks" and min_confidence 0.8
   ```
   → Should exclude observations below 0.8 confidence
 - [ ] Recall with project filter:
   ```
-  Use brain recall with query "preferences" and project "myco"
+  Use myco recall with query "preferences" and project "myco"
   ```
   → Should return only entities scoped to "myco" project
 - [ ] Kill Ollama (`pkill ollama`) and try recall again:
   ```
-  Use brain recall with query "TypeScript"
+  Use myco recall with query "TypeScript"
   ```
   → Should still work via FTS5 fallback. Check `method: "fts"`
 - [ ] Restart Ollama: `ollama serve`
@@ -72,17 +72,17 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] Query by name:
   ```
-  Use brain query with entity_name "React"
+  Use myco query with entity_name "React"
   ```
   → Should return entity with observations and relationship counts
 - [ ] Query by type:
   ```
-  Use brain query with entity_type "technology"
+  Use myco query with entity_type "technology"
   ```
   → Should return all technology entities
 - [ ] Query by relationship:
   ```
-  Use brain query with relation_type "uses"
+  Use myco query with relation_type "uses"
   ```
   → Should return entities that have "uses" relationships
 
@@ -90,7 +90,7 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] Log a test episode:
   ```
-  Use brain log_episode with event_type "test_event" and payload {"context": "QA testing", "result": "all good"}
+  Use myco log_episode with event_type "test_event" and payload {"context": "QA testing", "result": "all good"}
   ```
   → Should return episode ID and session ID
 
@@ -102,7 +102,7 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] Trigger consolidation:
   ```
-  Use brain consolidate
+  Use myco consolidate
   ```
   → Should return summary: `totalProcessed`, `totalExtracted`, `totalAutoApproved`, `totalQueued`, `errors`
 - [ ] If you logged episodes in Tier 1, verify `totalProcessed > 0`
@@ -113,23 +113,42 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] List pending approvals:
   ```
-  Use brain list_pending_approvals
+  Use myco list_pending_approvals
   ```
   → Should show queued items with reasons (contradiction, low_confidence, merge_candidate)
 - [ ] Approve an item:
   ```
-  Use brain resolve_approval with id "<id-from-above>" action "approve"
+  Use myco resolve_approval with id "<id-from-above>" action "approve"
   ```
   → Should write fact to knowledge graph
 - [ ] Reject an item:
   ```
-  Use brain resolve_approval with id "<id>" action "reject"
+  Use myco resolve_approval with id "<id>" action "reject"
   ```
   → Should mark as rejected, fact NOT written
 - [ ] Edit and approve:
   ```
-  Use brain resolve_approval with id "<id>" action "edit" edited_content "corrected fact text"
+  Use myco resolve_approval with id "<id>" action "edit" edited_content "corrected fact text"
   ```
+
+### Forget (Deletion)
+
+- [ ] Forget entity by name:
+  ```
+  Use myco forget with entity_name "Vite" entity_type "technology"
+  ```
+  → Should delete entity + all its observations and relationships
+- [ ] Forget specific observation by ID:
+  ```
+  Use myco forget with observation_id "<id-from-query>"
+  ```
+  → Should delete only that observation, entity remains
+- [ ] Forget specific relationship by ID:
+  ```
+  Use myco forget with relationship_id "<id-from-query>"
+  ```
+  → Should delete only that relationship
+- [ ] Forget nonexistent entity → should return NOT_FOUND error, not crash
 
 ### CLI
 
@@ -145,15 +164,15 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] Create entity "PostgreSQL":
   ```
-  Use brain remember with content "PostgreSQL is a relational database" entity_name "PostgreSQL" entity_type "technology"
+  Use myco remember with content "PostgreSQL is a relational database" entity_name "PostgreSQL" entity_type "technology"
   ```
 - [ ] Create entity that mentions it:
   ```
-  Use brain remember with content "Our API uses PostgreSQL for persistent storage" entity_name "API Service" entity_type "project"
+  Use myco remember with content "Our API uses PostgreSQL for persistent storage" entity_name "API Service" entity_type "project"
   ```
 - [ ] Query relationships:
   ```
-  Use brain query with entity_name "API Service"
+  Use myco query with entity_name "API Service"
   ```
   → Should show `related_to` relationship to PostgreSQL (auto-discovered)
 
@@ -161,11 +180,11 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] Create entity with existing mentions:
   ```
-  Use brain remember with content "Docker containers run our services" entity_name "Infrastructure" entity_type "concept"
+  Use myco remember with content "Docker containers run our services" entity_name "Infrastructure" entity_type "concept"
   ```
   Then later:
   ```
-  Use brain remember with content "A containerization platform" entity_name "Docker" entity_type "technology"
+  Use myco remember with content "A containerization platform" entity_name "Docker" entity_type "technology"
   ```
   → Creating "Docker" should back-link to "Infrastructure" (FTS found "Docker" in its observation)
 
@@ -173,7 +192,7 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] Entities with names < 3 chars should NOT trigger auto-relationships:
   ```
-  Use brain remember with content "Go is fast" entity_name "Go" entity_type "technology"
+  Use myco remember with content "Go is fast" entity_name "Go" entity_type "technology"
   ```
   → "Go" won't be scanned for in other observations (too short, too many false positives)
 
@@ -185,12 +204,12 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] Store a project-scoped entity:
   ```
-  Use brain remember with content "Myco uses SQLite for storage" entity_name "Myco" entity_type "project" project "myco"
+  Use myco remember with content "Myco uses SQLite for storage" entity_name "Myco" entity_type "project" project "myco"
   ```
   → Should succeed with entity ID
 - [ ] Store a global entity (no project):
   ```
-  Use brain remember with content "TypeScript is a typed superset of JavaScript" entity_name "TypeScript" entity_type "technology"
+  Use myco remember with content "TypeScript is a typed superset of JavaScript" entity_name "TypeScript" entity_type "technology"
   ```
   → Should succeed — stored with NULL project (globally visible)
 
@@ -198,12 +217,12 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 - [ ] Recall with project filter:
   ```
-  Use brain recall with query "storage" project "myco"
+  Use myco recall with query "storage" project "myco"
   ```
   → Should return Myco entity (project-scoped) but NOT TypeScript (global, not in "myco")
 - [ ] Recall without project filter:
   ```
-  Use brain recall with query "storage"
+  Use myco recall with query "storage"
   ```
   → Should return BOTH entities (backward compatible — no filter = see everything)
 
