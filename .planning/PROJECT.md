@@ -12,16 +12,20 @@ Open source under Apache 2.0. Everything runs locally — SQLite, Ollama, no clo
 
 Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
 
-## Current Milestone: v4.0 Dashboard & Graph Experience
+## Current Milestone: v5.0 Feature Parity & Differentiation
 
-**Goal:** Transform the Myco dashboard into a polished, bioluminescent analytics experience with a deeply interactive knowledge graph.
+**Goal:** Close competitive gaps and add differentiating features that make Myco the most capable local-first MCP memory server.
 
 **Target features:**
-- Graph overhaul: fix hover physics, timeline scrub playback, cluster visualization, neighborhood explorer, confidence filter, search with auto-zoom, enhanced analytics
-- Bioluminescent deep-sea visual theme across all dashboard pages
-- Home page: knowledge growth chart, richer activity stream, health metrics, interactive graph preview
-- Approvals refresh: guided onboarding, batch actions, confidence visualization, inline graph preview, "Myco" language (not "brain")
-- Competitive research: Chroma, Mem0, similar tools — best practices for knowledge graph UX
+- Import/export: JSON export of entire knowledge graph, import from Mem0/reference server formats
+- Temporal fact versioning: facts track when they changed, query "what was true at time X"
+- Auto-entity extraction: passive knowledge capture from conversations, not just explicit `remember`
+- Auto-dedup / conflict resolution: intelligent ADD/UPDATE/DELETE/NOOP when new memories conflict with existing
+- Incremental consolidation: consolidate on-the-fly as memories are added, nightly cycle for deeper analysis
+- Codebase-to-graph ingestion: `codify` tool that turns project structure/conventions into graph knowledge
+- REST API for non-MCP access: expose memory operations over HTTP for LangGraph, CrewAI, etc.
+- Memory importance decay: unreinforced facts fade over time, keeping the graph fresh
+- Relationship strength scoring: edges weighted by reinforcement frequency and recency
 
 ## Current State
 
@@ -92,6 +96,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - **v1.0** (2026-03-21) — Core MCP server, knowledge graph, consolidation, PWA dashboard
 - **v2.0** (2026-03-22) — Rename to Myco, Apache 2.0 open source, tech debt cleanup
 - **v3.0** (2026-03-26) — Performance & architecture: config, prepared statements, query filters, error handling, namespace isolation
+- **v4.0** (2026-03-27) — Dashboard & graph experience: bioluminescent theme, graph core features, timeline, approvals refresh
 
 ### Out of Scope
 
@@ -105,7 +110,8 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - v1.0 shipped 2026-03-21 with all 15 requirements validated across 5 phases
 - v2.0 shipped 2026-03-22 — rename to Myco, open source packaging, tech debt cleanup
 - v3.0 shipped 2026-03-26 — 20 requirements validated across 4 phases (config, prepared statements, query filters, error handling, namespace isolation)
-- v4.0 started 2026-03-27 — dashboard & graph experience overhaul
+- v4.0 shipped 2026-03-27 — dashboard & graph experience overhaul
+- v5.0 started 2026-03-27 — feature parity & differentiation (driven by competitive analysis vs Mem0, Zep, Cognee, mcp-memory-service)
 - 98 tests passing across 6 test files (core, mcp-server, gsd-hook, statements, embed-client, recall-filters)
 - Design direction: bioluminescent deep-sea aesthetic — dark void, rich glows, organic depth, mycorrhizal metaphor
 - Vercel AI SDK v4.3.19 used for consolidation (v6 incompatible with ollama-ai-provider)
@@ -164,4 +170,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after v4.0 milestone start*
+*Last updated: 2026-03-27 after v5.0 milestone start*

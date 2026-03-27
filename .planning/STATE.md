@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Dashboard & Graph Experience
-status: Ready to plan
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-03-27T19:34:19.432Z"
+milestone: v5.0
+milestone_name: Feature Parity & Differentiation
+status: Defining requirements
+stopped_at: "Milestone v5.0 started"
+last_updated: "2026-03-27T19:35:00.000Z"
 progress:
-  total_phases: 5
-  completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -19,12 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 14 — graph-core-features
+**Current focus:** Defining requirements for v5.0
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-27 — Milestone v5.0 started
 
 ## Performance Metrics
 
