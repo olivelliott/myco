@@ -34,3 +34,5 @@ Myco runs entirely on your local machine. The primary security concerns are:
 | Version | Supported |
 |---------|-----------|
 | 0.1.x   | Yes       |
+
+Note: Internal milestone tags (v1.0, v2.0, v3.0) track development milestones, not npm releases. The npm package version is 0.1.x.

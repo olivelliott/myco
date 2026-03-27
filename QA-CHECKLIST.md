@@ -12,7 +12,7 @@ Complete testing guide — work through each tier in order.
 - [ ] **Node.js 22.x**: `node --version` → should be 22.x
 - [ ] **Dependencies installed**: `npm install --legacy-peer-deps`
 - [ ] **Build passes**: `npm run build` (ignore TS2688 type-def warnings — pre-existing)
-- [ ] **Tests pass**: `npm test` → 72 tests, 4 files, all green
+- [ ] **Tests pass**: `npm test` → 90 tests, 6 files, all green
 
 ---
 
@@ -46,6 +46,21 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
   Use brain recall with query "JavaScript frameworks"
   ```
   → Should return React, TypeScript, or similar. Check `method: "semantic"`
+- [ ] Recall with entity_type filter:
+  ```
+  Use brain recall with query "frameworks" and entity_type "technology"
+  ```
+  → Should return only entities of type "technology"
+- [ ] Recall with min_confidence filter:
+  ```
+  Use brain recall with query "frameworks" and min_confidence 0.8
+  ```
+  → Should exclude observations below 0.8 confidence
+- [ ] Recall with project filter:
+  ```
+  Use brain recall with query "preferences" and project "myco"
+  ```
+  → Should return only entities scoped to "myco" project
 - [ ] Kill Ollama (`pkill ollama`) and try recall again:
   ```
   Use brain recall with query "TypeScript"
@@ -164,7 +179,66 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 ---
 
-## Tier 4: Dashboard + API Server
+## Tier 4: Namespace Isolation
+
+### Project-scoped remember
+
+- [ ] Store a project-scoped entity:
+  ```
+  Use brain remember with content "Myco uses SQLite for storage" entity_name "Myco" entity_type "project" project "myco"
+  ```
+  → Should succeed with entity ID
+- [ ] Store a global entity (no project):
+  ```
+  Use brain remember with content "TypeScript is a typed superset of JavaScript" entity_name "TypeScript" entity_type "technology"
+  ```
+  → Should succeed — stored with NULL project (globally visible)
+
+### Project-scoped recall
+
+- [ ] Recall with project filter:
+  ```
+  Use brain recall with query "storage" project "myco"
+  ```
+  → Should return Myco entity (project-scoped) but NOT TypeScript (global, not in "myco")
+- [ ] Recall without project filter:
+  ```
+  Use brain recall with query "storage"
+  ```
+  → Should return BOTH entities (backward compatible — no filter = see everything)
+
+### API project filtering
+
+- [ ] `GET http://localhost:3001/api/entities?project=myco` → only myco-scoped entities
+- [ ] `GET http://localhost:3001/api/entities` → all entities (no filter)
+- [ ] `GET http://localhost:3001/api/graph?project=myco` → graph scoped to myco entities
+- [ ] `GET http://localhost:3001/api/dashboard?project=myco` → counts scoped to myco
+
+---
+
+## Tier 5: Error Handling
+
+### API validation
+
+- [ ] Send invalid query params:
+  ```
+  GET http://localhost:3001/api/entities?limit=abc
+  ```
+  → Should return `400` with `{ error: { message: "...", code: "INVALID_INPUT", status: 400 } }`
+- [ ] Send invalid approval body:
+  ```
+  PATCH http://localhost:3001/api/approvals/fake-id with body { "status": "invalid" }
+  ```
+  → Should return structured error (400 or 422)
+
+### MCP tool errors
+
+- [ ] Call recall with no query parameter → should return structured `{ error, code }` JSON, NOT an unhandled exception
+- [ ] If a tool throws internally → error is caught, `code: "INTERNAL_ERROR"` returned, stack trace goes to stderr only
+
+---
+
+## Tier 6: Dashboard + API Server
 
 ### Start services
 
@@ -194,7 +268,7 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 ---
 
-## Tier 5: Knowledge Graph Visualization
+## Tier 7: Knowledge Graph Visualization
 
 ### Basic rendering
 
@@ -274,7 +348,7 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 ---
 
-## Tier 6: Approval Queue Page
+## Tier 8: Approval Queue Page
 
 - [ ] Navigate to `/approvals`
 - [ ] Cards use mycelium theme (dark surface, glow accents)
@@ -292,7 +366,7 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 ---
 
-## Tier 7: Graceful Degradation
+## Tier 9: Graceful Degradation
 
 - [ ] **Ollama down during remember()**: observation stored, `needs_embedding=1` flagged, no error
 - [ ] **Ollama down during recall()**: falls back to FTS5 search, `method: "fts"` in response
@@ -303,17 +377,19 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 ---
 
-## Tier 8: Environment Variables
+## Tier 10: Environment Variables
 
-Test each override individually:
+Test each override individually (copy `.env.example` to `.env` and edit):
 
 - [ ] `MYCO_DB_PATH=/tmp/test-brain.db npm run dev` → uses custom DB path
 - [ ] `OLLAMA_HOST=http://localhost:11435 npm run dev` → connects to different Ollama port
 - [ ] `BRAIN_CONSOLIDATION_MODEL=mistral npm run dev` → uses different LLM for consolidation
+- [ ] `MYCO_API_PORT=4000 npm run api` → API server starts on port 4000
+- [ ] Verify startup logs print resolved config to stderr
 
 ---
 
-## Tier 9: PWA & Mobile
+## Tier 11: PWA & Mobile
 
 - [ ] Open `http://localhost:5173` on phone (same network) or use Chrome DevTools mobile view
 - [ ] Bottom tab bar appears (Dashboard / Approvals / Graph)

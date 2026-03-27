@@ -7,9 +7,9 @@ A **persistent memory layer** that runs alongside any Claude Code session. Every
 It does NOT replace your internal workflows (GSD, swing-trader scripts, etc.). It runs underneath them as infrastructure. Think of it like giving every Claude session a shared long-term memory.
 
 **What agents can do with it:**
-- `remember` facts about your projects, preferences, decisions
-- `recall` knowledge using natural language queries (semantic search)
-- `query` the knowledge graph by entity name/type
+- `remember` facts about your projects, preferences, decisions — optionally scoped to a project namespace
+- `recall` knowledge using natural language queries (semantic search) — filter by entity type, confidence, or project
+- `query` the knowledge graph by entity name/type — with optional project scoping
 - `log_episode` to capture session events for later consolidation
 - Review a visual knowledge graph and approve/reject AI-extracted insights via a dashboard
 
@@ -251,8 +251,15 @@ This only fires inside the `myco` project (project-scoped hook).
 
 ## Environment Variables (All Optional)
 
+All variables can be set in a `.env` file at the project root (loaded automatically via dotenv at startup). See `.env.example` for the full list.
+
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `MYCO_DB_PATH` | `~/.local/share/myco/brain.db` | Override database location (BRAIN_DB_PATH also accepted as fallback) |
 | `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama server URL |
+| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Ollama embedding model |
 | `BRAIN_CONSOLIDATION_MODEL` | `llama3.2` | LLM model for fact extraction |
+| `MYCO_API_PORT` | `3001` | API server port |
+| `MYCO_LOG_LEVEL` | `info` | Log level (`info` or `debug`) |
+
+Resolved configuration is logged to stderr at startup so you can verify what values the server is using.

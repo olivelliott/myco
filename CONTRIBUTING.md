@@ -44,9 +44,9 @@ cd packages/dashboard && npm run dev
 
 ```
 packages/
-├── core/          — Shared DB, schema, types, provenance
-├── mcp-server/    — MCP tools, consolidation pipeline, cron, CLI
-├── api-server/    — Hono REST API (port 3001)
+├── core/          — Shared DB, schema, types, prepared statement factory, provenance
+├── mcp-server/    — MCP tools, query filters, consolidation pipeline, cron, CLI
+├── api-server/    — Hono REST API (port 3001), Zod validation, structured errors
 └── dashboard/     — React PWA (approval queue, graph explorer)
 ```
 

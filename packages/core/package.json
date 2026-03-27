@@ -1,7 +1,7 @@
 {
   "name": "@myco/core",
   "version": "0.1.0",
-  "description": "Shared database, schema, types, and provenance layer for Myco",
+  "description": "Shared database, schema, types, prepared statements, and provenance layer for Myco",
   "license": "Apache-2.0",
   "author": "Olive",
   "keywords": [
