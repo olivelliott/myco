@@ -79,4 +79,31 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 
 | Requirement | Phase | Plan | Status |
 |-------------|-------|------|--------|
-| *Populated by roadmapper* | | | |
+| INFRA-01 | Phase 18 | TBD | Pending |
+| INFRA-02 | Phase 18 | TBD | Pending |
+| TEMP-01 | Phase 19 | TBD | Pending |
+| TEMP-02 | Phase 19 | TBD | Pending |
+| TEMP-03 | Phase 19 | TBD | Pending |
+| DEDUP-01 | Phase 19 | TBD | Pending |
+| DEDUP-02 | Phase 19 | TBD | Pending |
+| DEDUP-03 | Phase 19 | TBD | Pending |
+| DEDUP-04 | Phase 19 | TBD | Pending |
+| STRENGTH-01 | Phase 20 | TBD | Pending |
+| STRENGTH-02 | Phase 20 | TBD | Pending |
+| STRENGTH-03 | Phase 20 | TBD | Pending |
+| DECAY-01 | Phase 21 | TBD | Pending |
+| DECAY-02 | Phase 21 | TBD | Pending |
+| DECAY-03 | Phase 21 | TBD | Pending |
+| API-01 | Phase 22 | TBD | Pending |
+| API-02 | Phase 22 | TBD | Pending |
+| API-03 | Phase 22 | TBD | Pending |
+| IO-01 | Phase 22 | TBD | Pending |
+| IO-02 | Phase 22 | TBD | Pending |
+| IO-03 | Phase 22 | TBD | Pending |
+| IO-04 | Phase 22 | TBD | Pending |
+| EXTRACT-01 | Phase 23 | TBD | Pending |
+| EXTRACT-02 | Phase 23 | TBD | Pending |
+| EXTRACT-03 | Phase 23 | TBD | Pending |
+| CONSOL-01 | Phase 23 | TBD | Pending |
+| CONSOL-02 | Phase 23 | TBD | Pending |
+| CONSOL-03 | Phase 23 | TBD | Pending |

@@ -5,7 +5,8 @@
 - ✅ **v1.0 AI Workbots Brain** — Phases 1-5 (shipped 2026-03-21)
 - ✅ **v2.0 Open Source Release** — Phases 6-8 (shipped 2026-03-22)
 - ✅ **v3.0 Performance & Architecture Optimization** — Phases 9-12 (shipped 2026-03-26)
-- 🚧 **v4.0 Dashboard & Graph Experience** — Phases 13-17 (in progress)
+- ✅ **v4.0 Dashboard & Graph Experience** — Phases 13-17 (shipped 2026-03-27)
+- 🚧 **v5.0 Feature Parity & Differentiation** — Phases 18-24 (in progress)
 
 ## Phases
 
@@ -45,94 +46,99 @@ Full details: `.planning/milestones/v3.0-ROADMAP.md`
 
 </details>
 
-### 🚧 v4.0 Dashboard & Graph Experience (In Progress)
+<details>
+<summary>✅ v4.0 Dashboard & Graph Experience (Phases 13-17) — SHIPPED 2026-03-27</summary>
 
-**Milestone Goal:** Transform the Myco dashboard into a polished, bioluminescent analytics experience with a deeply interactive knowledge graph, enriched home page, and a streamlined approvals flow.
+- [x] Phase 13: Theme + Language Foundation (1/1 plans) — completed 2026-03-27
+- [x] Phase 14: Graph Core Features (3/3 plans) — completed 2026-03-27
+- [x] Phase 15: Timeline Animation (1/1 plans) — completed 2026-03-27
+- [x] Phase 16: Home Page Enhancements (2/2 plans) — completed 2026-03-27
+- [x] Phase 17: Approvals Overhaul (2/2 plans) — completed 2026-03-27
 
-- [x] **Phase 13: Theme + Language Foundation** - Bioluminescent CSS variables and "Myco" language pass across all dashboard pages (completed 2026-03-27)
-- [x] **Phase 14: Graph Core Features** - Stable interaction mode system, confidence filter, cluster visualization, neighborhood explorer, search zoom, LOD rendering (completed 2026-03-27)
-- [x] **Phase 15: Timeline Animation** - requestAnimationFrame-driven timeline playback with animated node entry (completed 2026-03-27)
-- [ ] **Phase 16: Home Page Enhancements** - Knowledge growth chart, rich activity stream, health metrics, interactive graph preview
-- [ ] **Phase 17: Approvals Overhaul** - Guided onboarding, batch actions, confidence visualization, inline mini-graph preview
+Full details: `.planning/milestones/v4.0-ROADMAP.md`
+
+</details>
+
+### 🚧 v5.0 Feature Parity & Differentiation (In Progress)
+
+**Milestone Goal:** Close competitive gaps against Mem0, Zep, and mcp-memory-service and add differentiating features — temporal fact versioning, conflict-aware dedup, memory decay, relationship strength, REST API with OpenAPI docs, import/export, and incremental consolidation with passive auto-extraction.
+
+- [ ] **Phase 18: Schema Foundation** - Versioned migration framework and all v5.0 schema columns added safely before any feature phase begins
+- [ ] **Phase 19: Temporal Versioning + Dedup Resolution** - Observations track valid_from/valid_until; new memories route through ADD/UPDATE/NOOP classification before write
+- [ ] **Phase 20: Relationship Strength Scoring** - Relationship edges gain strength scores reinforced on every re-assertion; edge thickness reflects strength in the dashboard
+- [ ] **Phase 21: Memory Importance Decay** - Unreinforced facts fade via lazy decay at read time; recall ranking factors in effective confidence
+- [ ] **Phase 22: Core Refactor + REST Write Routes + Import/Export** - Business logic moves to packages/core; Hono server gains write endpoints, OpenAPI docs, API key auth, and export/import tools
+- [ ] **Phase 23: Auto-Extraction + Incremental Consolidation** - Episodes trigger passive entity extraction and micro-consolidation on log_episode without blocking MCP responses
 
 ## Phase Details
 
-### Phase 13: Theme + Language Foundation
-**Goal**: All dashboard pages present the bioluminescent deep-sea aesthetic with consistent visual language and no legacy "brain" terminology
-**Depends on**: Phase 12 (v3.0 complete)
-**Requirements**: THME-01, THME-02
+### Phase 18: Schema Foundation
+**Goal**: The database migration system runs each migration exactly once and all v5.0 schema columns are present with safe defaults before any feature code touches them
+**Depends on**: Phase 17 (v4.0 complete)
+**Requirements**: INFRA-01, INFRA-02
 **Success Criteria** (what must be TRUE):
-  1. Every dashboard page (home, graph, approvals, activity) uses the bioluminescent color palette with no residual slate-* hardcoded classes
-  2. CSS variables for the theme are defined in one place and applied consistently — changing a variable updates all pages
-  3. No visible "brain" string remains in the dashboard UI — all copy reads "Myco" (headings, labels, empty states, tooltips)
-  4. Branded empty states exist for the graph view and approvals page, matching the deep-sea aesthetic
-**Plans:** 1/1 plans complete
-Plans:
-- [x] 13-01-PLAN.md — Migrate all slate-* hardcoded classes to CSS variables and verify no "brain" terminology remains
+  1. The server starts on a fresh database and on an existing v3.0/v4.0 database without errors, data loss, or duplicate ALTER TABLE execution
+  2. A `schema_migrations` table exists in the database and contains one row per migration that has been applied, with a timestamp
+  3. All v5.0 columns (`valid_from`, `valid_until`, `last_accessed_at`, `decay_exempt`, `strength`, `reinforcement_count`, `merged_into`) exist on their respective tables after startup
+  4. TypeScript interfaces in `packages/core/src/types.ts` reflect the new columns — no `any` casts required to access them
+**Plans**: TBD
+
+### Phase 19: Temporal Versioning + Dedup Resolution
+**Goal**: Facts carry version history so the graph is never silently overwritten, and every incoming memory is classified as a new addition, an update to an existing fact, or a duplicate before it is committed
+**Depends on**: Phase 18
+**Requirements**: TEMP-01, TEMP-02, TEMP-03, DEDUP-01, DEDUP-02, DEDUP-03, DEDUP-04
+**Success Criteria** (what must be TRUE):
+  1. After calling `remember` with an updated fact about an entity, the old observation has a non-null `valid_until` timestamp and the new observation has `valid_from` set to the current time
+  2. Calling the recall tool with an `as_of` timestamp returns only observations that were valid at that point in time, not the current versions
+  3. When the same observation is submitted twice, the second call is classified as NOOP and does not create a duplicate row in the observations table
+  4. When a conflicting fact is submitted (different value for same attribute), the old observation is soft-retired and the new one is inserted in a single atomic operation
+  5. Entity merges use a `merged_into` column soft-delete — after a merge, the source entity still exists in the database with its `merged_into` field set, and prior observations remain queryable
+**Plans**: TBD
+
+### Phase 20: Relationship Strength Scoring
+**Goal**: Every relationship in the knowledge graph carries a strength score that grows each time it is reinforced by a `remember` call, and the dashboard graph visualizes edge weight via line thickness
+**Depends on**: Phase 18
+**Requirements**: STRENGTH-01, STRENGTH-02, STRENGTH-03
+**Success Criteria** (what must be TRUE):
+  1. Calling `remember` with the same entity relationship multiple times increases the relationship's `strength` score and `reinforcement_count` — a single `remember` does not reset the count to 1
+  2. The upsert is idempotent — calling `remember` for a relationship that already exists updates strength rather than creating a duplicate relationship row
+  3. The dashboard knowledge graph renders edges with varying line thickness proportional to relationship strength — a newly created relationship is visually thinner than a reinforced one
+**Plans**: TBD
 **UI hint**: yes
 
-### Phase 14: Graph Core Features
-**Goal**: The knowledge graph is a fully interactive, stable visualization with mode-driven interactions, cluster awareness, confidence filtering, entity search, and performant rendering at scale
-**Depends on**: Phase 13
-**Requirements**: GRPH-01, GRPH-02, GRPH-03, GRPH-04, GRPH-05, GRPH-07, GRPH-08
+### Phase 21: Memory Importance Decay
+**Goal**: Recall results account for how recently and how often a fact has been accessed, so stale unreinforced memories rank lower than actively reinforced ones — without any write overhead in the hot path
+**Depends on**: Phase 18
+**Requirements**: DECAY-01, DECAY-02, DECAY-03
 **Success Criteria** (what must be TRUE):
-  1. Hovering over any node does not cause it or neighboring nodes to drift — the simulation stays visually calm during interaction
-  2. A visible mode indicator shows the current interaction mode (explore / neighborhood / search); switching modes is a single click
-  3. User can click a node to enter neighborhood mode, seeing only that node's 1-2 hop subgraph isolated from the rest of the graph
-  4. Community clusters are auto-detected and rendered with labeled convex hull boundaries; clusters update when the graph data changes
-  5. Dragging the confidence threshold slider immediately filters nodes below the chosen value out of the visible graph
-  6. Typing in the search box highlights matching nodes, moves the camera to center on the best match, and dims non-matching nodes
-  7. Graphs with 500+ nodes skip per-node gradient and label rendering when zoomed out, keeping interaction smooth
-**Plans:** 3/3 plans complete
-Plans:
-- [x] 14-01-PLAN.md — Foundation: packages, GraphInteractionMode types, graphData stability fix, sim freeze, LOD rendering, mode toolbar
-- [x] 14-02-PLAN.md — Cluster visualization with Louvain detection and convex hull rendering, confidence threshold slider
-- [x] 14-03-PLAN.md — Neighborhood explorer (1-2 hop subgraph isolation) and search auto-zoom with pulse animation
-**UI hint**: yes
+  1. Two observations with the same base confidence score rank differently in recall results if one was accessed recently and the other has not been accessed in 30+ days
+  2. The `computeEffectiveConfidence` function takes `last_accessed_at` and `reinforcement_count` as inputs and returns a value without reading from or writing to the database — it is a pure computation
+  3. Entities marked as `decay_exempt` (preference, constraint, decision, architecture types) return their base confidence score unchanged regardless of access recency
+**Plans**: TBD
 
-### Phase 15: Timeline Animation
-**Goal**: Users can watch the knowledge graph grow from its earliest entry to the present day via smooth, animated timeline playback
-**Depends on**: Phase 14
-**Requirements**: GRPH-06
+### Phase 22: Core Refactor + REST Write Routes + Import/Export
+**Goal**: Business logic is accessible to both MCP tools and REST clients from a shared `packages/core/memory-ops.ts` module, the REST API exposes full write operations with OpenAPI documentation and optional auth, and users can export or import their entire knowledge graph via MCP tool or HTTP endpoint
+**Depends on**: Phase 19, Phase 20, Phase 21
+**Requirements**: API-01, API-02, API-03, IO-01, IO-02, IO-03, IO-04
 **Success Criteria** (what must be TRUE):
-  1. The timeline slider shows the full date range of entities in the graph and can be scrubbed manually to any point in time
-  2. Pressing play animates the graph growing from the earliest entity to the latest without visible frame drops or physics reheating
-  3. Nodes that newly appear during playback get a brief entry pulse effect; the rest of the graph remains stable
-  4. Stopping or scrubbing while playing immediately freezes the graph at that point in time
-**Plans:** 1/1 plans complete
-Plans:
-- [x] 15-01-PLAN.md — rAF-driven timeline playback with useRef cutoff, entry pulse animation, no graphData reheat
-**UI hint**: yes
+  1. A LangGraph or CrewAI client can call `POST /api/memory/remember`, `POST /api/memory/recall`, and `POST /api/memory/forget` over HTTP and receive the same results as using the MCP tools directly
+  2. Navigating to `/api/docs` (or equivalent) in a browser displays interactive OpenAPI documentation covering all write endpoints
+  3. An agent with a valid `MYCO_API_KEY` configured can authenticate write requests; requests without the key are rejected with 401 when auth is enabled
+  4. Calling the `export_graph` MCP tool or `GET /api/export` produces a JSON file that, when imported with `import_graph` or `POST /api/import`, restores the exact same set of entities, observations, and relationships with no data loss or duplication
+  5. The import tool accepts a Mem0-format JSON or the Anthropic reference server JSONL format and successfully loads its entries into the Myco knowledge graph
+**Plans**: TBD
 
-### Phase 16: Home Page Enhancements
-**Goal**: The home page is a rich analytics command center showing how the knowledge graph has grown over time, current system health, and a live graph preview
-**Depends on**: Phase 13
-**Requirements**: HOME-01, HOME-02, HOME-03, HOME-04
+### Phase 23: Auto-Extraction + Incremental Consolidation
+**Goal**: Every `log_episode` call passively captures entities and relationships from the conversation context via LLM extraction without blocking the response, and high-confidence episodes trigger a micro-consolidation immediately rather than waiting for the nightly 2am cycle
+**Depends on**: Phase 19, Phase 20, Phase 21
+**Requirements**: EXTRACT-01, EXTRACT-02, EXTRACT-03, CONSOL-01, CONSOL-02, CONSOL-03
 **Success Criteria** (what must be TRUE):
-  1. The home page displays a knowledge growth chart with separate trend lines for entities, observations, and relationships over time
-  2. The activity stream shows entity cards with type-specific colors and contextual metadata rather than plain text log entries
-  3. Four health metric indicators are visible: consolidation status, embedding coverage percentage, orphaned node count, and confidence distribution
-  4. The graph preview on the home page is large enough to orient users and responds to click/tap by navigating to the full graph view
-**Plans:** 1/2 plans executed
-Plans:
-- [x] 16-01-PLAN.md — API endpoints for growth time-series, health metrics, and rich activity stream
-- [ ] 16-02-PLAN.md — Frontend: growth chart, health panel, enhanced activity feed, enlarged graph preview
-**UI hint**: yes
-
-### Phase 17: Approvals Overhaul
-**Goal**: The approvals page guides new users through Myco's knowledge flow, supports efficient bulk review, and provides epistemic context (confidence, evidence, graph position) on every item
-**Depends on**: Phase 14
-**Requirements**: APRV-01, APRV-02, APRV-03, APRV-04
-**Success Criteria** (what must be TRUE):
-  1. First-time visitors to the approvals page see a dismissable onboarding banner explaining how Myco extracts knowledge and what approving/rejecting does
-  2. User can select multiple approval items with checkboxes and approve or reject the whole selection in a single action
-  3. Each approval card displays the confidence score as a visual bar with the source episode linked as evidence
-  4. Each approval card shows an inline mini-graph preview of where the entity would connect in the knowledge graph
-**Plans:** 2 plans
-Plans:
-- [ ] 16-01-PLAN.md — API endpoints for growth time-series, health metrics, and rich activity stream
-- [ ] 16-02-PLAN.md — Frontend: growth chart, health panel, enhanced activity feed, enlarged graph preview
-**UI hint**: yes
+  1. After calling `log_episode` with a conversation mentioning entities, new pending approval items appear in the approval queue within seconds — the MCP tool response itself is not delayed
+  2. All auto-extracted entities appear in the approval queue with `source_type: 'auto_extracted'` before any of them become permanent knowledge — none are auto-approved directly into the graph
+  3. Calling `log_episode` 10 times in rapid succession results in exactly one consolidation run, not 10 — the consolidation lock prevents duplicate processing
+  4. After the nightly cron fires, the consolidation log shows relationship inference and contradiction detection steps that do not appear in the incremental micro-consolidation output
+  5. When both an incremental trigger and the nightly cron attempt to consolidate simultaneously, one waits for the lock and runs after — no episodes are processed twice
+**Plans**: TBD
 
 ## Progress
 
@@ -150,8 +156,14 @@ Plans:
 | 10. Prepared Statements | v3.0 | 2/2 | Complete | 2026-03-25 |
 | 11. Query Filters + Error Handling | v3.0 | 2/2 | Complete | 2026-03-25 |
 | 12. Namespace Isolation | v3.0 | 2/2 | Complete | 2026-03-26 |
-| 13. Theme + Language Foundation | v4.0 | 1/1 | Complete    | 2026-03-27 |
-| 14. Graph Core Features | v4.0 | 3/3 | Complete    | 2026-03-27 |
-| 15. Timeline Animation | v4.0 | 1/1 | Complete    | 2026-03-27 |
-| 16. Home Page Enhancements | v4.0 | 1/2 | In Progress|  |
-| 17. Approvals Overhaul | v4.0 | 0/? | Not started | - |
+| 13. Theme + Language Foundation | v4.0 | 1/1 | Complete | 2026-03-27 |
+| 14. Graph Core Features | v4.0 | 3/3 | Complete | 2026-03-27 |
+| 15. Timeline Animation | v4.0 | 1/1 | Complete | 2026-03-27 |
+| 16. Home Page Enhancements | v4.0 | 2/2 | Complete | 2026-03-27 |
+| 17. Approvals Overhaul | v4.0 | 2/2 | Complete | 2026-03-27 |
+| 18. Schema Foundation | v5.0 | 0/? | Not started | - |
+| 19. Temporal Versioning + Dedup Resolution | v5.0 | 0/? | Not started | - |
+| 20. Relationship Strength Scoring | v5.0 | 0/? | Not started | - |
+| 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |
+| 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
+| 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |

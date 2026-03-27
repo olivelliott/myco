@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Dashboard & Graph Experience
-status: Ready to execute
-stopped_at: Completed 16-01-PLAN.md
-last_updated: "2026-03-27T20:11:08.417Z"
+milestone: v5.0
+milestone_name: Feature Parity & Differentiation
+status: Ready to plan
+stopped_at: v5.0 roadmap created — Phase 18 ready to plan
+last_updated: "2026-03-27"
 progress:
-  total_phases: 5
-  completed_phases: 3
-  total_plans: 7
-  completed_plans: 6
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -19,18 +19,18 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 16 — home-page-enhancements
+**Current focus:** Phase 18 — Schema Foundation
 
 ## Current Position
 
-Phase: 16 (home-page-enhancements) — EXECUTING
-Plan: 2 of 2
+Phase: 18 (schema-foundation) — READY TO PLAN
+Plan: 0 of ?
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0 (v4.0)
+- Total plans completed: 0 (v5.0)
 - Average duration: —
 - Total execution time: —
 
@@ -41,12 +41,6 @@ Plan: 2 of 2
 | - | - | - | - |
 
 *Updated after each plan completion*
-| Phase 13 P01 | 12 | 2 tasks | 12 files |
-| Phase 14 P01 | 352 | 2 tasks | 5 files |
-| Phase 14 P03 | 4 minutes | 2 tasks | 5 files |
-| Phase 14-graph-core-features P02 | 18 | 2 tasks | 5 files |
-| Phase 15-timeline-animation P01 | 5 minutes | 2 tasks | 3 files |
-| Phase 16-home-page-enhancements P01 | 8 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -55,45 +49,24 @@ Plan: 2 of 2
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Phase 13]: Theme comes first — unblocks accurate visual QA for all downstream phases
-- [Phase 14]: graphData reference identity fix is Phase 14 task 0 — prerequisite for all canvas features (simulation reheat bug)
-- [Phase 14]: GraphMode union type (`browse | path | neighborhood | search`) must be defined before implementing new modes
-- [Phase 14]: Cluster hull boundaries drawn via canvas `onRenderFramePost` (not DOM overlay) to avoid capturing pointer events
-- [Phase 15]: Timeline playback driven by `requestAnimationFrame` + `useRef` cutoff timestamp — NOT `setInterval` (causes 10x/sec reheat)
-- [Phase 15]: Particle state stored in `useRef`, never React state — prevents render feedback loop
-- [Phase 17]: `ApprovalCard` selectable props already defined in TypeScript interface — APRV-02 is mostly route-level wiring
-- [Phase 13]: App components use inline style pattern, UI primitives use Tailwind arbitrary value syntax for CSS variable theming
-- [Phase 14]: computeGraphDataKey memoizes graphData by sorted node/link ID sets — only structural changes reheat simulation (Pitfall 1 fix)
-- [Phase 14]: GraphModeState discriminated union replaces pathMode boolean — single source of truth for explore/path/neighborhood/search modes
-- [Phase 14]: cooldownTicks(0) in handleEngineStop permanently freezes simulation after initial layout — prevents hover drift (GRPH-01)
-- [Phase 14]: Double-click detected via lastClickRef timestamp (400ms) in ForceGraph2D custom canvas model
-- [Phase 14]: activeNodes/activeLinks derived in GraphView from neighborhoodData prop — filtering co-located with rendering
-- [Phase 14-graph-core-features]: Cluster hulls drawn via onRenderFramePost (canvas layer) to avoid pointer event capture per Pitfall 3
-- [Phase 14-graph-core-features]: Confidence filter fades nodes to opacity 0.05 (not remove) — preserves graph topology while hiding noise
-- [Phase 15-timeline-animation]: rAF loop in TimelineSlider writes to cutoffRef.current; canvas painter reads ref directly — zero React re-renders during auto-play
-- [Phase 15-timeline-animation]: Timeline visibility controlled via nodeCanvasObject early-return (nodeMs > cutoffMs) — graphData reference never modified during playback
-- [Phase 15-timeline-animation]: created_at_ms pre-computed on decoratedNodes to avoid per-frame Date parsing at 60fps
-- [Phase 16]: Growth endpoint at /api/stats/growth separate from /api/dashboard — clean separation of time-series vs snapshot data
-- [Phase 16]: recentActivity added alongside recentEpisodes in dashboard response for backward compatibility
+- [v5.0 research]: Vercel AI SDK locked at v4.3.19 — do NOT upgrade in v5.0 (ollama-ai-provider incompatibility)
+- [v5.0 research]: All auto-extracted entities unconditionally route to approval queue — no auto-approve threshold applies
+- [v5.0 research]: Relationship strength updated only on `remember` (not `recall`) to avoid write amplification
+- [v5.0 research]: `computeEffectiveConfidence` is a pure function at read time — no write-back to DB
+- [v5.0 research]: Phase 18 must land before any other v5.0 phase — migration framework prerequisite
 
 ### Pending Todos
 
-- Run `/gsd:plan-phase 13` to decompose Phase 13 into executable plans
+None.
 
 ### Blockers/Concerns
 
-- [Phase 14]: Verify `onRenderFramePost` exists in the installed `react-force-graph-2d` version before cluster hull implementation (fallback: draw in `onRenderFramePre`, hulls render under nodes)
-- [Phase 14]: Verify `graphology-communities-louvain` 2.0.2 has no breaking changes against `graphology` 0.26.0 before writing integration code
-
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260327-f8o | Build brain forget MCP tool for removing entities, observations, or relationships | 2026-03-27 | 8ad8e06 | [260327-f8o-build-brain-forget-mcp-tool-for-removing](./quick/260327-f8o-build-brain-forget-mcp-tool-for-removing/) |
-| 260327-hr6 | Rename brain.db to myco.db and BRAIN_* env vars to MYCO_* across entire codebase | 2026-03-27 | 9752be5 | [260327-hr6-rename-brain-db-to-myco-db-and-brain-env](./quick/260327-hr6-rename-brain-db-to-myco-db-and-brain-env/) |
+- [Phase 19]: SQLite `CURRENT_TIMESTAMP` instability — all `valid_from` values must be generated in application code before transactions open (audit every `insertObservation` call site)
+- [Phase 19]: Wrong entity merges are hard to undo — merge candidates require BOTH Levenshtein ≤ 2 AND cosine similarity > 0.92; all merge proposals must route through approval queue
+- [Phase 23]: Consolidation lock design (`consolidation_lock` table row structure, expiry logic, atomic check-and-lock SQL) must be fully specified before implementation begins
 
 ## Session Continuity
 
-Last session: 2026-03-27T20:11:08.413Z
-Stopped at: Completed 16-01-PLAN.md
+Last session: 2026-03-27
+Stopped at: v5.0 roadmap written — ROADMAP.md and STATE.md created, REQUIREMENTS.md traceability updated
 Resume file: None
