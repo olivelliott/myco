@@ -96,7 +96,10 @@ Plans:
   3. When the same observation is submitted twice, the second call is classified as NOOP and does not create a duplicate row in the observations table
   4. When a conflicting fact is submitted (different value for same attribute), the old observation is soft-retired and the new one is inserted in a single atomic operation
   5. Entity merges use a `merged_into` column soft-delete — after a merge, the source entity still exists in the database with its `merged_into` field set, and prior observations remain queryable
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 19-01-PLAN.md — Dedup classification engine + temporal prepared statements
+- [ ] 19-02-PLAN.md — Wire dedup into remember/recall + entity merge + integration tests
 
 ### Phase 20: Relationship Strength Scoring
 **Goal**: Every relationship in the knowledge graph carries a strength score that grows each time it is reinforced by a `remember` call, and the dashboard graph visualizes edge weight via line thickness
@@ -106,7 +109,10 @@ Plans:
   1. Calling `remember` with the same entity relationship multiple times increases the relationship's `strength` score and `reinforcement_count` — a single `remember` does not reset the count to 1
   2. The upsert is idempotent — calling `remember` for a relationship that already exists updates strength rather than creating a duplicate relationship row
   3. The dashboard knowledge graph renders edges with varying line thickness proportional to relationship strength — a newly created relationship is visually thinner than a reinforced one
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 19-01-PLAN.md — Dedup classification engine + temporal prepared statements
+- [ ] 19-02-PLAN.md — Wire dedup into remember/recall + entity merge + integration tests
 **UI hint**: yes
 
 ### Phase 21: Memory Importance Decay
@@ -117,7 +123,10 @@ Plans:
   1. Two observations with the same base confidence score rank differently in recall results if one was accessed recently and the other has not been accessed in 30+ days
   2. The `computeEffectiveConfidence` function takes `last_accessed_at` and `reinforcement_count` as inputs and returns a value without reading from or writing to the database — it is a pure computation
   3. Entities marked as `decay_exempt` (preference, constraint, decision, architecture types) return their base confidence score unchanged regardless of access recency
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 19-01-PLAN.md — Dedup classification engine + temporal prepared statements
+- [ ] 19-02-PLAN.md — Wire dedup into remember/recall + entity merge + integration tests
 
 ### Phase 22: Core Refactor + REST Write Routes + Import/Export
 **Goal**: Business logic is accessible to both MCP tools and REST clients from a shared `packages/core/memory-ops.ts` module, the REST API exposes full write operations with OpenAPI documentation and optional auth, and users can export or import their entire knowledge graph via MCP tool or HTTP endpoint
@@ -129,7 +138,10 @@ Plans:
   3. An agent with a valid `MYCO_API_KEY` configured can authenticate write requests; requests without the key are rejected with 401 when auth is enabled
   4. Calling the `export_graph` MCP tool or `GET /api/export` produces a JSON file that, when imported with `import_graph` or `POST /api/import`, restores the exact same set of entities, observations, and relationships with no data loss or duplication
   5. The import tool accepts a Mem0-format JSON or the Anthropic reference server JSONL format and successfully loads its entries into the Myco knowledge graph
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 19-01-PLAN.md — Dedup classification engine + temporal prepared statements
+- [ ] 19-02-PLAN.md — Wire dedup into remember/recall + entity merge + integration tests
 
 ### Phase 23: Auto-Extraction + Incremental Consolidation
 **Goal**: Every `log_episode` call passively captures entities and relationships from the conversation context via LLM extraction without blocking the response, and high-confidence episodes trigger a micro-consolidation immediately rather than waiting for the nightly 2am cycle
@@ -141,7 +153,10 @@ Plans:
   3. Calling `log_episode` 10 times in rapid succession results in exactly one consolidation run, not 10 — the consolidation lock prevents duplicate processing
   4. After the nightly cron fires, the consolidation log shows relationship inference and contradiction detection steps that do not appear in the incremental micro-consolidation output
   5. When both an incremental trigger and the nightly cron attempt to consolidate simultaneously, one waits for the lock and runs after — no episodes are processed twice
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 19-01-PLAN.md — Dedup classification engine + temporal prepared statements
+- [ ] 19-02-PLAN.md — Wire dedup into remember/recall + entity merge + integration tests
 
 ## Progress
 
@@ -165,7 +180,7 @@ Plans:
 | 16. Home Page Enhancements | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 17. Approvals Overhaul | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 18. Schema Foundation | v5.0 | 2/2 | Complete    | 2026-03-27 |
-| 19. Temporal Versioning + Dedup Resolution | v5.0 | 0/? | Not started | - |
+| 19. Temporal Versioning + Dedup Resolution | v5.0 | 0/2 | Planned | - |
 | 20. Relationship Strength Scoring | v5.0 | 0/? | Not started | - |
 | 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
