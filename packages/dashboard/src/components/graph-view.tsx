@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { Input } from './ui/input'
 import {
@@ -21,6 +21,8 @@ export type GraphNode = {
   opacity: number
   x?: number
   y?: number
+  fx?: number | undefined
+  fy?: number | undefined
 }
 
 export type GraphLink = {
@@ -42,6 +44,7 @@ interface GraphViewProps {
     confidence?: number; source_type?: string; created_at?: string
   }>
   onNodeClick: (node: GraphNode) => void
+  onNodeHover?: (node: GraphNode | null) => void
   mini?: boolean
   highlightedPath?: Set<string> | null
 }
@@ -60,7 +63,7 @@ const TYPE_COLORS: Record<string, string> = {
 }
 const DEFAULT_COLOR = '#818cf8'
 
-function getNodeColor(type: string): string {
+export function getNodeColor(type: string): string {
   return TYPE_COLORS[type.toLowerCase()] ?? DEFAULT_COLOR
 }
 
@@ -75,11 +78,15 @@ export function getLinkNodeId(node: string | GraphNode): string {
   return typeof node === 'string' ? node : node.id
 }
 
-export function GraphView({ nodes, links, onNodeClick, mini = false, highlightedPath }: GraphViewProps) {
+export function GraphView({
+  nodes, links, onNodeClick, onNodeHover, mini = false, highlightedPath,
+}: GraphViewProps) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const fgRef = useRef<any>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const hasZoomedRef = useRef(false)
 
   const uniqueTypes = useMemo(
     () => [...new Set(nodes.map((n) => n.type))].sort(),
@@ -160,8 +167,54 @@ export function GraphView({ nodes, links, onNodeClick, mini = false, highlighted
     [hoveredNodeId, highlightedPath],
   )
 
+  // Zoom to fit after engine stabilizes
+  const handleEngineStop = useCallback(() => {
+    if (!hasZoomedRef.current && fgRef.current && !mini) {
+      hasZoomedRef.current = true
+      setTimeout(() => {
+        fgRef.current?.zoomToFit(400, 80)
+      }, 100)
+    }
+  }, [mini])
+
+  // Reset zoom flag when data changes significantly
+  useEffect(() => {
+    hasZoomedRef.current = false
+  }, [nodes.length])
+
+  // Configure forces after mount
+  useEffect(() => {
+    if (!fgRef.current || mini) return
+    const fg = fgRef.current
+
+    // Weaker charge so nodes don't fly apart, with max distance cap
+    fg.d3Force('charge')?.strength(-120).distanceMax(300)
+
+    // Stronger center gravity to keep the graph cohesive
+    fg.d3Force('center')?.strength(0.05)
+
+    // Link distance and strength for readable spacing
+    fg.d3Force('link')?.distance(60).strength(0.3)
+  }, [mini, decoratedNodes.length])
+
+  // Set cursor style on the canvas element
+  useEffect(() => {
+    if (mini) return
+    const canvas = containerRef.current?.querySelector('canvas')
+    if (canvas) {
+      canvas.style.cursor = hoveredNodeId ? 'pointer' : 'grab'
+    }
+  }, [hoveredNodeId, mini])
+
+  // Stats
+  const stats = useMemo(() => ({
+    nodes: decoratedNodes.length,
+    links: filteredLinks.length,
+    types: uniqueTypes.length,
+  }), [decoratedNodes.length, filteredLinks.length, uniqueTypes.length])
+
   return (
-    <div className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full">
       {/* Search + filter controls */}
       {!mini && (
         <div className="absolute top-4 left-4 z-10 flex flex-col md:flex-row gap-2">
@@ -198,6 +251,31 @@ export function GraphView({ nodes, links, onNodeClick, mini = false, highlighted
         </div>
       )}
 
+      {/* Stats bar */}
+      {!mini && (
+        <div
+          className="absolute bottom-4 right-4 z-10 flex items-center gap-3 px-3 py-1.5 rounded-md text-xs font-mono"
+          style={{
+            backgroundColor: 'rgba(5, 5, 16, 0.8)',
+            border: '1px solid var(--border-subtle)',
+            backdropFilter: 'blur(8px)',
+            color: 'var(--text-muted)',
+          }}
+        >
+          <span>
+            <span style={{ color: 'var(--glow-teal)' }}>{stats.nodes}</span> nodes
+          </span>
+          <span style={{ color: 'var(--border-subtle)' }}>|</span>
+          <span>
+            <span style={{ color: 'var(--glow-violet)' }}>{stats.links}</span> edges
+          </span>
+          <span style={{ color: 'var(--border-subtle)' }}>|</span>
+          <span>
+            <span style={{ color: 'var(--glow-amber)' }}>{stats.types}</span> types
+          </span>
+        </div>
+      )}
+
       <ForceGraph2D
         ref={fgRef}
         graphData={{
@@ -206,9 +284,28 @@ export function GraphView({ nodes, links, onNodeClick, mini = false, highlighted
         }}
         nodeId="id"
         nodeVal="val"
-        nodeLabel={(node: object) => {
-          const n = node as GraphNode
-          return `${n.name} (${n.type}) — ${n.val} observations`
+        nodeLabel=""
+        // Use high velocity decay to dampen node motion quickly.
+        // The original bug (nodes flying away on hover) was caused by
+        // overly strong default charge force + simulation reheat from drag.
+        // Our force config in useEffect fixes the root cause; this adds extra stability.
+        d3VelocityDecay={0.4}
+        d3AlphaDecay={0.03}
+        warmupTicks={mini ? 0 : 60}
+        cooldownTicks={mini ? Infinity : 200}
+        cooldownTime={2000}
+        onEngineStop={handleEngineStop}
+        // Node dragging pins the node in place
+        onNodeDrag={(node: any) => {
+          node.fx = node.x
+          node.fy = node.y
+        }}
+        onNodeDragEnd={(node: any) => {
+          node.fx = node.x
+          node.fy = node.y
+        }}
+        onBackgroundClick={() => {
+          setHoveredNodeId(null)
         }}
         nodeCanvasObject={(
           node: object,
@@ -217,70 +314,170 @@ export function GraphView({ nodes, links, onNodeClick, mini = false, highlighted
         ) => {
           const n = node as GraphNode
           if (n.x === undefined || n.y === undefined) return
-          const size = Math.sqrt(n.val) * 2.5
+
+          const baseSize = Math.sqrt(n.val) * 2.5 + 1.5
+          const isHovered = n.id === hoveredNodeId
+          const isNeighbor = hoveredNodeId ? (neighborMap.get(hoveredNodeId)?.has(n.id) ?? false) : false
           const highlighted = isHighlighted(n.id)
           const onPath = highlightedPath?.has(n.id)
-          const alpha = highlighted ? (n.opacity ?? 1) : 0.08
+          const alpha = highlighted ? (n.opacity ?? 1) : 0.06
 
-          // Outer glow
-          const glowRadius =
-            onPath
+          // Static size boost for hovered node (no animation needed)
+          const size = isHovered ? baseSize * 1.2 : baseSize
+
+          // Outer glow — larger and more vivid for interactive states
+          const glowRadius = onPath
+            ? size * 7
+            : isHovered
               ? size * 6
-              : highlighted && n.id === hoveredNodeId
-                ? size * 5
-                : size * 3
+              : isNeighbor
+                ? size * 4
+                : size * 2.5
+
+          const glowAlpha = onPath
+            ? 0.4
+            : isHovered
+              ? 0.35
+              : isNeighbor
+                ? 0.2
+                : 0.12
+
           const gradient = ctx.createRadialGradient(
-            n.x,
-            n.y,
-            0,
-            n.x,
-            n.y,
-            glowRadius,
+            n.x, n.y, 0,
+            n.x, n.y, glowRadius,
           )
-          gradient.addColorStop(0, hexToRgba(n.color, 0.3 * alpha))
-          gradient.addColorStop(0.5, hexToRgba(n.color, 0.1 * alpha))
+          gradient.addColorStop(0, hexToRgba(n.color, glowAlpha * alpha))
+          gradient.addColorStop(0.4, hexToRgba(n.color, glowAlpha * 0.4 * alpha))
           gradient.addColorStop(1, hexToRgba(n.color, 0))
           ctx.beginPath()
           ctx.arc(n.x, n.y, glowRadius, 0, 2 * Math.PI)
           ctx.fillStyle = gradient
           ctx.fill()
 
-          // Core circle
+          // Core circle with 3D-ish gradient
+          const coreGradient = ctx.createRadialGradient(
+            n.x - size * 0.3, n.y - size * 0.3, 0,
+            n.x, n.y, size,
+          )
+          coreGradient.addColorStop(0, hexToRgba('#ffffff', 0.25 * alpha))
+          coreGradient.addColorStop(0.5, hexToRgba(n.color, 0.9 * alpha))
+          coreGradient.addColorStop(1, hexToRgba(n.color, 0.7 * alpha))
+
           ctx.beginPath()
           ctx.arc(n.x, n.y, size, 0, 2 * Math.PI)
-          ctx.fillStyle = hexToRgba(n.color, alpha)
+          ctx.fillStyle = coreGradient
           ctx.fill()
 
-          // Inner highlight
+          // Inner specular highlight for depth
           ctx.beginPath()
-          ctx.arc(n.x, n.y, size * 0.4, 0, 2 * Math.PI)
-          ctx.fillStyle = hexToRgba('#ffffff', 0.3 * alpha)
+          ctx.arc(n.x - size * 0.2, n.y - size * 0.2, size * 0.3, 0, 2 * Math.PI)
+          ctx.fillStyle = hexToRgba('#ffffff', 0.35 * alpha)
           ctx.fill()
+
+          // Hover rings
+          if (isHovered) {
+            ctx.beginPath()
+            ctx.arc(n.x, n.y, size + 3 / globalScale, 0, 2 * Math.PI)
+            ctx.strokeStyle = hexToRgba(n.color, 0.8)
+            ctx.lineWidth = 2 / globalScale
+            ctx.stroke()
+
+            ctx.beginPath()
+            ctx.arc(n.x, n.y, size + 7 / globalScale, 0, 2 * Math.PI)
+            ctx.strokeStyle = hexToRgba(n.color, 0.2)
+            ctx.lineWidth = 1 / globalScale
+            ctx.stroke()
+          }
 
           // Path tracing ring
-          if (onPath) {
+          if (onPath && !isHovered) {
             ctx.beginPath()
-            ctx.arc(n.x, n.y, size + 2, 0, 2 * Math.PI)
+            ctx.arc(n.x, n.y, size + 3 / globalScale, 0, 2 * Math.PI)
             ctx.strokeStyle = hexToRgba(n.color, 0.9)
             ctx.lineWidth = 1.5 / globalScale
             ctx.stroke()
           }
 
-          // Labels
-          if (!mini || globalScale > 2) {
-            const fontSize = Math.max(10 / globalScale, 3)
-            ctx.font = `${fontSize}px ui-sans-serif, system-ui, sans-serif`
+          // Pin indicator (amber dot at top-right if node is pinned)
+          if (n.fx !== undefined && n.fx !== null) {
+            ctx.beginPath()
+            ctx.arc(n.x + size * 0.7, n.y - size * 0.7, 2 / globalScale, 0, 2 * Math.PI)
+            ctx.fillStyle = hexToRgba('#fbbf24', 0.8 * alpha)
+            ctx.fill()
+          }
+
+          // Labels — always show for hovered/neighbors/path, zoom-dependent otherwise
+          const showLabel = isHovered || isNeighbor || onPath || globalScale > 1.2 || !hoveredNodeId
+          if (showLabel && (!mini || globalScale > 2)) {
+            const fontSize = isHovered
+              ? Math.max(12 / globalScale, 4)
+              : Math.max(10 / globalScale, 3)
+            const fontWeight = isHovered || onPath ? '600' : '400'
+            ctx.font = `${fontWeight} ${fontSize}px ui-sans-serif, system-ui, -apple-system, sans-serif`
             ctx.textAlign = 'center'
             ctx.textBaseline = 'top'
-            // Text shadow
-            ctx.fillStyle = hexToRgba('#000000', 0.5 * alpha)
-            ctx.fillText(n.name, n.x + 0.5, n.y + size + 2.5)
-            // Label
-            ctx.fillStyle = hexToRgba(n.color, 0.8 * alpha)
-            ctx.fillText(n.name, n.x, n.y + size + 2)
+
+            const labelY = n.y + size + 3 / globalScale
+            const labelAlpha = isHovered ? 1 : isNeighbor ? 0.9 : 0.7
+
+            // Text background pill for readability
+            const textWidth = ctx.measureText(n.name).width
+            const padX = 3 / globalScale
+            const padY = 1.5 / globalScale
+            ctx.fillStyle = hexToRgba('#050510', 0.7 * alpha * labelAlpha)
+            ctx.beginPath()
+            ctx.roundRect(
+              n.x - textWidth / 2 - padX,
+              labelY - padY,
+              textWidth + padX * 2,
+              fontSize + padY * 2,
+              2 / globalScale,
+            )
+            ctx.fill()
+
+            ctx.fillStyle = hexToRgba(n.color, labelAlpha * alpha)
+            ctx.fillText(n.name, n.x, labelY)
+
+            // Show type badge under hovered node
+            if (isHovered) {
+              const typeLabel = n.type
+              const typeFontSize = Math.max(8 / globalScale, 2.5)
+              ctx.font = `400 ${typeFontSize}px ui-sans-serif, system-ui, sans-serif`
+              const typeLabelY = labelY + fontSize + padY * 2 + 2 / globalScale
+              const typeWidth = ctx.measureText(typeLabel).width
+
+              ctx.fillStyle = hexToRgba(n.color, 0.15)
+              ctx.beginPath()
+              ctx.roundRect(
+                n.x - typeWidth / 2 - padX,
+                typeLabelY - padY,
+                typeWidth + padX * 2,
+                typeFontSize + padY * 2,
+                2 / globalScale,
+              )
+              ctx.fill()
+              ctx.strokeStyle = hexToRgba(n.color, 0.3)
+              ctx.lineWidth = 0.5 / globalScale
+              ctx.stroke()
+
+              ctx.fillStyle = hexToRgba(n.color, 0.7)
+              ctx.fillText(typeLabel, n.x, typeLabelY)
+            }
           }
         }}
         nodeCanvasObjectMode={() => 'replace'}
+        // Paint a generous invisible hit area so hover detection is smooth.
+        // Without this, the hit area is smaller than the visual node (glow + size boost),
+        // causing flicker as you hover near edges.
+        nodePointerAreaPaint={(node: object, color: string, ctx: CanvasRenderingContext2D) => {
+          const n = node as GraphNode
+          if (n.x === undefined || n.y === undefined) return
+          const hitRadius = Math.sqrt(n.val) * 2.5 + 8
+          ctx.fillStyle = color
+          ctx.beginPath()
+          ctx.arc(n.x, n.y, hitRadius, 0, 2 * Math.PI)
+          ctx.fill()
+        }}
         linkCanvasObject={(
           link: object,
           ctx: CanvasRenderingContext2D,
@@ -291,23 +488,42 @@ export function GraphView({ nodes, links, onNodeClick, mini = false, highlighted
             target: GraphNode
           }
           if (!l.source.x || !l.target.x) return
-          const highlighted = isLinkHighlighted(l)
-          const alpha = highlighted ? 0.5 : 0.06
-          const srcColor = getNodeColor(l.source.type ?? '')
-          const width = (1 + (l.confidence ?? 1) * 1.5) / globalScale
 
-          // Curved link
+          const srcId = getLinkNodeId(l.source)
+          const tgtId = getLinkNodeId(l.target)
+          const highlighted = isLinkHighlighted(l)
+          const isHoveredLink = hoveredNodeId != null && (srcId === hoveredNodeId || tgtId === hoveredNodeId)
+
+          const alpha = isHoveredLink ? 0.7 : highlighted ? 0.35 : 0.04
+          const srcColor = getNodeColor(l.source.type ?? '')
+          const tgtColor = getNodeColor(l.target.type ?? '')
+          const width = isHoveredLink
+            ? (2 + (l.confidence ?? 1) * 2) / globalScale
+            : (0.8 + (l.confidence ?? 1) * 1) / globalScale
+
+          // Curved link via quadratic bezier
           const midX = (l.source.x + l.target.x) / 2
           const midY = (l.source.y! + l.target.y!) / 2
           const dx = l.target.x - l.source.x
           const dy = l.target.y! - l.source.y!
-          const cpX = midX - dy * 0.08
-          const cpY = midY + dx * 0.08
+          const cpX = midX - dy * 0.1
+          const cpY = midY + dx * 0.1
+
+          // Color gradient along link when hovered and connecting different types
+          if (isHoveredLink && srcColor !== tgtColor) {
+            const linkGrad = ctx.createLinearGradient(
+              l.source.x, l.source.y!, l.target.x, l.target.y!,
+            )
+            linkGrad.addColorStop(0, hexToRgba(srcColor, alpha))
+            linkGrad.addColorStop(1, hexToRgba(tgtColor, alpha))
+            ctx.strokeStyle = linkGrad
+          } else {
+            ctx.strokeStyle = hexToRgba(srcColor, alpha)
+          }
 
           ctx.beginPath()
           ctx.moveTo(l.source.x, l.source.y!)
           ctx.quadraticCurveTo(cpX, cpY, l.target.x, l.target.y!)
-          ctx.strokeStyle = hexToRgba(srcColor, alpha)
           ctx.lineWidth = width
 
           if (l.source_type === 'auto_discovery') {
@@ -318,28 +534,35 @@ export function GraphView({ nodes, links, onNodeClick, mini = false, highlighted
           ctx.stroke()
           ctx.setLineDash([])
 
-          // Relationship label on hover or zoom
+          // Relationship label on hover or deep zoom
           const showLabel =
-            (highlighted && hoveredNodeId && globalScale > 1) ||
+            (isHoveredLink && globalScale > 0.8) ||
             globalScale > 2.5
           if (showLabel && l.type) {
             const fontSize = Math.max(9 / globalScale, 2)
-            ctx.font = `${fontSize}px ui-sans-serif, system-ui, sans-serif`
+            ctx.font = `500 ${fontSize}px ui-sans-serif, system-ui, -apple-system, sans-serif`
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
             const label = l.type
             const textWidth = ctx.measureText(label).width
             const pad = 3 / globalScale
-            ctx.fillStyle = hexToRgba('#050510', 0.8)
+
+            // Background pill with subtle border
+            ctx.fillStyle = hexToRgba('#0a0a1e', 0.9)
             ctx.beginPath()
             ctx.roundRect(
               cpX - textWidth / 2 - pad,
               cpY - fontSize / 2 - pad / 2,
               textWidth + pad * 2,
               fontSize + pad,
-              3 / globalScale,
+              4 / globalScale,
             )
             ctx.fill()
+
+            ctx.strokeStyle = hexToRgba(srcColor, 0.3)
+            ctx.lineWidth = 0.5 / globalScale
+            ctx.stroke()
+
             ctx.fillStyle = hexToRgba(srcColor, 0.9)
             ctx.fillText(label, cpX, cpY)
           }
@@ -347,14 +570,22 @@ export function GraphView({ nodes, links, onNodeClick, mini = false, highlighted
         linkCanvasObjectMode={() => 'replace'}
         onNodeClick={(node: object) => onNodeClick(node as GraphNode)}
         onNodeHover={(node: object | null) => {
-          setHoveredNodeId(node ? (node as GraphNode).id : null)
+          const graphNode = node ? (node as GraphNode) : null
+          setHoveredNodeId(graphNode?.id ?? null)
+          onNodeHover?.(graphNode)
+        }}
+        // Right-click unpins a pinned node
+        onNodeRightClick={(node: object) => {
+          const n = node as GraphNode
+          n.fx = undefined
+          n.fy = undefined
         }}
         backgroundColor="#050510"
         width={undefined}
         height={undefined}
-        cooldownTicks={mini ? Infinity : 100}
-        enableNavigationControls={!mini}
         enablePointerInteraction={!mini}
+        minZoom={0.3}
+        maxZoom={12}
       />
     </div>
   )
