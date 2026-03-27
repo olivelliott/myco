@@ -63,7 +63,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 
 **Milestone Goal:** Close competitive gaps against Mem0, Zep, and mcp-memory-service and add differentiating features — temporal fact versioning, conflict-aware dedup, memory decay, relationship strength, REST API with OpenAPI docs, import/export, and incremental consolidation with passive auto-extraction.
 
-- [ ] **Phase 18: Schema Foundation** - Versioned migration framework and all v5.0 schema columns added safely before any feature phase begins
+- [x] **Phase 18: Schema Foundation** - Versioned migration framework and all v5.0 schema columns added safely before any feature phase begins (completed 2026-03-27)
 - [ ] **Phase 19: Temporal Versioning + Dedup Resolution** - Observations track valid_from/valid_until; new memories route through ADD/UPDATE/NOOP classification before write
 - [ ] **Phase 20: Relationship Strength Scoring** - Relationship edges gain strength scores reinforced on every re-assertion; edge thickness reflects strength in the dashboard
 - [ ] **Phase 21: Memory Importance Decay** - Unreinforced facts fade via lazy decay at read time; recall ranking factors in effective confidence
@@ -81,10 +81,10 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
   2. A `schema_migrations` table exists in the database and contains one row per migration that has been applied, with a timestamp
   3. All v5.0 columns (`valid_from`, `valid_until`, `last_accessed_at`, `decay_exempt`, `strength`, `reinforcement_count`, `merged_into`) exist on their respective tables after startup
   4. TypeScript interfaces in `packages/core/src/types.ts` reflect the new columns — no `any` casts required to access them
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 18-01-PLAN.md — Migration framework + absorb existing try/catch ALTER TABLEs
-- [ ] 18-02-PLAN.md — v5.0 schema columns, TypeScript types, prepared statements
+- [x] 18-02-PLAN.md — v5.0 schema columns, TypeScript types, prepared statements
 
 ### Phase 19: Temporal Versioning + Dedup Resolution
 **Goal**: Facts carry version history so the graph is never silently overwritten, and every incoming memory is classified as a new addition, an update to an existing fact, or a duplicate before it is committed
@@ -164,7 +164,7 @@ Plans:
 | 15. Timeline Animation | v4.0 | 1/1 | Complete | 2026-03-27 |
 | 16. Home Page Enhancements | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 17. Approvals Overhaul | v4.0 | 2/2 | Complete | 2026-03-27 |
-| 18. Schema Foundation | v5.0 | 1/2 | In Progress|  |
+| 18. Schema Foundation | v5.0 | 2/2 | Complete   | 2026-03-27 |
 | 19. Temporal Versioning + Dedup Resolution | v5.0 | 0/? | Not started | - |
 | 20. Relationship Strength Scoring | v5.0 | 0/? | Not started | - |
 | 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |
