@@ -3,7 +3,7 @@ import * as sqliteVec from 'sqlite-vec';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { applySchema } from './schema.js';
+import { runMigrations } from './migrations.js';
 
 function getDefaultDbPath(): string {
   const xdgData = process.env.XDG_DATA_HOME ?? path.join(os.homedir(), '.local', 'share');
@@ -27,8 +27,8 @@ export function openDatabase(dbPath?: string): Database.Database {
   db.pragma('busy_timeout = 5000');  // connection-lifetime only
   db.pragma('synchronous = NORMAL'); // safe with WAL, better perf
 
-  // 3. Apply schema (CREATE TABLE IF NOT EXISTS)
-  applySchema(db);
+  // 3. Run schema migrations
+  runMigrations(db);
 
   return db;
 }

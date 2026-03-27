@@ -234,6 +234,70 @@ describe('openDatabase()', () => {
       db2.close();
     }).not.toThrow();
   });
+
+  it('schema_migrations table exists after openDatabase', () => {
+    const db = openDatabase(dbPath);
+    const result = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='schema_migrations'`)
+      .get() as { name: string } | undefined;
+    expect(result).toBeDefined();
+    expect(result?.name).toBe('schema_migrations');
+    db.close();
+  });
+
+  it('schema_migrations table has 9 applied migrations', () => {
+    const db = openDatabase(dbPath);
+    const result = db
+      .prepare(`SELECT COUNT(*) as cnt FROM schema_migrations`)
+      .get() as { cnt: number };
+    expect(result.cnt).toBe(9);
+    db.close();
+  });
+
+  it('observations table has v5.0 temporal columns (valid_from, valid_until)', () => {
+    const db = openDatabase(dbPath);
+    const cols = db
+      .prepare(`PRAGMA table_info(observations)`)
+      .all() as Array<{ name: string }>;
+    const colNames = cols.map(c => c.name);
+    expect(colNames).toContain('valid_from');
+    expect(colNames).toContain('valid_until');
+    db.close();
+  });
+
+  it('observations table has v5.0 decay columns', () => {
+    const db = openDatabase(dbPath);
+    const cols = db
+      .prepare(`PRAGMA table_info(observations)`)
+      .all() as Array<{ name: string }>;
+    const colNames = cols.map(c => c.name);
+    expect(colNames).toContain('last_accessed_at');
+    expect(colNames).toContain('decay_exempt');
+    expect(colNames).toContain('strength');
+    expect(colNames).toContain('reinforcement_count');
+    db.close();
+  });
+
+  it('entities table has merged_into column', () => {
+    const db = openDatabase(dbPath);
+    const cols = db
+      .prepare(`PRAGMA table_info(entities)`)
+      .all() as Array<{ name: string }>;
+    const colNames = cols.map(c => c.name);
+    expect(colNames).toContain('merged_into');
+    db.close();
+  });
+
+  it('relationships table has strength columns', () => {
+    const db = openDatabase(dbPath);
+    const cols = db
+      .prepare(`PRAGMA table_info(relationships)`)
+      .all() as Array<{ name: string }>;
+    const colNames = cols.map(c => c.name);
+    expect(colNames).toContain('strength');
+    expect(colNames).toContain('reinforcement_count');
+    db.close();
+  });
 });
 
 describe('generateSessionId()', () => {
