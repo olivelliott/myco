@@ -460,7 +460,8 @@ export function forgetEntity(
     // Get all observation IDs for manual cleanup of vec_embeddings and fts_observations
     const obsRows = stmts.selectAllObservationIdsByEntityId.all(entityId) as Array<{ id: string }>;
     for (const obs of obsRows) {
-      stmts.deleteVecEmbeddingByItemId.run(obs.id);
+      // vec_embeddings is a virtual table (sqlite-vec) that throws when deleting nonexistent rows
+      try { stmts.deleteVecEmbeddingByItemId.run(obs.id); } catch { /* no embedding stored */ }
       stmts.deleteFtsObservationByObsId.run(obs.id);
     }
 
@@ -500,7 +501,8 @@ export function forgetEntity(
     }
 
     // Clean up vec_embeddings and fts_observations
-    stmts.deleteVecEmbeddingByItemId.run(observation_id);
+    // vec_embeddings is a virtual table (sqlite-vec) that throws when deleting nonexistent rows
+    try { stmts.deleteVecEmbeddingByItemId.run(observation_id); } catch { /* no embedding stored */ }
     stmts.deleteFtsObservationByObsId.run(observation_id);
     stmts.deleteObservationById.run(observation_id);
 

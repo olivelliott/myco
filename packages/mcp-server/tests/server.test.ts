@@ -5,7 +5,7 @@ import { rmSync, mkdirSync } from 'node:fs';
 import { openDatabase, prepareStatements } from '@myco/core';
 import type Database from 'better-sqlite3';
 import type { MycoStatements } from '@myco/core';
-import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending } from '../src/tools.js';
+import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending, forgetEntity } from '../src/tools.js';
 import * as embedClient from '../src/embed-client.js';
 
 const testDir = join(tmpdir(), 'myco-mcp-test-' + process.pid);
@@ -420,6 +420,166 @@ describe('MCP server tools', () => {
       // Should not throw and returns 0 (Ollama unavailable mid-sweep stops early)
       const count = await reEmbedPending(db, stmts);
       expect(count).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('forgetEntity', () => {
+    it('forgets entity by name, cascade-deleting observations and relationships', async () => {
+      // Create entity with a relation
+      await rememberEntity(db, {
+        content: 'Hono is an ultrafast web framework',
+        entity_name: 'Hono',
+        entity_type: 'technology',
+        relations: [{ target_name: 'Express', target_type: 'technology', relation_type: 'alternative_to' }],
+      }, stmts);
+
+      // Verify entity exists
+      const entityBefore = db.prepare('SELECT id FROM entities WHERE name = ? AND type = ?').get('Hono', 'technology') as { id: string };
+      expect(entityBefore).toBeDefined();
+
+      const result = forgetEntity(db, { entity_name: 'Hono', entity_type: 'technology' }, stmts);
+      const parsed = JSON.parse(result.content[0].text) as {
+        status: string; type: string; entity_name: string; observations_removed: number; relationships_removed: number;
+      };
+
+      expect(parsed.status).toBe('forgotten');
+      expect(parsed.type).toBe('entity');
+      expect(parsed.entity_name).toBe('Hono');
+      expect(parsed.observations_removed).toBeGreaterThanOrEqual(1);
+      expect(parsed.relationships_removed).toBeGreaterThanOrEqual(1);
+
+      // Entity should be gone
+      const entityAfter = db.prepare('SELECT * FROM entities WHERE name = ?').get('Hono');
+      expect(entityAfter).toBeUndefined();
+
+      // Observations should be gone
+      const obsCount = db.prepare('SELECT COUNT(*) as n FROM observations WHERE entity_id = ?').get(entityBefore.id) as { n: number };
+      expect(obsCount.n).toBe(0);
+    });
+
+    it('cleans up fts_observations entries when forgetting entity', async () => {
+      await rememberEntity(db, {
+        content: 'Vitest is a fast test runner',
+        entity_name: 'Vitest',
+        entity_type: 'technology',
+      }, stmts);
+
+      const entity = db.prepare('SELECT id FROM entities WHERE name = ?').get('Vitest') as { id: string };
+      const obs = db.prepare('SELECT id FROM observations WHERE entity_id = ?').get(entity.id) as { id: string };
+
+      // FTS row should exist before forget
+      const ftsBefore = db.prepare('SELECT * FROM fts_observations WHERE observation_id = ?').get(obs.id);
+      expect(ftsBefore).toBeDefined();
+
+      forgetEntity(db, { entity_name: 'Vitest', entity_type: 'technology' }, stmts);
+
+      // FTS row should be gone after forget
+      const ftsAfter = db.prepare('SELECT * FROM fts_observations WHERE observation_id = ?').get(obs.id);
+      expect(ftsAfter).toBeUndefined();
+    });
+
+    it('returns NOT_FOUND for nonexistent entity', () => {
+      const result = forgetEntity(db, { entity_name: 'DoesNotExist', entity_type: 'technology' }, stmts);
+      const parsed = JSON.parse(result.content[0].text) as { error: string; code: string };
+
+      expect(parsed.error).toContain('not found');
+      expect(parsed.code).toBe('NOT_FOUND');
+    });
+
+    it('forgets single observation by ID, leaving entity intact', async () => {
+      await rememberEntity(db, {
+        content: 'First observation about SQLite',
+        entity_name: 'SQLite',
+        entity_type: 'technology',
+      }, stmts);
+
+      await rememberEntity(db, {
+        content: 'Second observation about SQLite',
+        entity_name: 'SQLite',
+        entity_type: 'technology',
+      }, stmts);
+
+      const entity = db.prepare('SELECT id FROM entities WHERE name = ?').get('SQLite') as { id: string };
+      const observations = db.prepare('SELECT id FROM observations WHERE entity_id = ?').all(entity.id) as Array<{ id: string }>;
+      expect(observations.length).toBe(2);
+
+      const obsToDelete = observations[0].id;
+
+      const result = forgetEntity(db, { observation_id: obsToDelete }, stmts);
+      const parsed = JSON.parse(result.content[0].text) as { status: string; type: string; observation_id: string };
+
+      expect(parsed.status).toBe('forgotten');
+      expect(parsed.type).toBe('observation');
+      expect(parsed.observation_id).toBe(obsToDelete);
+
+      // Observation should be gone
+      const obsAfter = db.prepare('SELECT * FROM observations WHERE id = ?').get(obsToDelete);
+      expect(obsAfter).toBeUndefined();
+
+      // FTS entry should be gone
+      const ftsAfter = db.prepare('SELECT * FROM fts_observations WHERE observation_id = ?').get(obsToDelete);
+      expect(ftsAfter).toBeUndefined();
+
+      // Entity should still exist
+      const entityAfter = db.prepare('SELECT * FROM entities WHERE id = ?').get(entity.id);
+      expect(entityAfter).toBeDefined();
+
+      // One observation should remain
+      const remainingObs = db.prepare('SELECT COUNT(*) as n FROM observations WHERE entity_id = ?').get(entity.id) as { n: number };
+      expect(remainingObs.n).toBe(1);
+    });
+
+    it('returns NOT_FOUND for nonexistent observation', () => {
+      const result = forgetEntity(db, { observation_id: 'nonexistent-obs-id' }, stmts);
+      const parsed = JSON.parse(result.content[0].text) as { error: string; code: string };
+
+      expect(parsed.error).toContain('not found');
+      expect(parsed.code).toBe('NOT_FOUND');
+    });
+
+    it('forgets single relationship by ID', async () => {
+      await rememberEntity(db, {
+        content: 'React uses JSX',
+        entity_name: 'React',
+        entity_type: 'technology',
+        relations: [{ target_name: 'JSX', target_type: 'concept', relation_type: 'uses' }],
+      }, stmts);
+
+      const source = db.prepare('SELECT id FROM entities WHERE name = ?').get('React') as { id: string };
+      const target = db.prepare('SELECT id FROM entities WHERE name = ?').get('JSX') as { id: string };
+      const rel = db.prepare('SELECT id FROM relationships WHERE from_id = ? AND to_id = ?').get(source.id, target.id) as { id: string };
+      expect(rel).toBeDefined();
+
+      const result = forgetEntity(db, { relationship_id: rel.id }, stmts);
+      const parsed = JSON.parse(result.content[0].text) as { status: string; type: string; relationship_id: string };
+
+      expect(parsed.status).toBe('forgotten');
+      expect(parsed.type).toBe('relationship');
+      expect(parsed.relationship_id).toBe(rel.id);
+
+      // Relationship should be gone
+      const relAfter = db.prepare('SELECT * FROM relationships WHERE id = ?').get(rel.id);
+      expect(relAfter).toBeUndefined();
+
+      // Both entities should still exist
+      expect(db.prepare('SELECT * FROM entities WHERE id = ?').get(source.id)).toBeDefined();
+      expect(db.prepare('SELECT * FROM entities WHERE id = ?').get(target.id)).toBeDefined();
+    });
+
+    it('returns NOT_FOUND for nonexistent relationship', () => {
+      const result = forgetEntity(db, { relationship_id: 'nonexistent-rel-id' }, stmts);
+      const parsed = JSON.parse(result.content[0].text) as { error: string; code: string };
+
+      expect(parsed.error).toContain('not found');
+      expect(parsed.code).toBe('NOT_FOUND');
+    });
+
+    it('returns INVALID_INPUT when no params provided', () => {
+      const result = forgetEntity(db, {}, stmts);
+      const parsed = JSON.parse(result.content[0].text) as { error: string; code: string };
+
+      expect(parsed.code).toBe('INVALID_INPUT');
+      expect(parsed.error).toContain('entity_name');
     });
   });
 
