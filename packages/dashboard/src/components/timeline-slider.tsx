@@ -1,47 +1,72 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
-import { Play, Pause } from 'lucide-react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { Play, Pause, SkipForward, SkipBack } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface TimelineSliderProps {
-  minMs: number                                         // earliest entity timestamp (ms)
-  maxMs: number                                         // latest entity timestamp (ms)
-  cutoffRef: React.MutableRefObject<number>             // shared ref: the current cutoff timestamp in ms
-  onScrub: (ms: number) => void                         // called ONLY on manual slider scrub
-  onPlayStateChange?: (playing: boolean) => void        // optional callback when play/pause toggles
+  minMs: number
+  maxMs: number
+  cutoffRef: React.MutableRefObject<number>
+  onScrub: (ms: number) => void
+  /** Sorted array of unique entity creation timestamps (ms). Enables event-based stepping. */
+  entityTimestamps?: number[]
+  onPlayStateChange?: (playing: boolean) => void
 }
 
-// Target: full timeline plays in ~10 seconds at 1x speed.
-// Computed dynamically from the actual date range so narrow ranges (same day)
-// still produce a visible frame-by-frame playback.
-const MIN_PLAYBACK_SECONDS = 10
+/**
+ * Event-based timeline: steps through entity creation events rather than
+ * smooth time, so clusters of entities created seconds apart each get
+ * their own visible frame. Pauses ~600ms per step at 1x speed.
+ */
+const MS_PER_STEP = 600
 
 export function TimelineSlider({
   minMs,
   maxMs,
   cutoffRef,
   onScrub,
+  entityTimestamps,
   onPlayStateChange,
 }: TimelineSliderProps) {
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
-  // displayMs is for slider position + date label only — NOT the source of truth for canvas
   const [displayMs, setDisplayMs] = useState<number>(minMs)
 
   const rafIdRef = useRef<number | null>(null)
   const prevTimestampRef = useRef<number | null>(null)
-  const lastDisplayUpdateRef = useRef<number>(0)
   const speedRef = useRef(speed)
   const playingRef = useRef(playing)
+  const stepAccumulatorRef = useRef(0)
+  const currentStepRef = useRef(0)
 
-  // Keep refs in sync with state so rAF callback reads current values
   useEffect(() => { speedRef.current = speed }, [speed])
   useEffect(() => { playingRef.current = playing }, [playing])
 
   const range = maxMs - minMs || 1
 
-  // Compute playback rate: range / (target seconds * 1000ms) = timeline ms per real ms
-  // This ensures even a 1-hour range takes ~10 seconds to play through
-  const timelineMsPerRealMs = range / (MIN_PLAYBACK_SECONDS * 1000)
+  // Build sorted unique event steps from entity timestamps
+  const steps = useMemo(() => {
+    if (!entityTimestamps || entityTimestamps.length === 0) return [minMs, maxMs]
+    const unique = [...new Set(entityTimestamps)].sort((a, b) => a - b)
+    return unique
+  }, [entityTimestamps, minMs, maxMs])
+
+  // Node count at each step (for display)
+  const nodeCountAtStep = useCallback((stepIndex: number) => {
+    if (stepIndex < 0) return 0
+    if (stepIndex >= steps.length) return entityTimestamps?.length ?? 0
+    const cutoff = steps[stepIndex]
+    return (entityTimestamps ?? []).filter(t => t <= cutoff).length
+  }, [steps, entityTimestamps])
+
+  // Find which step we're at for a given ms
+  const stepForMs = useCallback((ms: number) => {
+    let idx = 0
+    for (let i = 0; i < steps.length; i++) {
+      if (steps[i] <= ms) idx = i
+      else break
+    }
+    return idx
+  }, [steps])
 
   const stopPlayback = useCallback(() => {
     if (rafIdRef.current !== null) {
@@ -49,39 +74,54 @@ export function TimelineSlider({
       rafIdRef.current = null
     }
     prevTimestampRef.current = null
+    stepAccumulatorRef.current = 0
   }, [])
+
+  const goToStep = useCallback((stepIndex: number) => {
+    const clamped = Math.max(0, Math.min(stepIndex, steps.length - 1))
+    currentStepRef.current = clamped
+    const ms = steps[clamped]
+    cutoffRef.current = ms
+    setDisplayMs(ms)
+  }, [steps, cutoffRef])
 
   const startPlayback = useCallback(() => {
     stopPlayback()
 
     // If at end, restart from beginning
-    if (cutoffRef.current >= maxMs) {
-      cutoffRef.current = minMs
-      setDisplayMs(minMs)
+    if (currentStepRef.current >= steps.length - 1) {
+      currentStepRef.current = 0
+      cutoffRef.current = steps[0]
+      setDisplayMs(steps[0])
     }
+
+    stepAccumulatorRef.current = 0
 
     const tick = (timestamp: number) => {
       if (!playingRef.current) return
 
       if (prevTimestampRef.current !== null) {
         const elapsed = timestamp - prevTimestampRef.current
-        const timelineAdvance = elapsed * timelineMsPerRealMs * speedRef.current
-        cutoffRef.current = Math.min(cutoffRef.current + timelineAdvance, maxMs)
+        stepAccumulatorRef.current += elapsed * speedRef.current
 
-        // Throttle display updates to ~4fps to avoid re-renders during playback
-        const now = Date.now()
-        if (now - lastDisplayUpdateRef.current > 250) {
-          lastDisplayUpdateRef.current = now
-          setDisplayMs(cutoffRef.current)
-        }
+        // Advance one step per MS_PER_STEP of accumulated real time
+        if (stepAccumulatorRef.current >= MS_PER_STEP) {
+          stepAccumulatorRef.current -= MS_PER_STEP
+          currentStepRef.current++
 
-        // Stop when we reach the end
-        if (cutoffRef.current >= maxMs) {
-          setDisplayMs(maxMs)
-          setPlaying(false)
-          onPlayStateChange?.(false)
-          onScrub(maxMs) // sync final state
-          return
+          if (currentStepRef.current >= steps.length) {
+            // Reached the end
+            currentStepRef.current = steps.length - 1
+            cutoffRef.current = steps[steps.length - 1]
+            setDisplayMs(steps[steps.length - 1])
+            setPlaying(false)
+            onPlayStateChange?.(false)
+            onScrub(steps[steps.length - 1])
+            return
+          }
+
+          cutoffRef.current = steps[currentStepRef.current]
+          setDisplayMs(steps[currentStepRef.current])
         }
       }
 
@@ -90,7 +130,7 @@ export function TimelineSlider({
     }
 
     rafIdRef.current = requestAnimationFrame(tick)
-  }, [stopPlayback, cutoffRef, minMs, maxMs, onScrub, onPlayStateChange])
+  }, [stopPlayback, cutoffRef, steps, onScrub, onPlayStateChange])
 
   const handlePlayPause = useCallback(() => {
     const nextPlaying = !playing
@@ -104,9 +144,26 @@ export function TimelineSlider({
     }
   }, [playing, startPlayback, stopPlayback, onPlayStateChange])
 
+  const handleStepForward = useCallback(() => {
+    if (playing) {
+      setPlaying(false)
+      onPlayStateChange?.(false)
+      stopPlayback()
+    }
+    goToStep(currentStepRef.current + 1)
+  }, [playing, stopPlayback, goToStep, onPlayStateChange])
+
+  const handleStepBack = useCallback(() => {
+    if (playing) {
+      setPlaying(false)
+      onPlayStateChange?.(false)
+      stopPlayback()
+    }
+    goToStep(currentStepRef.current - 1)
+  }, [playing, stopPlayback, goToStep, onPlayStateChange])
+
   const handleSliderChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      // Pause if currently playing
       if (playingRef.current) {
         setPlaying(false)
         onPlayStateChange?.(false)
@@ -117,32 +174,49 @@ export function TimelineSlider({
       const ms = minMs + (pct / 100) * range
       cutoffRef.current = ms
       setDisplayMs(ms)
+      currentStepRef.current = stepForMs(ms)
       onScrub(ms)
     },
-    [minMs, range, cutoffRef, onScrub, onPlayStateChange, stopPlayback],
+    [minMs, range, cutoffRef, onScrub, onPlayStateChange, stopPlayback, stepForMs],
   )
+
+  // Sync currentStepRef when minMs changes (timeline re-enabled)
+  useEffect(() => {
+    currentStepRef.current = 0
+    setDisplayMs(minMs)
+  }, [minMs])
 
   // Cleanup rAF on unmount
   useEffect(() => {
     return () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current)
-      }
+      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current)
     }
   }, [])
 
   const progress = ((displayMs - minMs) / range) * 100
   const displayDate = new Date(displayMs)
+  const currentNodes = nodeCountAtStep(currentStepRef.current)
+  const totalNodes = entityTimestamps?.length ?? 0
 
   return (
     <div
-      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 px-4 py-2.5 rounded-lg max-w-lg w-full"
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 px-4 py-2.5 rounded-lg max-w-xl w-full"
       style={{
         backgroundColor: 'rgba(5, 5, 16, 0.9)',
         border: '1px solid var(--border-subtle)',
         backdropFilter: 'blur(8px)',
       }}
     >
+      {/* Step back */}
+      <button
+        onClick={handleStepBack}
+        className="shrink-0 p-1 rounded transition-colors"
+        style={{ color: 'var(--text-muted)' }}
+      >
+        <SkipBack size={14} />
+      </button>
+
+      {/* Play/Pause */}
       <button
         onClick={handlePlayPause}
         className="shrink-0 p-1 rounded transition-colors"
@@ -151,6 +225,16 @@ export function TimelineSlider({
         {playing ? <Pause size={16} /> : <Play size={16} />}
       </button>
 
+      {/* Step forward */}
+      <button
+        onClick={handleStepForward}
+        className="shrink-0 p-1 rounded transition-colors"
+        style={{ color: 'var(--text-muted)' }}
+      >
+        <SkipForward size={14} />
+      </button>
+
+      {/* Slider */}
       <input
         type="range"
         min={0}
@@ -165,13 +249,23 @@ export function TimelineSlider({
         }}
       />
 
+      {/* Date + time display */}
       <span
-        className="text-xs font-mono shrink-0 w-20 text-right"
+        className="text-xs font-mono shrink-0 w-28 text-right"
         style={{ color: 'var(--text-secondary)' }}
       >
-        {format(displayDate, 'MMM d, yy')}
+        {format(displayDate, 'MMM d, h:mm a')}
       </span>
 
+      {/* Node count */}
+      <span
+        className="text-xs font-mono shrink-0"
+        style={{ color: 'var(--glow-teal)' }}
+      >
+        {currentNodes}/{totalNodes}
+      </span>
+
+      {/* Speed */}
       <select
         value={speed}
         onChange={(e) => setSpeed(Number(e.target.value))}
@@ -182,6 +276,7 @@ export function TimelineSlider({
           border: '1px solid var(--border-subtle)',
         }}
       >
+        <option value={0.5}>0.5x</option>
         <option value={1}>1x</option>
         <option value={2}>2x</option>
         <option value={5}>5x</option>

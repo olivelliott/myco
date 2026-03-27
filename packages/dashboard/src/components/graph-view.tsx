@@ -228,10 +228,22 @@ export function GraphView({
     hasZoomedRef.current = false
   }, [nodes.length])
 
-  // Reset zoom flag when entering/exiting neighborhood mode so view re-zooms to fit subgraph
+  // When entering/exiting neighborhood mode, re-zoom to fit the new data set.
+  // We reset the flag AND proactively trigger zoom-to-fit after a delay to
+  // allow the simulation to position nodes. Without the proactive call, the
+  // full graph wouldn't zoom-to-fit if the sim settles very quickly.
   useEffect(() => {
     hasZoomedRef.current = false
-  }, [neighborhoodData != null]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!mini && fgRef.current) {
+      // Give simulation time to start positioning, then zoom to fit
+      setTimeout(() => {
+        if (!hasZoomedRef.current && fgRef.current) {
+          hasZoomedRef.current = true
+          fgRef.current.zoomToFit(400, 80)
+        }
+      }, 500)
+    }
+  }, [neighborhoodData != null, mini]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Configure forces after mount
   useEffect(() => {

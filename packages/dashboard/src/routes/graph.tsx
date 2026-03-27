@@ -104,6 +104,15 @@ function GraphPage() {
     timelineCutoffRef.current = ms
   }, [])
 
+  // Sorted unique entity creation timestamps for event-based timeline stepping
+  const entityTimestamps = useMemo(() => {
+    if (!data?.nodes?.length) return []
+    return data.nodes
+      .map((n) => n.created_at ? new Date(n.created_at).getTime() : 0)
+      .filter((t) => t > 0)
+      .sort((a, b) => a - b)
+  }, [data])
+
   // Always pass ALL data to GraphView — timeline visibility is purely visual via canvas painter
   // This is the critical Pitfall 1 fix: graphData reference never changes during timeline playback
   const displayData = data
@@ -157,30 +166,31 @@ function GraphPage() {
 
   const handleNodeClick = useCallback(
     (node: GraphNode) => {
-      const now = Date.now()
-      const lastClick = lastClickRef.current
-
-      // Double-click detection (< 400ms between clicks on same node)
-      if (lastClick && lastClick.id === node.id && now - lastClick.time < 400) {
-        // Enter neighborhood mode
-        setModeState({ type: 'neighborhood', centerId: node.id, depth: 1 })
-        lastClickRef.current = null
-        return
-      }
-
-      lastClickRef.current = { id: node.id, time: now }
-
+      // In path mode, clicks set source/target — no double-click neighborhood entry
       if (modeState.type === 'path') {
         if (!modeState.source) {
           setModeState({ type: 'path', source: node.id, target: null })
         } else if (!modeState.target && node.id !== modeState.source) {
           setModeState({ type: 'path', source: modeState.source, target: node.id })
         } else {
+          // Both set — restart with this node as new source
           setModeState({ type: 'path', source: node.id, target: null })
         }
-      } else {
-        setSelectedNodeId(node.id)
+        return
       }
+
+      // Double-click detection (< 400ms between clicks on same node) for neighborhood
+      const now = Date.now()
+      const lastClick = lastClickRef.current
+      if (lastClick && lastClick.id === node.id && now - lastClick.time < 400) {
+        setModeState({ type: 'neighborhood', centerId: node.id, depth: 1 })
+        lastClickRef.current = null
+        return
+      }
+      lastClickRef.current = { id: node.id, time: now }
+
+      // Default: open entity panel
+      setSelectedNodeId(node.id)
     },
     [modeState],
   )
@@ -300,6 +310,7 @@ function GraphPage() {
           maxMs={dateRange.max}
           cutoffRef={timelineCutoffRef}
           onScrub={handleScrub}
+          entityTimestamps={entityTimestamps}
         />
       )}
 
