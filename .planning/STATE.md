@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Ready to plan
-stopped_at: Completed 18-02-PLAN.md
-last_updated: "2026-03-27T20:39:36.747Z"
+status: Ready to execute
+stopped_at: Completed 19-01-PLAN.md
+last_updated: "2026-03-27T20:52:09.205Z"
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 18 — schema-foundation
+**Current focus:** Phase 19 — temporal-versioning-dedup-resolution
 
 ## Current Position
 
-Phase: 19
-Plan: Not started
+Phase: 19 (temporal-versioning-dedup-resolution) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -43,6 +43,7 @@ Plan: Not started
 *Updated after each plan completion*
 | Phase 18 P01 | 1m | 1 tasks | 4 files |
 | Phase 18 P02 | 2m | 2 tasks | 3 files |
+| Phase 19 P01 | 303s | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,9 @@ Recent decisions affecting current work:
 - [Phase 18]: Each ALTER TABLE in its own try/catch — SQLite stops at first error in multi-statement exec, so individual wrapping lets subsequent columns land on existing databases
 - [Phase 18]: New v5.0 interface fields are optional (?) to avoid breaking existing consumers — feature phases 19-21 will populate them as they land
 - [Phase 18]: Merged entities excluded at query layer (merged_into IS NULL) rather than a deleted flag — preserves graph history while hiding merged nodes from active consumers
+- [Phase 19]: sqlite-vec returns Euclidean distance between normalized vectors — dedup thresholds corrected to NOOP<0.40 UPDATE<0.84 (equivalent to cosine 0.08 and 0.35)
+- [Phase 19]: retireObservation is a sync function — better-sqlite3 UPDATE is synchronous, no async needed
+- [Phase 19]: Ollama-down fallback: exact string match for NOOP, ADD otherwise — avoids data loss at cost of rare duplicate
 
 ### Pending Todos
 
@@ -74,6 +78,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T20:38:57.046Z
-Stopped at: Completed 18-02-PLAN.md
+Last session: 2026-03-27T20:52:09.201Z
+Stopped at: Completed 19-01-PLAN.md
 Resume file: None

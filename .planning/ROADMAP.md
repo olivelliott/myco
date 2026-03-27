@@ -96,9 +96,9 @@ Plans:
   3. When the same observation is submitted twice, the second call is classified as NOOP and does not create a duplicate row in the observations table
   4. When a conflicting fact is submitted (different value for same attribute), the old observation is soft-retired and the new one is inserted in a single atomic operation
   5. Entity merges use a `merged_into` column soft-delete — after a merge, the source entity still exists in the database with its `merged_into` field set, and prior observations remain queryable
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 19-01-PLAN.md — Dedup classification engine + temporal prepared statements
+- [x] 19-01-PLAN.md — Dedup classification engine + temporal prepared statements
 - [ ] 19-02-PLAN.md — Wire dedup into remember/recall + entity merge + integration tests
 
 ### Phase 20: Relationship Strength Scoring
@@ -180,7 +180,7 @@ Plans:
 | 16. Home Page Enhancements | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 17. Approvals Overhaul | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 18. Schema Foundation | v5.0 | 2/2 | Complete    | 2026-03-27 |
-| 19. Temporal Versioning + Dedup Resolution | v5.0 | 0/2 | Planned | - |
+| 19. Temporal Versioning + Dedup Resolution | v5.0 | 1/2 | In Progress|  |
 | 20. Relationship Strength Scoring | v5.0 | 0/? | Not started | - |
 | 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
