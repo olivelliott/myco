@@ -61,6 +61,16 @@ export interface MycoStatements {
   countObservationsAfter: Statement;
   countRelationshipsAfter: Statement;
 
+  // ── Forget / delete statements ──────────────────────────────────────────────
+  deleteObservationById: Statement;
+  deleteRelationshipById: Statement;
+  selectObservationById: Statement;
+  selectRelationshipById: Statement;
+  selectAllObservationIdsByEntityId: Statement;
+  selectRelationshipsByEntityIdBoth: Statement;
+  deleteVecEmbeddingByItemId: Statement;
+  deleteFtsObservationByObsId: Statement;
+
   // ── API route statements ──────────────────────────────────────────────────
   selectAllPendingApprovals: Statement;
   selectEntitiesPaginated: Statement;
@@ -319,6 +329,39 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     countRelationshipsAfter: db.prepare(
       `SELECT COUNT(*) as n FROM relationships WHERE created_at > ?`
+    ),
+
+    // ── Forget / delete statements ────────────────────────────────────────────
+    deleteObservationById: db.prepare(
+      `DELETE FROM observations WHERE id = ?`
+    ),
+
+    deleteRelationshipById: db.prepare(
+      `DELETE FROM relationships WHERE id = ?`
+    ),
+
+    selectObservationById: db.prepare(
+      `SELECT id, entity_id FROM observations WHERE id = ?`
+    ),
+
+    selectRelationshipById: db.prepare(
+      `SELECT id FROM relationships WHERE id = ?`
+    ),
+
+    selectAllObservationIdsByEntityId: db.prepare(
+      `SELECT id FROM observations WHERE entity_id = ?`
+    ),
+
+    selectRelationshipsByEntityIdBoth: db.prepare(
+      `SELECT id FROM relationships WHERE from_id = ? OR to_id = ?`
+    ),
+
+    deleteVecEmbeddingByItemId: db.prepare(
+      `DELETE FROM vec_embeddings WHERE item_id = ?`
+    ),
+
+    deleteFtsObservationByObsId: db.prepare(
+      `DELETE FROM fts_observations WHERE observation_id = ?`
     ),
 
     // ── API route statements ─────────────────────────────────────────────────

@@ -58,6 +58,11 @@ interface QueryObservationRow {
   created_at: string;
 }
 
+export interface ForgetResult {
+  content: Array<{ type: 'text'; text: string }>;
+  [key: string]: unknown;
+}
+
 export interface RecallResult {
   content: Array<{ type: 'text'; text: string }>;
   [key: string]: unknown;
@@ -412,6 +417,133 @@ export async function reEmbedPending(db: Database.Database, stmts: MycoStatement
   return embedded;
 }
 
+/**
+ * Remove an entity (by name, with full cascade), a single observation (by ID),
+ * or a single relationship (by ID) from the knowledge graph.
+ *
+ * Manually cleans up vec_embeddings and fts_observations entries that do not
+ * cascade via SQLite foreign keys.
+ */
+export function forgetEntity(
+  db: Database.Database,
+  params: { entity_name?: string; entity_type?: string; observation_id?: string; relationship_id?: string },
+  stmts: MycoStatements,
+): ForgetResult {
+  const { entity_name, entity_type, observation_id, relationship_id } = params;
+
+  // Validation: exactly one mode required
+  if (!entity_name && !observation_id && !relationship_id) {
+    return {
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({ error: 'Provide entity_name, observation_id, or relationship_id', code: 'INVALID_INPUT' }),
+      }],
+    };
+  }
+
+  // Mode 1: Forget entire entity by name
+  if (entity_name) {
+    const type = entity_type ?? 'concept';
+    const entity = stmts.selectEntityByNameType.get(entity_name, type) as { id: string } | undefined;
+
+    if (!entity) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ error: `Entity '${entity_name}' (type: ${type}) not found`, code: 'NOT_FOUND' }),
+        }],
+      };
+    }
+
+    const entityId = entity.id;
+
+    // Get all observation IDs for manual cleanup of vec_embeddings and fts_observations
+    const obsRows = stmts.selectAllObservationIdsByEntityId.all(entityId) as Array<{ id: string }>;
+    for (const obs of obsRows) {
+      stmts.deleteVecEmbeddingByItemId.run(obs.id);
+      stmts.deleteFtsObservationByObsId.run(obs.id);
+    }
+
+    // Count relationships before cascade delete
+    const relRows = stmts.selectRelationshipsByEntityIdBoth.all(entityId, entityId) as Array<{ id: string }>;
+    const relationshipsRemoved = relRows.length;
+
+    // Delete entity — CASCADE handles observations and relationships rows
+    stmts.deleteEntityById.run(entityId);
+    invalidateEntityCache();
+
+    return {
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({
+          status: 'forgotten',
+          type: 'entity',
+          entity_name,
+          observations_removed: obsRows.length,
+          relationships_removed: relationshipsRemoved,
+        }),
+      }],
+    };
+  }
+
+  // Mode 2: Forget single observation by ID
+  if (observation_id) {
+    const obs = stmts.selectObservationById.get(observation_id) as { id: string; entity_id: string } | undefined;
+
+    if (!obs) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ error: `Observation '${observation_id}' not found`, code: 'NOT_FOUND' }),
+        }],
+      };
+    }
+
+    // Clean up vec_embeddings and fts_observations
+    stmts.deleteVecEmbeddingByItemId.run(observation_id);
+    stmts.deleteFtsObservationByObsId.run(observation_id);
+    stmts.deleteObservationById.run(observation_id);
+
+    return {
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({ status: 'forgotten', type: 'observation', observation_id }),
+      }],
+    };
+  }
+
+  // Mode 3: Forget single relationship by ID
+  if (relationship_id) {
+    const rel = stmts.selectRelationshipById.get(relationship_id) as { id: string } | undefined;
+
+    if (!rel) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ error: `Relationship '${relationship_id}' not found`, code: 'NOT_FOUND' }),
+        }],
+      };
+    }
+
+    stmts.deleteRelationshipById.run(relationship_id);
+
+    return {
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({ status: 'forgotten', type: 'relationship', relationship_id }),
+      }],
+    };
+  }
+
+  // Should not reach here, but TypeScript needs exhaustive return
+  return {
+    content: [{
+      type: 'text' as const,
+      text: JSON.stringify({ error: 'Provide entity_name, observation_id, or relationship_id', code: 'INVALID_INPUT' }),
+    }],
+  };
+}
+
 export function registerTools(server: McpServer, db: Database.Database, stmts: MycoStatements): void {
   server.registerTool(
     'remember',
@@ -756,6 +888,29 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
               code: 'INTERNAL_ERROR',
             }),
           }],
+        };
+      }
+    },
+  );
+
+  server.registerTool(
+    'forget',
+    {
+      description: 'Remove an entity, observation, or relationship from the knowledge graph. Deleting an entity cascade-deletes all its observations and relationships.',
+      inputSchema: {
+        entity_name: z.string().optional().describe('Name of the entity to forget (deletes entity + all observations + relationships)'),
+        entity_type: z.string().default('concept').optional().describe('Entity type (used with entity_name to find exact entity)'),
+        observation_id: z.string().optional().describe('ID of a specific observation to remove'),
+        relationship_id: z.string().optional().describe('ID of a specific relationship to remove'),
+      },
+    },
+    async ({ entity_name, entity_type, observation_id, relationship_id }) => {
+      try {
+        return forgetEntity(db, { entity_name, entity_type, observation_id, relationship_id }, stmts);
+      } catch (err) {
+        console.error('[forget] tool error:', err);
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'An unexpected error occurred', code: 'INTERNAL_ERROR' }) }],
         };
       }
     },
