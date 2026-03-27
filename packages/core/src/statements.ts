@@ -20,6 +20,7 @@ export interface MycoStatements {
   clearObservationEmbeddingFlag: Statement;
   selectPendingEmbeddings: Statement;
   selectObservationsByEntityId: Statement;
+  selectAllObservationsByEntityId: Statement;
   updateObservationEntityId: Statement;
 
   // ── Relationship statements ──────────────────────────────────────────────
@@ -147,7 +148,12 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     selectObservationsByEntityId: db.prepare(
       `SELECT id, content, confidence, created_at
-       FROM observations WHERE entity_id = ? ORDER BY created_at DESC LIMIT 20`
+       FROM observations WHERE entity_id = ? AND valid_until IS NULL ORDER BY created_at DESC LIMIT 20`
+    ),
+
+    selectAllObservationsByEntityId: db.prepare(
+      `SELECT id, content, confidence, created_at, valid_from, valid_until
+       FROM observations WHERE entity_id = ? ORDER BY valid_from DESC`
     ),
 
     updateObservationEntityId: db.prepare(
@@ -193,7 +199,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
          e.type      AS entity_type,
          knn.distance AS relevance_score
        FROM knn
-       JOIN observations o ON o.id = knn.item_id
+       JOIN observations o ON o.id = knn.item_id AND o.valid_until IS NULL
        JOIN entities e ON e.id = o.entity_id
        ORDER BY knn.distance`
     ),
@@ -208,7 +214,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
        )
        SELECT knn.distance
        FROM knn
-       JOIN observations o ON o.id = knn.item_id
+       JOIN observations o ON o.id = knn.item_id AND o.valid_until IS NULL
        WHERE o.entity_id = ?
        ORDER BY knn.distance
        LIMIT 1`
@@ -244,7 +250,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
          e.type      AS entity_type,
          fts.rank    AS relevance_score
        FROM fts_observations fts
-       JOIN observations o ON o.id = fts.observation_id
+       JOIN observations o ON o.id = fts.observation_id AND o.valid_until IS NULL
        JOIN entities e ON e.id = o.entity_id
        WHERE fts_observations MATCH ?
        ORDER BY fts.rank

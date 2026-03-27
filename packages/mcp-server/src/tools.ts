@@ -57,6 +57,8 @@ interface QueryObservationRow {
   content: string;
   confidence: number;
   created_at: string;
+  valid_from?: string;
+  valid_until?: string | null;
 }
 
 export interface ForgetResult {
@@ -209,14 +211,26 @@ export async function recallKnowledge(
     entity_type?: string;
     min_confidence?: number;
     project?: string;
+    as_of?: string;
   },
   stmts: MycoStatements,
 ): Promise<RecallResult> {
-  const { query, limit, entity_type, min_confidence, project } = params;
+  const { query, limit, entity_type, min_confidence, project, as_of } = params;
 
   // Build filter conditions (STMT-02 exception pattern — dynamic WHERE)
+  // Temporal filter — always applied first
   const conditions: string[] = [];
   const filterParams: unknown[] = [];
+
+  if (as_of !== undefined) {
+    // Point-in-time: observations valid at the given timestamp
+    conditions.push('o.valid_from <= ?');
+    conditions.push('(o.valid_until IS NULL OR o.valid_until > ?)');
+    filterParams.push(as_of, as_of);
+  } else {
+    // Default: current observations only (no retired)
+    conditions.push('o.valid_until IS NULL');
+  }
 
   if (entity_type !== undefined) {
     conditions.push('e.type = ?');
@@ -231,6 +245,13 @@ export async function recallKnowledge(
     filterParams.push(project);
   }
 
+  // Fast path: only if no filters beyond the default temporal filter
+  // (prepared statements already have valid_until IS NULL baked in)
+  const useDefaultTemporalOnly = as_of === undefined
+    && entity_type === undefined
+    && min_confidence === undefined
+    && project === undefined;
+
   // Try semantic search first
   const queryEmbedding = await embedText(query);
 
@@ -239,8 +260,9 @@ export async function recallKnowledge(
 
     let rows: RecallRow[];
 
-    if (conditions.length === 0) {
-      // No filters — use prepared statement (fast path)
+    if (useDefaultTemporalOnly) {
+      // No filters beyond default temporal — use prepared statement (fast path)
+      // knnSearchObservations already has AND o.valid_until IS NULL
       rows = stmts.knnSearchObservations.all(queryVec, limit) as RecallRow[];
     } else {
       // Filters present — dynamic WHERE (STMT-02 exception)
@@ -291,8 +313,9 @@ export async function recallKnowledge(
 
   let rows: RecallRow[];
 
-  if (conditions.length === 0) {
-    // No filters — use prepared statement (fast path)
+  if (useDefaultTemporalOnly) {
+    // No filters beyond default temporal — use prepared statement (fast path)
+    // ftsSearchObservations already has AND o.valid_until IS NULL
     rows = stmts.ftsSearchObservations.all(ftsQuery, limit) as RecallRow[];
   } else {
     // Filters present — dynamic WHERE (STMT-02 exception)
@@ -334,10 +357,10 @@ export async function recallKnowledge(
 
 export function queryEntities(
   db: Database.Database,
-  params: { entity_name?: string; entity_type?: string; relation_type?: string; project?: string },
+  params: { entity_name?: string; entity_type?: string; relation_type?: string; project?: string; as_of?: string; history?: boolean },
   stmts: MycoStatements,
 ): RecallResult {
-  const { entity_name, entity_type, relation_type, project } = params;
+  const { entity_name, entity_type, relation_type, project, as_of, history } = params;
 
   const conditions: string[] = ['e.merged_into IS NULL'];
   const queryParams: unknown[] = [];
@@ -376,20 +399,53 @@ export function queryEntities(
     LIMIT 50
   `).all(...queryParams) as QueryEntityRow[];
 
-  // For each entity, fetch its observations using the pre-compiled statement
-  const results = entities.map(ent => ({
-    entity_name: ent.name,
-    entity_type: ent.type,
-    summary: ent.summary,
-    confidence: ent.confidence,
-    observation_count: ent.observation_count,
-    relationship_count: ent.relationship_count,
-    observations: (stmts.selectObservationsByEntityId.all(ent.id) as QueryObservationRow[]).map(obs => ({
-      content: obs.content,
-      confidence: obs.confidence,
-      created_at: obs.created_at,
-    })),
-  }));
+  // For each entity, fetch observations based on temporal mode
+  const results = entities.map(ent => {
+    let obsRows: QueryObservationRow[];
+
+    if (history) {
+      // History mode: all versions including retired, ordered by valid_from DESC
+      obsRows = stmts.selectAllObservationsByEntityId.all(ent.id) as QueryObservationRow[];
+    } else if (as_of !== undefined) {
+      // Point-in-time: observations valid at the given timestamp
+      obsRows = db.prepare(
+        `SELECT id, content, confidence, created_at, valid_from, valid_until
+         FROM observations
+         WHERE entity_id = ?
+           AND valid_from <= ?
+           AND (valid_until IS NULL OR valid_until > ?)
+         ORDER BY valid_from DESC`
+      ).all(ent.id, as_of, as_of) as QueryObservationRow[];
+    } else {
+      // Default: current observations only (valid_until IS NULL)
+      obsRows = stmts.selectObservationsByEntityId.all(ent.id) as QueryObservationRow[];
+    }
+
+    return {
+      entity_name: ent.name,
+      entity_type: ent.type,
+      summary: ent.summary,
+      confidence: ent.confidence,
+      observation_count: ent.observation_count,
+      relationship_count: ent.relationship_count,
+      observations: obsRows.map(obs => {
+        const base = {
+          content: obs.content,
+          confidence: obs.confidence,
+          created_at: obs.created_at,
+        };
+        // Include temporal fields when history or as_of is requested
+        if (history || as_of !== undefined) {
+          return {
+            ...base,
+            valid_from: obs.valid_from,
+            valid_until: obs.valid_until ?? null,
+          };
+        }
+        return base;
+      }),
+    };
+  });
 
   return {
     content: [{
@@ -644,11 +700,13 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
         entity_type: z.string().optional().describe('Filter by entity type (e.g. "technology", "person")'),
         min_confidence: z.number().min(0).max(1).optional().describe('Minimum confidence score 0.0-1.0'),
         project: z.string().optional().describe('Filter by project namespace'),
+        as_of: z.string().datetime({ offset: true }).optional()
+          .describe('ISO 8601 timestamp — returns observations valid at this point in time. Omit for current.'),
       },
     },
-    async ({ query, limit, entity_type, min_confidence, project }) => {
+    async ({ query, limit, entity_type, min_confidence, project, as_of }) => {
       try {
-        return await recallKnowledge(db, { query, limit, entity_type, min_confidence, project }, stmts);
+        return await recallKnowledge(db, { query, limit, entity_type, min_confidence, project, as_of }, stmts);
       } catch (err) {
         console.error('[recall] tool error:', err);
         return {
@@ -673,11 +731,15 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
         entity_type: z.string().optional().describe('Filter by entity type'),
         relation_type: z.string().optional().describe('Filter by relationship type'),
         project: z.string().optional().describe('Filter by project namespace'),
+        as_of: z.string().datetime({ offset: true }).optional()
+          .describe('ISO 8601 timestamp — returns observations valid at this point in time. Omit for current.'),
+        history: z.boolean().default(false)
+          .describe('If true, returns all observation versions including superseded ones'),
       },
     },
-    async ({ entity_name, entity_type, relation_type, project }) => {
+    async ({ entity_name, entity_type, relation_type, project, as_of, history }) => {
       try {
-        return queryEntities(db, { entity_name, entity_type, relation_type, project }, stmts);
+        return queryEntities(db, { entity_name, entity_type, relation_type, project, as_of, history }, stmts);
       } catch (err) {
         console.error('[query] tool error:', err);
         return {
