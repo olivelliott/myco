@@ -2,7 +2,9 @@
   "name": "myco",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "tsc --build",
     "dev": "tsx packages/mcp-server/src/index.ts",
@@ -11,13 +13,15 @@
     "api": "tsx packages/api-server/src/index.ts"
   },
   "devDependencies": {
-    "typescript": "~5.9.0",
-    "tsx": "^4.21.0",
-    "vitest": "latest",
     "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.0",
+    "vitest": "latest",
     "zod": "^4.3.6"
   },
   "overrides": {
-    "zod": "^4.3.6"
+    "@modelcontextprotocol/sdk": {
+      "zod": "^4.3.6"
+    }
   }
 }
