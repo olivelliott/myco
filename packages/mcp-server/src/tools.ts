@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type Database from 'better-sqlite3';
-import { generateSessionId, buildProvenance } from '@myco/core';
+import { generateSessionId, buildProvenance, computeEffectiveConfidence, DECAY_EXEMPT_TYPES } from '@myco/core';
 import type { SourceType } from '@myco/core';
 import type { MycoStatements } from '@myco/core';
 import { nanoid } from 'nanoid';
@@ -37,6 +37,9 @@ interface RecallRow {
   observation_id: string;
   content: string;
   confidence: number;
+  last_accessed_at: string | null;      // for decay scoring
+  decay_exempt: number;                 // 0 or 1 from SQLite
+  reinforcement_count: number;
   entity_name: string;
   entity_type: string;
   relevance_score: number;
@@ -59,6 +62,9 @@ interface QueryObservationRow {
   created_at: string;
   valid_from?: string;
   valid_until?: string | null;
+  last_accessed_at: string | null;      // for decay scoring
+  decay_exempt: number;                 // 0 or 1 from SQLite
+  reinforcement_count: number;
 }
 
 export interface ForgetResult {
@@ -276,6 +282,7 @@ export async function recallKnowledge(
             AND item_type = 'observation'
         )
         SELECT o.id AS observation_id, o.content, o.confidence,
+               o.last_accessed_at, o.decay_exempt, o.reinforcement_count,
                e.name AS entity_name, e.type AS entity_type,
                knn.distance AS relevance_score
         FROM knn
@@ -287,20 +294,54 @@ export async function recallKnowledge(
       `).all(queryVec, limit * 3, ...filterParams, limit) as RecallRow[];
     }
 
+    // Apply decay scoring and compute final_score (semantic path)
+    const now = new Date();
+    const scoredRows = rows.map(r => {
+      const effective_confidence = computeEffectiveConfidence({
+        confidence: r.confidence,
+        decayExempt: DECAY_EXEMPT_TYPES.has(r.entity_type),
+        lastAccessedAt: r.last_accessed_at ?? null,
+        reinforcementCount: r.reinforcement_count,
+        now,
+      });
+      // KNN distance: 0 = perfect match — invert to similarity score
+      const similarity = Math.max(0, 1 - r.relevance_score);
+      return { ...r, effective_confidence, final_score: similarity * effective_confidence };
+    });
+
+    // Re-sort by final_score descending (decay-aware ranking)
+    scoredRows.sort((a, b) => b.final_score - a.final_score);
+
+    // Lazy write: update last_accessed_at for returned observation IDs (best-effort)
+    if (scoredRows.length > 0) {
+      const accessedAt = now.toISOString();
+      const placeholders = scoredRows.map(() => '?').join(', ');
+      const ids = scoredRows.map(r => r.observation_id);
+      try {
+        // STMT-02 exception: placeholder count varies with result set size
+        db.prepare(
+          `UPDATE observations SET last_accessed_at = ? WHERE id IN (${placeholders})`
+        ).run(accessedAt, ...ids);
+      } catch {
+        // Best-effort — do not surface as tool error
+      }
+    }
+
     return {
       content: [{
         type: 'text' as const,
         text: JSON.stringify({
-          results: rows.map(r => ({
+          results: scoredRows.map(r => ({
             entity_name: r.entity_name,
             entity_type: r.entity_type,
             observation: r.content,
             confidence: r.confidence,
+            effective_confidence: r.effective_confidence,
             relevance_score: r.relevance_score,
           })),
           metadata: {
             method: 'semantic' as const,
-            count: rows.length,
+            count: scoredRows.length,
             query,
           },
         }),
@@ -322,6 +363,7 @@ export async function recallKnowledge(
     const whereClause = conditions.map(c => `AND ${c}`).join('\n        ');
     rows = db.prepare(`
       SELECT o.id AS observation_id, o.content, o.confidence,
+             o.last_accessed_at, o.decay_exempt, o.reinforcement_count,
              e.name AS entity_name, e.type AS entity_type,
              fts.rank AS relevance_score
       FROM fts_observations fts
@@ -334,20 +376,54 @@ export async function recallKnowledge(
     `).all(ftsQuery, ...filterParams, limit) as RecallRow[];
   }
 
+  // Apply decay scoring and compute final_score (FTS path)
+  const nowFts = new Date();
+  const scoredRowsFts = rows.map(r => {
+    const effective_confidence = computeEffectiveConfidence({
+      confidence: r.confidence,
+      decayExempt: DECAY_EXEMPT_TYPES.has(r.entity_type),
+      lastAccessedAt: r.last_accessed_at ?? null,
+      reinforcementCount: r.reinforcement_count,
+      now: nowFts,
+    });
+    // FTS rank is negative BM25 — negate to get positive score
+    const similarity = -r.relevance_score;
+    return { ...r, effective_confidence, final_score: similarity * effective_confidence };
+  });
+
+  // Re-sort by final_score descending (decay-aware ranking)
+  scoredRowsFts.sort((a, b) => b.final_score - a.final_score);
+
+  // Lazy write: update last_accessed_at for returned observation IDs (best-effort)
+  if (scoredRowsFts.length > 0) {
+    const accessedAt = nowFts.toISOString();
+    const placeholders = scoredRowsFts.map(() => '?').join(', ');
+    const ids = scoredRowsFts.map(r => r.observation_id);
+    try {
+      // STMT-02 exception: placeholder count varies with result set size
+      db.prepare(
+        `UPDATE observations SET last_accessed_at = ? WHERE id IN (${placeholders})`
+      ).run(accessedAt, ...ids);
+    } catch {
+      // Best-effort — do not surface as tool error
+    }
+  }
+
   return {
     content: [{
       type: 'text' as const,
       text: JSON.stringify({
-        results: rows.map(r => ({
+        results: scoredRowsFts.map(r => ({
           entity_name: r.entity_name,
           entity_type: r.entity_type,
           observation: r.content,
           confidence: r.confidence,
+          effective_confidence: r.effective_confidence,
           relevance_score: r.relevance_score,
         })),
         metadata: {
           method: 'fts' as const,
-          count: rows.length,
+          count: scoredRowsFts.length,
           query,
         },
       }),
@@ -400,6 +476,8 @@ export function queryEntities(
   `).all(...queryParams) as QueryEntityRow[];
 
   // For each entity, fetch observations based on temporal mode
+  const allReturnedObsIds: string[] = [];
+
   const results = entities.map(ent => {
     let obsRows: QueryObservationRow[];
 
@@ -409,7 +487,7 @@ export function queryEntities(
     } else if (as_of !== undefined) {
       // Point-in-time: observations valid at the given timestamp
       obsRows = db.prepare(
-        `SELECT id, content, confidence, created_at, valid_from, valid_until
+        `SELECT id, content, confidence, created_at, valid_from, valid_until, last_accessed_at, decay_exempt, reinforcement_count
          FROM observations
          WHERE entity_id = ?
            AND valid_from <= ?
@@ -429,23 +507,43 @@ export function queryEntities(
       observation_count: ent.observation_count,
       relationship_count: ent.relationship_count,
       observations: obsRows.map(obs => {
-        const base = {
+        allReturnedObsIds.push(obs.id);
+        const effective_confidence = computeEffectiveConfidence({
+          confidence: obs.confidence,
+          decayExempt: DECAY_EXEMPT_TYPES.has(ent.type),
+          lastAccessedAt: obs.last_accessed_at ?? null,
+          reinforcementCount: obs.reinforcement_count,
+          now: new Date(),
+        });
+        const base: Record<string, unknown> = {
           content: obs.content,
           confidence: obs.confidence,
+          effective_confidence,
           created_at: obs.created_at,
         };
         // Include temporal fields when history or as_of is requested
         if (history || as_of !== undefined) {
-          return {
-            ...base,
-            valid_from: obs.valid_from,
-            valid_until: obs.valid_until ?? null,
-          };
+          base.valid_from = obs.valid_from;
+          base.valid_until = obs.valid_until ?? null;
         }
         return base;
       }),
     };
   });
+
+  // Lazy write: update last_accessed_at for all observations returned (best-effort)
+  if (allReturnedObsIds.length > 0) {
+    const accessedAt = new Date().toISOString();
+    const placeholders = allReturnedObsIds.map(() => '?').join(', ');
+    try {
+      // STMT-02 exception: placeholder count varies with result set size
+      db.prepare(
+        `UPDATE observations SET last_accessed_at = ? WHERE id IN (${placeholders})`
+      ).run(accessedAt, ...allReturnedObsIds);
+    } catch {
+      // Best-effort — do not surface as tool error
+    }
+  }
 
   return {
     content: [{
