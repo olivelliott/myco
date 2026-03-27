@@ -97,6 +97,12 @@ Recent decisions affecting current work:
 
 None.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260327-f8o | Build brain forget MCP tool for removing entities, observations, or relationships | 2026-03-27 | 8ad8e06 | [260327-f8o-build-brain-forget-mcp-tool-for-removing](./quick/260327-f8o-build-brain-forget-mcp-tool-for-removing/) |
+
 ## Session Continuity
 
 Last session: 2026-03-27T15:09:08.204Z
