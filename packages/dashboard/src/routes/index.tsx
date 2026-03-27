@@ -5,6 +5,8 @@ import { StatCard } from '../components/stat-card'
 import { ActivityFeed } from '../components/activity-feed'
 import { QuickApprove } from '../components/quick-approve'
 import { GraphView } from '../components/graph-view'
+import { KnowledgeGrowthChart } from '../components/knowledge-growth-chart'
+import { HealthMetrics } from '../components/health-metrics'
 
 export const Route = createFileRoute('/')({ component: DashboardPage })
 
@@ -30,9 +32,9 @@ function DashboardPage() {
       ? Math.round(((data.relationships ?? 0) / data.entities) * 10) / 10
       : 0
 
-  // Get top 20 most connected nodes for mini graph
+  // Get top 30 most connected nodes for mini graph (HOME-04: increased from 20)
   const miniNodes =
-    graphData?.nodes?.sort((a, b) => b.val - a.val).slice(0, 20) ?? []
+    graphData?.nodes?.sort((a, b) => b.val - a.val).slice(0, 30) ?? []
   const miniNodeIds = new Set(miniNodes.map((n) => n.id))
   const miniLinks =
     graphData?.links?.filter(
@@ -53,6 +55,7 @@ function DashboardPage() {
         Myco Dashboard
       </h1>
 
+      {/* Stat cards row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Entities"
@@ -84,14 +87,28 @@ function DashboardPage() {
         />
       </div>
 
-      {/* Mini graph + top connected */}
+      {/* Knowledge growth chart (HOME-01) */}
+      <KnowledgeGrowthChart />
+
+      {/* Health metrics panel (HOME-03) */}
+      <div>
+        <h2
+          className="text-sm font-semibold mb-3 uppercase tracking-wider"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          System Health
+        </h2>
+        <HealthMetrics health={data?.health} />
+      </div>
+
+      {/* Graph preview + Most Connected (HOME-04: graph enlarged to 400px) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div
           className="rounded-lg overflow-hidden cursor-pointer"
           style={{
             backgroundColor: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
-            height: '280px',
+            height: '400px',
           }}
           onClick={() => navigate({ to: '/graph' })}
         >
@@ -160,6 +177,7 @@ function DashboardPage() {
         </div>
       </div>
 
+      {/* Activity feed + Quick Approve */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <h2
@@ -168,7 +186,8 @@ function DashboardPage() {
           >
             Activity
           </h2>
-          <ActivityFeed episodes={data?.recentEpisodes ?? []} />
+          {/* HOME-02: rich entity cards via recentActivity */}
+          <ActivityFeed activities={data?.recentActivity ?? []} />
         </div>
         <div>
           <h2

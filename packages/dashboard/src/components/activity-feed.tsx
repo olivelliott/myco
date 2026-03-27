@@ -1,68 +1,75 @@
-import { format, formatDistanceToNow } from 'date-fns'
-import { Badge } from './ui/badge'
-import { Separator } from './ui/separator'
-
-interface Episode {
-  id: string
-  session_id: string
-  agent_id: string
-  event_type: string
-  created_at: string
-}
+import { formatDistanceToNow } from 'date-fns'
+import { type ActivityCard } from '../lib/api'
+import { getNodeColor } from './graph-view'
 
 interface ActivityFeedProps {
-  episodes: Episode[]
+  activities: ActivityCard[]
 }
 
-export function ActivityFeed({ episodes }: ActivityFeedProps) {
-  if (episodes.length === 0) {
+export function ActivityFeed({ activities }: ActivityFeedProps) {
+  if (activities.length === 0) {
     return (
       <div className="text-center py-8">
-        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>No activity yet</h3>
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>No recent activity</h3>
         <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-          Agent sessions will appear here once episodes are logged.
+          New entities will appear here as agents learn.
         </p>
       </div>
     )
   }
 
-  // Group episodes by date
-  const groups = episodes.reduce<Record<string, Episode[]>>((acc, ep) => {
-    const dateKey = format(new Date(ep.created_at), 'MMM d, yyyy')
-    if (!acc[dateKey]) acc[dateKey] = []
-    acc[dateKey].push(ep)
-    return acc
-  }, {})
-
   return (
-    <div className="space-y-4">
-      {Object.entries(groups).map(([date, items]) => (
-        <div key={date}>
-          <div className="flex items-center gap-3 mb-2">
-            <Separator className="flex-1 bg-[var(--bg-elevated)]" />
-            <span className="text-xs font-normal flex-shrink-0" style={{ color: 'var(--text-muted)' }}>{date}</span>
-            <Separator className="flex-1 bg-[var(--bg-elevated)]" />
+    <div className="space-y-2">
+      {activities.map((activity) => (
+        <div
+          key={activity.id}
+          className="flex items-center gap-3 px-3 py-2 rounded-md"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          {/* Type color dot */}
+          <div
+            className="flex-shrink-0 rounded-full"
+            style={{
+              width: 8,
+              height: 8,
+              backgroundColor: getNodeColor(activity.type),
+            }}
+          />
+
+          {/* Entity name + type */}
+          <div className="flex-1 min-w-0">
+            <span
+              className="text-sm font-medium block truncate"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {activity.name}
+            </span>
+            <span
+              className="text-xs"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              {activity.type}
+            </span>
           </div>
-          <div className="space-y-2">
-            {items.map((ep) => (
-              <div
-                key={ep.id}
-                className="flex items-center gap-3 py-1.5 text-sm"
-              >
-                <Badge
-                  className="text-xs font-normal flex-shrink-0"
-                  variant="outline"
-                  style={{ backgroundColor: 'var(--border-glow)', borderColor: 'var(--border-glow)', color: 'var(--text-secondary)' }}
-                >
-                  {ep.event_type}
-                </Badge>
-                <span className="flex-1 truncate" style={{ color: 'var(--text-secondary)' }}>{ep.agent_id}</span>
-                <span className="text-xs flex-shrink-0" style={{ color: 'var(--text-muted)' }}>
-                  {formatDistanceToNow(new Date(ep.created_at), { addSuffix: true })}
-                </span>
-              </div>
-            ))}
-          </div>
+
+          {/* Confidence */}
+          <span
+            className="text-xs font-mono flex-shrink-0"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {Math.round(activity.confidence * 100)}%
+          </span>
+
+          {/* Relative timestamp */}
+          <span
+            className="text-xs flex-shrink-0"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+          </span>
         </div>
       ))}
     </div>
