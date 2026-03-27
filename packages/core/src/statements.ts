@@ -147,12 +147,12 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     ),
 
     selectObservationsByEntityId: db.prepare(
-      `SELECT id, content, confidence, created_at
+      `SELECT id, content, confidence, created_at, last_accessed_at, decay_exempt, reinforcement_count
        FROM observations WHERE entity_id = ? AND valid_until IS NULL ORDER BY created_at DESC LIMIT 20`
     ),
 
     selectAllObservationsByEntityId: db.prepare(
-      `SELECT id, content, confidence, created_at, valid_from, valid_until
+      `SELECT id, content, confidence, created_at, valid_from, valid_until, last_accessed_at, decay_exempt, reinforcement_count
        FROM observations WHERE entity_id = ? ORDER BY valid_from DESC`
     ),
 
@@ -199,6 +199,9 @@ export function prepareStatements(db: Database.Database): MycoStatements {
          o.id        AS observation_id,
          o.content,
          o.confidence,
+         o.last_accessed_at,
+         o.decay_exempt,
+         o.reinforcement_count,
          e.name      AS entity_name,
          e.type      AS entity_type,
          knn.distance AS relevance_score
@@ -250,6 +253,9 @@ export function prepareStatements(db: Database.Database): MycoStatements {
          o.id        AS observation_id,
          o.content,
          o.confidence,
+         o.last_accessed_at,
+         o.decay_exempt,
+         o.reinforcement_count,
          e.name      AS entity_name,
          e.type      AS entity_type,
          fts.rank    AS relevance_score
