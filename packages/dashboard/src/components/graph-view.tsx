@@ -48,6 +48,7 @@ interface GraphViewProps {
   onNodeHover?: (node: GraphNode | null) => void
   mini?: boolean
   highlightedPath?: Set<string> | null
+  neighborhoodData?: { nodes: Array<GraphNode>; links: Array<GraphLink> } | null
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -80,7 +81,7 @@ export function getLinkNodeId(node: string | GraphNode): string {
 }
 
 export function GraphView({
-  nodes, links, onNodeClick, onNodeHover, mini = false, highlightedPath,
+  nodes, links, onNodeClick, onNodeHover, mini = false, highlightedPath, neighborhoodData,
 }: GraphViewProps) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -129,27 +130,32 @@ export function GraphView({
     [links, filteredNodeIds],
   )
 
+  // When in neighborhood mode, use the neighborhood subgraph instead of full graph
+  const activeNodes = neighborhoodData ? neighborhoodData.nodes : decoratedNodes
+  const activeLinks = neighborhoodData ? neighborhoodData.links : filteredLinks
+
   // Stable graphData: only changes when node/link ID set changes (Pitfall 1 fix)
   const graphDataKey = useMemo(() => {
-    const nodeIds = decoratedNodes.map(n => n.id)
-    const linkPairs = filteredLinks.map(l => ({
-      source: typeof l.source === 'string' ? l.source : (l.source as any).id,
-      target: typeof l.target === 'string' ? l.target : (l.target as any).id,
+    const nodeIds = activeNodes.map((n: GraphNode) => n.id)
+    const linkPairs = activeLinks.map((l: GraphLink) => ({
+      source: typeof l.source === 'string' ? l.source : (l.source as GraphNode).id,
+      target: typeof l.target === 'string' ? l.target : (l.target as GraphNode).id,
     }))
     return computeGraphDataKey(nodeIds, linkPairs)
-  }, [decoratedNodes, filteredLinks])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeNodes, activeLinks])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableGraphData = useMemo(() => ({
-    nodes: decoratedNodes as GraphNode[],
-    links: filteredLinks as GraphLink[],
+    nodes: activeNodes as GraphNode[],
+    links: activeLinks as GraphLink[],
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [graphDataKey])
 
-  // Build neighbor set for hover illumination
+  // Build neighbor set for hover illumination (uses activeLinks for neighborhood mode correctness)
   const neighborMap = useMemo(() => {
     const map = new Map<string, Set<string>>()
-    for (const link of filteredLinks) {
+    for (const link of activeLinks) {
       const srcId = getLinkNodeId(link.source)
       const tgtId = getLinkNodeId(link.target)
       if (!map.has(srcId)) map.set(srcId, new Set())
@@ -158,7 +164,7 @@ export function GraphView({
       map.get(tgtId)!.add(srcId)
     }
     return map
-  }, [filteredLinks])
+  }, [activeLinks])
 
   const isHighlighted = useCallback(
     (nodeId: string) => {
@@ -204,6 +210,11 @@ export function GraphView({
     hasZoomedRef.current = false
   }, [nodes.length])
 
+  // Reset zoom flag when entering/exiting neighborhood mode so view re-zooms to fit subgraph
+  useEffect(() => {
+    hasZoomedRef.current = false
+  }, [neighborhoodData != null]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Configure forces after mount
   useEffect(() => {
     if (!fgRef.current || mini) return
@@ -227,6 +238,42 @@ export function GraphView({
       canvas.style.cursor = hoveredNodeId ? 'pointer' : 'grab'
     }
   }, [hoveredNodeId, mini])
+
+  // Search auto-zoom: animate camera to first match after 300ms debounce (GRPH-05)
+  const searchZoomTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (searchZoomTimerRef.current) {
+      clearTimeout(searchZoomTimerRef.current)
+      searchZoomTimerRef.current = null
+    }
+
+    if (!search || mini) return
+
+    searchZoomTimerRef.current = window.setTimeout(() => {
+      // Find first matching node with valid position
+      const match = decoratedNodes.find(
+        (n) => n.name.toLowerCase().includes(search.toLowerCase()) && n.x !== undefined && n.y !== undefined,
+      )
+      if (match && fgRef.current) {
+        fgRef.current.centerAt(match.x, match.y, 400)
+        fgRef.current.zoom(3, 400)
+      }
+    }, 300)
+
+    return () => {
+      if (searchZoomTimerRef.current) clearTimeout(searchZoomTimerRef.current)
+    }
+  }, [search, mini, decoratedNodes])
+
+  // Keep pulse animation running when simulation is cooled
+  useEffect(() => {
+    if (!search || mini) return
+    const interval = window.setInterval(() => {
+      fgRef.current?.refresh()
+    }, 50) // ~20fps for pulse animation
+    return () => clearInterval(interval)
+  }, [search, mini])
 
   // Stats
   const stats = useMemo(() => ({
@@ -426,6 +473,18 @@ export function GraphView({
             ctx.beginPath()
             ctx.arc(n.x, n.y, size + 3 / globalScale, 0, 2 * Math.PI)
             ctx.strokeStyle = hexToRgba(n.color, 0.9)
+            ctx.lineWidth = 1.5 / globalScale
+            ctx.stroke()
+          }
+
+          // Search match pulse ring
+          const isSearchMatch = search && n.name.toLowerCase().includes(search.toLowerCase())
+          if (isSearchMatch && !isLOD) {
+            const pulseScale = 1 + 0.3 * Math.sin(Date.now() / 300)
+            const pulseRadius = (size + 5 / globalScale) * pulseScale
+            ctx.beginPath()
+            ctx.arc(n.x, n.y, pulseRadius, 0, 2 * Math.PI)
+            ctx.strokeStyle = hexToRgba(n.color, 0.6)
             ctx.lineWidth = 1.5 / globalScale
             ctx.stroke()
           }
