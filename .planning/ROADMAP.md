@@ -111,7 +111,7 @@ Plans:
   3. The dashboard knowledge graph renders edges with varying line thickness proportional to relationship strength — a newly created relationship is visually thinner than a reinforced one
 **Plans**: 1 plan
 Plans:
-- [ ] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
+- [ ] 20-01-PLAN.md — Upsert SQL, API strength passthrough, dashboard edge width + tooltip
 **UI hint**: yes
 
 ### Phase 21: Memory Importance Decay
@@ -124,7 +124,7 @@ Plans:
   3. Entities marked as `decay_exempt` (preference, constraint, decision, architecture types) return their base confidence score unchanged regardless of access recency
 **Plans**: 1 plan
 Plans:
-- [ ] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
+- [ ] 21-XX-PLAN.md — [To be planned]
 
 ### Phase 22: Core Refactor + REST Write Routes + Import/Export
 **Goal**: Business logic is accessible to both MCP tools and REST clients from a shared `packages/core/memory-ops.ts` module, the REST API exposes full write operations with OpenAPI documentation and optional auth, and users can export or import their entire knowledge graph via MCP tool or HTTP endpoint
@@ -138,7 +138,7 @@ Plans:
   5. The import tool accepts a Mem0-format JSON or the Anthropic reference server JSONL format and successfully loads its entries into the Myco knowledge graph
 **Plans**: 1 plan
 Plans:
-- [ ] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
+- [ ] 22-XX-PLAN.md — [To be planned]
 
 ### Phase 23: Auto-Extraction + Incremental Consolidation
 **Goal**: Every `log_episode` call passively captures entities and relationships from the conversation context via LLM extraction without blocking the response, and high-confidence episodes trigger a micro-consolidation immediately rather than waiting for the nightly 2am cycle
@@ -152,7 +152,7 @@ Plans:
   5. When both an incremental trigger and the nightly cron attempt to consolidate simultaneously, one waits for the lock and runs after — no episodes are processed twice
 **Plans**: 1 plan
 Plans:
-- [ ] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
+- [ ] 23-XX-PLAN.md — [To be planned]
 
 ## Progress
 
@@ -176,8 +176,8 @@ Plans:
 | 16. Home Page Enhancements | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 17. Approvals Overhaul | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 18. Schema Foundation | v5.0 | 1/1 | Complete    | 2026-03-27 |
-| 19. Temporal Versioning + Dedup Resolution | v5.0 | 3/3 | Complete |  |
-| 20. Relationship Strength Scoring | v5.0 | 0/? | Not started | - |
+| 19. Temporal Versioning + Dedup Resolution | v5.0 | 3/3 | Complete    | 2026-03-27 |
+| 20. Relationship Strength Scoring | v5.0 | 0/1 | Not started | - |
 | 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |
