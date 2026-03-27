@@ -5,6 +5,7 @@ export { loadConfig, getConfig } from './config.js';
 export type { MycoConfig } from './config.js';
 export { prepareStatements } from './statements.js';
 export type { MycoStatements } from './statements.js';
+export { computeEffectiveConfidence, DECAY_EXEMPT_TYPES } from './decay.js';
 export type {
   SourceType,
   Entity,
