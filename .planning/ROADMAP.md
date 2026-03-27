@@ -113,7 +113,10 @@ Plans:
   2. The activity stream shows entity cards with type-specific colors and contextual metadata rather than plain text log entries
   3. Four health metric indicators are visible: consolidation status, embedding coverage percentage, orphaned node count, and confidence distribution
   4. The graph preview on the home page is large enough to orient users and responds to click/tap by navigating to the full graph view
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 16-01-PLAN.md — API endpoints for growth time-series, health metrics, and rich activity stream
+- [ ] 16-02-PLAN.md — Frontend: growth chart, health panel, enhanced activity feed, enlarged graph preview
 **UI hint**: yes
 
 ### Phase 17: Approvals Overhaul
@@ -125,7 +128,10 @@ Plans:
   2. User can select multiple approval items with checkboxes and approve or reject the whole selection in a single action
   3. Each approval card displays the confidence score as a visual bar with the source episode linked as evidence
   4. Each approval card shows an inline mini-graph preview of where the entity would connect in the knowledge graph
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 16-01-PLAN.md — API endpoints for growth time-series, health metrics, and rich activity stream
+- [ ] 16-02-PLAN.md — Frontend: growth chart, health panel, enhanced activity feed, enlarged graph preview
 **UI hint**: yes
 
 ## Progress
@@ -147,5 +153,5 @@ Plans:
 | 13. Theme + Language Foundation | v4.0 | 1/1 | Complete    | 2026-03-27 |
 | 14. Graph Core Features | v4.0 | 3/3 | Complete    | 2026-03-27 |
 | 15. Timeline Animation | v4.0 | 1/1 | Complete    | 2026-03-27 |
-| 16. Home Page Enhancements | v4.0 | 0/? | Not started | - |
+| 16. Home Page Enhancements | v4.0 | 0/2 | In progress | - |
 | 17. Approvals Overhaul | v4.0 | 0/? | Not started | - |
