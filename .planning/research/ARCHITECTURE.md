@@ -1,543 +1,665 @@
-# Architecture: v4.0 Dashboard Feature Integration
+# Architecture Research
 
-**Project:** Myco v4.0 — Dashboard & Graph Experience
+**Domain:** MCP Memory Server — v5.0 Feature Integration
 **Researched:** 2026-03-27
-**Scope:** Integration patterns for animated timeline, cluster detection, growth charts,
-particle effects, batch approvals, and neighborhood explorer into the existing React PWA.
+**Confidence:** HIGH (based on direct codebase analysis of all 4 packages)
 
 ---
 
-## Current Architecture Map
+## Existing Architecture (Baseline)
+
+### System Overview
 
 ```
-packages/dashboard/src/
-  routes/
-    index.tsx          — Home page (stats, mini graph, activity, quick-approve)
-    graph.tsx          — Full graph explorer (all graph features orchestrated here)
-    approvals.tsx      — Approval queue (list, resolve individual items)
-  components/
-    graph-view.tsx     — ForceGraph2D canvas renderer, filtering, hover logic
-    graph-toolbar.tsx  — Right-side toggle buttons (analytics, path, timeline, legend)
-    graph-analytics.tsx — Floating panel: metrics, hubs, bridge nodes, confidence
-    graph-legend.tsx   — Floating panel: entity type color key
-    timeline-slider.tsx — Bottom-center scrub bar + play/pause
-    entity-panel.tsx   — Right drawer: entity detail on node click
-    activity-feed.tsx  — Episode log display (currently uses hardcoded slate-* classes)
-    stat-card.tsx      — KPI card with glow-on-alert
-    quick-approve.tsx  — Inline approve widget on home page
-    approval-card.tsx  — Full approval card with confidence bar + edit
-    merge-card.tsx     — Variant for merge-candidate approvals
-    sidebar.tsx        — Navigation shell
-  hooks/
-    use-graph.ts       — TanStack Query wrapper for GET /api/graph
-    use-dashboard.ts   — TanStack Query wrapper for GET /api/dashboard
-    use-approvals.ts   — TanStack Query + mutation for approvals
-  lib/
-    api.ts             — Typed fetch wrappers + TypeScript interfaces
-
-packages/api-server/src/routes/
-    graph.ts           — GET /api/graph (nodes + links, optional ?project filter)
-    dashboard.ts       — GET /api/dashboard (stats, episodes, topConnected, growthStats)
-    entities.ts        — GET /api/entities, GET /api/entities/:id
-    approvals.ts       — GET /api/approvals, PATCH /api/approvals/:id
-    episodes.ts        — Episode routes
+┌─────────────────────────────────────────────────────────────────────┐
+│                    MCP Clients (Claude Code sessions)                │
+│   remember / recall / query / log_episode / consolidate / forget     │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ stdio (StdioServerTransport)
+┌──────────────────────────────▼──────────────────────────────────────┐
+│                     packages/mcp-server                              │
+│  tools.ts   consolidator.ts   embed-client.ts   scheduler.ts        │
+│  relationship-discovery.ts    cli.ts                                 │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ imports @myco/core
+┌──────────────────────────────▼──────────────────────────────────────┐
+│                      packages/core                                   │
+│  db.ts   schema.ts   statements.ts   types.ts   provenance.ts        │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ better-sqlite3 (WAL mode)
+┌──────────────────────────────▼──────────────────────────────────────┐
+│                    SQLite Database (myco.db)                          │
+│  entities   observations   relationships   episodes                  │
+│  approval_queue   vec_embeddings (sqlite-vec)   fts_observations     │
+└──────────────────────────────▲──────────────────────────────────────┘
+                               │ imports @myco/core
+┌──────────────────────────────┴──────────────────────────────────────┐
+│                     packages/api-server                              │
+│  Hono on :3001   /api/dashboard   /api/entities   /api/graph         │
+│  /api/approvals   /api/episodes                                      │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ TanStack Query polling
+┌──────────────────────────────▼──────────────────────────────────────┐
+│                     packages/dashboard                               │
+│  React 19 PWA   Graph explorer   Approval queue   Activity log       │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Data Flow Baseline
+### Existing Component Responsibilities
 
-```
-SQLite → api-server (Hono, port 3001) → TanStack Query cache → React components
-```
+| Component | Responsibility | Key Files |
+|-----------|---------------|-----------|
+| `packages/core` | DB connection, schema migrations, all prepared statements, types, provenance factory | `db.ts`, `schema.ts`, `statements.ts`, `types.ts` |
+| `packages/mcp-server` | MCP tool registration, consolidation pipeline, embedding client, cron scheduler | `tools.ts`, `consolidator.ts`, `embed-client.ts`, `scheduler.ts` |
+| `packages/api-server` | Hono HTTP server for dashboard data access, 5 read-oriented route groups | `routes/*.ts` |
+| `packages/dashboard` | React PWA, force-directed graph, approval queue UI | `src/routes/*.tsx` |
 
-`/api/graph` returns all nodes and all links in a single payload. The dashboard's
-`graph.tsx` route does all filtering (timeline cutoff, type filter, search opacity)
-in-memory via `useMemo`. Cluster detection, neighborhood isolation, and confidence
-filtering all fit this same client-side pattern — no new API endpoints needed for
-those features.
+### Existing Schema (Relevant to v5.0)
 
----
-
-## Feature Integration Map
-
-### 1. Animated Timeline Playback (MODIFY `timeline-slider.tsx`)
-
-**What exists:** `TimelineSlider` has play/pause, a range input, speed selector, and
-a setInterval that advances `currentDate` by `dayMs * speed` every 100ms. The date
-filter sits in `graph.tsx`'s `filteredData` useMemo.
-
-**What's missing / what to change:**
-
-- The play animation is functional but visually crude (native range input). Replace the
-  native `<input type="range">` with a custom CSS-animated progress bar matching the
-  deep-sea theme.
-- Add a "node entry pulse" effect: when `filteredData` gains new nodes between ticks,
-  briefly render those nodes with an expanded glow ring in `graph-view.tsx`'s
-  `nodeCanvasObject`. Signal this via a new `newNodeIds?: Set<string>` prop on
-  `GraphView`, computed in `graph.tsx` by diffing successive `filteredData.nodes`
-  arrays with a `useRef<Set<string>>` tracking the previous frame's node IDs.
-- The speed options (1x/2x/5x) should be kept; they're useful. Add `7x` for sparse graphs.
-
-**Integration point:** `TimelineSlider` → `graph.tsx` (state) → `GraphView`
-(new `newNodeIds` prop). No API changes.
-
----
-
-### 2. Cluster Detection & Visualization (MODIFY `graph-analytics.tsx`, `graph-view.tsx`)
-
-**What exists:** `graph-analytics.tsx` already computes connected components via
-union-find inline and reports `componentCount`. `GraphView` renders nodes uniformly.
-
-**What's missing:** Visual cluster boundaries on the canvas, and cluster-aware sections
-in the analytics panel.
-
-**Approach — client-side only:**
-
-Extract the union-find into a shared utility:
-
-```
-lib/graph-clusters.ts
-  export function detectClusters(nodes, links): Map<string, string>
-  // Returns nodeId -> clusterRootId
-```
-
-`GraphView` receives a `clusterMap?: Map<string, string>` prop (optional, off by
-default). When present, draw cluster boundary circles on the canvas during each frame.
-Each cluster's bounding circle = centroid of member node x/y positions + max member
-radius. Compute per-frame since physics simulation moves nodes continuously.
-
-Use `onRenderFramePre` (ForceGraph2D exposes this as a canvas callback) to draw
-cluster overlays before nodes render. Fill: dominant entity type color at 4% opacity;
-stroke: same color at 15% opacity, 1px dashed.
-
-**Toolbar toggle:** Add "Clusters" toggle button to `GraphToolbar` with an
-`onToggleClusters` prop. `graph.tsx` owns `clustersEnabled` boolean state and passes
-`clusterMap` (or `null`) down.
-
-**Integration point:** New `lib/graph-clusters.ts`. Modify `graph-view.tsx` (new prop
-+ canvas overlay). Modify `graph-toolbar.tsx` (new button). Modify `graph-analytics.tsx`
-to import from shared utility. Modify `graph.tsx` (state + wiring). No API changes.
-
----
-
-### 3. Neighborhood Explorer (MODIFY `graph.tsx`, `graph-view.tsx`)
-
-**What exists:** Hover illumination in `GraphView` already dims non-neighbors to
-`alpha=0.06`. `EntityPanel` shows connected entities as a flat list. There is no mode
-that locks the view to a single node's local subgraph.
-
-**Approach:**
-
-New hook `hooks/use-neighborhood.ts`:
-```typescript
-export function useNeighborhood(
-  focalId: string | null,
-  nodes: GraphNode[],
-  links: GraphLink[],
-  depth: 1 | 2
-): { nodes: GraphNode[], links: GraphLink[] } | null
-```
-
-Returns BFS-expanded subgraph. Returns `null` when `focalId` is null (full graph shown).
-
-`GraphView` receives `neighborhoodData?: { nodes, links } | null`. When set, use it
-instead of the full `decoratedNodes`/`filteredLinks`. This makes neighborhood mode
-composable with the existing timeline filter (apply both).
-
-Entry: "Explore neighborhood" button on `EntityPanel` (calls lifted
-`onFocusNeighborhood(nodeId)` callback). Depth toggle (1-hop vs 2-hop) on `EntityPanel`
-or a small control on `GraphToolbar`.
-
-Exit: Escape key handler (already present in `graph.tsx` for path mode — extend it).
-Toolbar shows a "Neighborhood: NodeName [x]" dismiss badge when active, similar to
-the existing path trace info display.
-
-**Integration point:** New `hooks/use-neighborhood.ts`. Modify `graph-view.tsx`
-(new prop). Modify `graph-toolbar.tsx` (neighborhood dismiss display). Modify
-`graph.tsx` (state + wiring). Modify `entity-panel.tsx` (Focus button). No API changes.
-
----
-
-### 4. Confidence Filter Slider (MODIFY `graph-view.tsx`, `graph.tsx`)
-
-**What exists:** `GraphView` has type filter and search. Confidence data is present on
-every node (`confidence: number`). No confidence threshold filter exists yet.
-
-**Approach:**
-
-Add `confidenceThreshold: number` prop to `GraphView` (default `0`). The
-`decoratedNodes` useMemo already filters by type and computes opacity — add:
-```typescript
-.filter(n => (n.confidence ?? 1) >= confidenceThreshold)
-```
-
-Slider UI lives alongside the existing search bar in `GraphView`'s top-left controls.
-The home page mini graph passes `confidenceThreshold={0}` so no slider appears.
-
-`graph.tsx` holds `confidenceThreshold` state and passes it down.
-
-**Integration point:** Modify `graph-view.tsx`. Modify `graph.tsx` (state + prop
-passing). No new components. No API changes.
-
----
-
-### 5. Search with Animated Highlight and Auto-Zoom (MODIFY `graph-view.tsx`)
-
-**What exists:** Search already sets `opacity: 0.15` on non-matching nodes. There is
-no zoom-to-match behavior or pulse animation on matched nodes.
-
-**What to add:**
-
-When search resolves to exactly one matching node, call:
-```typescript
-fgRef.current.centerAt(node.x, node.y, 400)
-fgRef.current.zoom(3, 400)
-```
-after a 300ms debounce (so typing doesn't thrash the camera).
-
-For the animated highlight: matched nodes get a pulsing outer ring using
-`Date.now() / 300` as the sine argument. `nodeCanvasObject` already runs per-frame.
-Compute `pulseScale = 1 + 0.3 * Math.sin(Date.now() / 300)` for matched nodes and
-multiply the glow radius. When the simulation has cooled, trigger
-`fgRef.current.refresh()` on each search change to keep the animation loop running.
-
-**Integration point:** Modify `graph-view.tsx` only. No new components, hooks, or API
-changes.
-
----
-
-### 6. Knowledge Growth Chart (NEW component, NEW API endpoint)
-
-**What exists:** `DashboardStats` has `growthStats` with three 7-day delta counts.
-This is a point-in-time snapshot, not a time series.
-
-**What's needed:** Daily entity/observation/relationship counts for 30–90 days.
-
-**New API endpoint required:**
-
-```
-GET /api/stats/growth?days=30
-Response: { series: Array<{ date: string, entities: number, observations: number, relationships: number }> }
-```
-
-Implementation in `packages/api-server/src/routes/stats.ts`:
 ```sql
-SELECT strftime('%Y-%m-%d', created_at) as date, COUNT(*) as count
-FROM entities
-WHERE created_at > datetime('now', '-30 days')
-GROUP BY date ORDER BY date
+entities:      id, name, type, summary, metadata, session_id, agent_id,
+               source_type, confidence, created_at, updated_at, project
+
+observations:  id, entity_id, content, metadata, session_id, agent_id,
+               source_type, confidence, created_at, needs_embedding
+
+relationships: id, from_id, to_id, type, metadata, session_id, agent_id,
+               source_type, confidence, created_at
+               UNIQUE(from_id, to_id, type)
+
+episodes:      id, session_id, agent_id, event_type, payload, created_at,
+               consolidated_at
+
+approval_queue: id, item_type, item_id, status, reason, metadata,
+                created_at, resolved_at
 ```
-Three separate queries (entities, observations, relationships), merged by date key in
-JavaScript. Index on `created_at` already exists for all three tables. Register under
-`/api/stats` in `api-server/src/index.ts`.
 
-**New component:** `components/growth-chart.tsx`
+Key behaviors to preserve:
+- `schema.ts` uses try/catch `ALTER TABLE` for all migrations — safe to re-run on startup
+- `INSERT OR IGNORE` on relationships enforces UNIQUE(from_id, to_id, type)
+- `consolidated_at IS NULL` marks episodes awaiting the nightly cycle
+- `needs_embedding = 1` flags observations for deferred embedding when Ollama is offline
+- All write logic lives in `mcp-server/src/tools.ts` — `api-server` is currently read-only
 
-Custom Canvas sparkline (~60 lines). Use `useRef<HTMLCanvasElement>` and draw filled
-area charts with `createLinearGradient` from the glow color to transparent — identical
-pattern to `graph-view.tsx`'s node glow. Three overlaid lines: teal (entities), violet
-(observations), amber (relationships). No charting library dependency.
+---
 
-**New hook:** `hooks/use-growth.ts` — TanStack Query wrapper, `staleTime: 5 * 60_000`.
+## v5.0 Feature Integration Map
 
-**New type in `api.ts`:**
+Each feature is classified as **NEW TABLE**, **ADD COLUMNS**, **NEW MODULE**, **EXTEND EXISTING**, or **REFACTOR**.
+
+---
+
+### Feature 1: Temporal Fact Versioning
+
+**Integration classification:** ADD COLUMNS to `observations` + EXTEND EXISTING write path
+
+**Schema changes:**
+```sql
+ALTER TABLE observations ADD COLUMN superseded_by TEXT REFERENCES observations(id);
+ALTER TABLE observations ADD COLUMN valid_from    TEXT NOT NULL DEFAULT (datetime('now'));
+ALTER TABLE observations ADD COLUMN valid_until   TEXT;  -- NULL = currently valid
+```
+
+Index:
+```sql
+CREATE INDEX IF NOT EXISTS idx_observations_valid_until
+  ON observations(valid_until) WHERE valid_until IS NULL;
+```
+
+**Write path change in `rememberEntity()` (`tools.ts`):**
+Before inserting a new observation for an existing entity, check for a semantically near-match in existing observations (cosine distance < 0.2 via `knnSearchForContradiction`). If a near-match is found, "retire" the old observation (`UPDATE observations SET valid_until = now(), superseded_by = newObsId WHERE id = oldObsId`) before inserting the new one. If no match, append as additional fact — temporal versioning only fires on supersession, not on distinct new facts.
+
+**Query path change in `recallKnowledge()`:**
+Default filter adds `AND o.valid_until IS NULL`. Add optional `as_of` parameter to the MCP `recall` tool that substitutes `AND o.valid_from <= ? AND (o.valid_until IS NULL OR o.valid_until > ?)`.
+
+**New prepared statements in `MycoStatements`:**
+- `retireObservation` — `UPDATE observations SET valid_until = ?, superseded_by = ? WHERE id = ?`
+- `selectObservationsAtTime(entity_id, iso)` — point-in-time query
+- `selectCurrentObservations(entity_id)` — `WHERE valid_until IS NULL` (replaces the existing `selectObservationsByEntityId`)
+
+**api-server impact:** `GET /api/entities/:id` observation list should default to `valid_until IS NULL`; add `?include_history=true` to expose retired observations.
+
+---
+
+### Feature 2: Auto-Entity Extraction
+
+**Integration classification:** NEW MODULE in `mcp-server` + EXTEND EXISTING `logEpisode()`
+
+**No schema changes.** The existing `consolidated_at` column already tracks whether an episode has been processed.
+
+**New file:** `packages/mcp-server/src/auto-extractor.ts`
+- Exports `extractAndStoreEpisode(db, episode, stmts): Promise<void>`
+- Reuses `extractFacts()`, `detectContradiction()`, `findMergeCandidates()` already in `consolidator.ts`
+- High-confidence facts route to `rememberEntity()`; uncertain ones go to `approval_queue`
+- Marks episode `consolidated_at = now()` so the nightly cycle skips it
+
+**`logEpisode()` change in `tools.ts`:**
 ```typescript
-export interface GrowthSeries {
-  series: Array<{ date: string; entities: number; observations: number; relationships: number }>
+// After stmts.insertEpisode.run(...)
+setImmediate(() =>
+  extractAndStoreEpisode(db, newEpisode, stmts).catch(err =>
+    console.error('[auto-extractor] failed:', err)
+  )
+);
+```
+The `setImmediate` is critical — LLM inference takes 1–5 seconds. The episode log tool response must return immediately without blocking on Ollama.
+
+**SourceType extension:** Add `'auto_extraction'` to the `SourceType` union in `core/types.ts`.
+
+---
+
+### Feature 3: Auto-Dedup / Conflict Resolution
+
+**Integration classification:** NEW MODULE in `mcp-server` + EXTEND EXISTING write path
+
+**Dependencies:** Requires Feature 1 (temporal versioning) for the UPDATE action — the `retireObservation` mechanism is its underlying implementation.
+
+**New file:** `packages/mcp-server/src/dedup-resolver.ts`
+- Exports `resolveDedup(db, entityName, entityType, newObservation, stmts): Promise<DedupDecision>`
+
+```typescript
+type DedupDecision =
+  | { action: 'ADD' }                          // no conflict — insert normally
+  | { action: 'UPDATE'; retireObsId: string }  // new fact supersedes existing
+  | { action: 'NOOP'; reason: string }          // exact duplicate — skip
+  | { action: 'QUEUE'; reason: string }         // contradiction — send to approval queue
+```
+
+Logic sequence:
+1. Check for exact text duplicate (`SELECT 1 FROM observations WHERE entity_id = ? AND content = ?`) → NOOP
+2. Check cosine distance < 0.15 → NOOP (functionally identical)
+3. Check cosine distance 0.15–0.30 → UPDATE (near-match, new supersedes old)
+4. Check cosine distance 0.30–CONTRADICTION_THRESHOLD → QUEUE (potential contradiction)
+5. Otherwise → ADD
+
+**`rememberEntity()` change in `tools.ts`:**
+Call `resolveDedup()` before inserting an observation on an existing entity. Act on the returned decision.
+
+---
+
+### Feature 4: Incremental Consolidation
+
+**Integration classification:** NEW MODULE in `mcp-server` + EXTEND EXISTING `logEpisode()`
+
+**No schema changes.** Threshold-triggered micro-consolidation uses existing `runConsolidation()`.
+
+**New file:** `packages/mcp-server/src/consolidation-trigger.ts`
+- Exports `checkAndTriggerMicroConsolidation(db, stmts): void`
+- Counts `SELECT COUNT(*) FROM episodes WHERE consolidated_at IS NULL`
+- If count exceeds `MYCO_CONSOLIDATION_THRESHOLD` (default: 5), fires `runConsolidation(db, stmts)` asynchronously
+
+**`logEpisode()` change in `tools.ts`:**
+```typescript
+// Alongside the auto-extractor setImmediate:
+setImmediate(() =>
+  checkAndTriggerMicroConsolidation(db, stmts)
+);
+```
+
+**`config.ts` change in `core`:**
+Add `consolidationThreshold: number` (from `MYCO_CONSOLIDATION_THRESHOLD`, default `5`).
+
+The nightly `runConsolidation()` in `scheduler.ts` is unchanged — it becomes a catch-up pass for any episodes not yet consumed by micro-consolidation.
+
+---
+
+### Feature 5: Codebase-to-Graph Ingestion (`codify` tool)
+
+**Integration classification:** NEW MODULE in `mcp-server` + NEW MCP TOOL
+
+**No schema changes.** Uses existing entity/observation write path.
+
+**New file:** `packages/mcp-server/src/codebase-ingester.ts`
+- Exports `ingestCodebase(db, rootPath, projectName, maxDepth, stmts): Promise<CodifyResult>`
+- Walks the directory tree with Node.js `fs.readdirSync` (max depth 4, configurable)
+- Produces a structured JSON summary: file counts by extension, key config files found, package.json scripts, detected framework patterns
+- Passes the summary to `extractFacts()` (existing in `consolidator.ts`)
+- Each extracted fact goes through `rememberEntity()` with `source_type: 'codebase_ingestion'`
+
+**`tools.ts` change:** Register new `codify` MCP tool.
+```typescript
+// Input schema
+{ root_path: z.string(), project_name: z.string(), max_depth: z.number().default(4).optional() }
+```
+
+**SourceType extension:** Add `'codebase_ingestion'` to the union in `types.ts`.
+
+---
+
+### Feature 6: REST API for Non-MCP Access
+
+**Integration classification:** REFACTOR (move business logic to `core`) + NEW ROUTES in `api-server`
+
+**The circular dependency problem.** Today all write logic (`rememberEntity`, `recallKnowledge`, `queryEntities`, `forgetEntity`, `logEpisode`) lives in `mcp-server/src/tools.ts`. `api-server` cannot import from `mcp-server` without creating a circular dependency. The fix is to move pure business logic into `packages/core`.
+
+**Refactor plan (required before REST API routes can be written):**
+
+Step 1 — Move `embed-client.ts` from `mcp-server/src/` to `packages/core/src/`. Both `recallKnowledge` (semantic search) and `rememberEntity` (inline embedding) depend on it.
+
+Step 2 — Create `packages/core/src/memory-ops.ts`. Move these functions from `mcp-server/src/tools.ts`:
+- `rememberEntity()`
+- `recallKnowledge()`
+- `queryEntities()`
+- `forgetEntity()`
+- `logEpisode()`
+- `reEmbedPending()`
+
+Step 3 — `mcp-server/src/tools.ts` becomes a thin MCP adapter: imports all functions from `@myco/core`, registers MCP tool handlers, calls the shared functions.
+
+Step 4 — `api-server` can now import from `@myco/core` for the write routes.
+
+**New file:** `packages/api-server/src/routes/memory.ts`
+Mounted at `/api/memory`:
+
+```
+POST /api/memory/remember     → rememberEntity()
+POST /api/memory/recall       → recallKnowledge()
+POST /api/memory/query        → queryEntities()
+POST /api/memory/forget       → forgetEntity()
+POST /api/memory/log-episode  → logEpisode()
+POST /api/memory/consolidate  → runConsolidation()
+```
+
+**New file:** `packages/api-server/src/middleware/auth.ts`
+Optional API key middleware. If `MYCO_API_KEY` env var is set, require `Authorization: Bearer <key>` header on `/api/memory/*` routes. If unset, no auth (local-only default, backwards compatible).
+
+**`config.ts` change:** Add `apiKey: string | null` (from `MYCO_API_KEY`, default `null`).
+
+---
+
+### Feature 7: Memory Importance Decay
+
+**Integration classification:** ADD COLUMNS to `entities` and `observations` + NEW MODULE in `core`
+
+**Schema changes:**
+```sql
+ALTER TABLE entities ADD COLUMN last_accessed_at TEXT;
+ALTER TABLE entities ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE observations ADD COLUMN last_accessed_at TEXT;
+ALTER TABLE observations ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0;
+```
+
+**New file:** `packages/core/src/decay.ts`
+```typescript
+export function decayFactor(lastAccessedAt: string | null, createdAt: string): number {
+  const referenceDate = lastAccessedAt ?? createdAt;
+  const ageMs = Date.now() - new Date(referenceDate).getTime();
+  const halfLifeMs = halfLifeDays * 24 * 60 * 60 * 1000;
+  return Math.pow(0.5, ageMs / halfLifeMs);
 }
-export function fetchGrowth(days?: number): Promise<GrowthSeries>
-```
 
-**Integration point:** New `packages/api-server/src/routes/stats.ts`. Register in
-`index.ts`. New `growth-chart.tsx` component. New `use-growth.ts` hook. Modify
-`routes/index.tsx` to import and render the chart. Modify `api.ts`.
-
----
-
-### 7. Particle Effects (MODIFY `graph-view.tsx`)
-
-**What exists:** The canvas renderer already uses `nodeCanvasObject` and
-`linkCanvasObject`. The physics simulation continuously redraws the canvas. No particle
-system exists.
-
-**Approach — no new library:**
-
-Particles stored in `useRef<Particle[]>`:
-```typescript
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string }
-```
-
-Spawn particles from nodes on:
-- Node click: burst of 8 particles in the node's glow color
-- New nodes appearing during timeline playback (`newNodeIds` prop): 4 particles from
-  each newly appeared node
-
-In ForceGraph2D's `onRenderFramePre` callback (called each frame before node/link
-rendering, receives `ctx: CanvasRenderingContext2D`):
-1. Update particle positions (`x += vx`, `y += vy`, life decrements by 0.025)
-2. Draw live particles as small glowing circles (`ctx.arc`, radial gradient)
-3. Splice dead particles from array
-
-Cap particle pool at 200 entries to prevent runaway allocation.
-
-When particles are alive but simulation is cooled: call `fgRef.current.refresh()` to
-force continued canvas redraws. Stop calling `refresh()` when pool is empty.
-
-**Integration point:** Modify `graph-view.tsx` only. No new components, hooks, or API
-changes.
-
----
-
-### 8. Batch Approvals (MODIFY `approvals.tsx`, `approval-card.tsx`, `use-approvals.ts`, NEW API endpoint)
-
-**What exists:** `ApprovalCard` already has `selectable`, `selected`, and
-`onToggleSelect` props defined in its TypeScript interface — these are currently never
-passed from `approvals.tsx`. The `PATCH /api/approvals/:id` endpoint handles one item
-at a time.
-
-**New API endpoint required:**
-
-```
-POST /api/approvals/batch
-Body: { ids: string[], status: 'approved' | 'rejected' }
-Response: { resolved: number, failed: number }
-```
-
-Implementation: add to the existing `approvalsRoutes` Hono app in `approvals.ts`.
-Wrap the existing single-approve logic in a loop inside `db.transaction()`. Batch
-rejections are trivially fast; batch approvals run the full approve transaction per
-ID — acceptable for queues of ~20 items.
-
-**Dashboard changes in `approvals.tsx`:**
-1. `selectedIds: Set<string>` state
-2. Pass `selectable={true}`, `selected={selectedIds.has(item.id)}`,
-   `onToggleSelect={() => toggleId(item.id)}` to each card
-3. Sticky batch action bar: "X selected — Approve All / Reject All / Clear"
-4. "Select All / None" shortcut buttons
-
-**New hook in `use-approvals.ts`:**
-```typescript
-export function useBatchResolveApprovals()
-// useMutation with optimistic removal of all selected IDs from cache
-```
-
-**Integration point:** Add `POST /batch` to `approvals.ts`. Modify `approvals.tsx`
-(state + batch bar). Modify `use-approvals.ts` (mutation hook). Modify `api.ts`
-(new function). `ApprovalCard` requires no interface changes — just activation.
-
----
-
-### 9. Inline Mini-Graph Preview in Approvals (NEW component)
-
-**What exists:** `ApprovalCard` shows entity name, observation, confidence bar, and
-evidence quote. The approval item's `metadata.fact.related_entities` already contains
-enough data to render a synthetic subgraph.
-
-**Approach:**
-
-New `components/approval-mini-graph.tsx`. Props:
-```typescript
-interface ApprovalMiniGraphProps {
-  entityName: string
-  entityType: string
-  relatedEntities: Array<{ name: string; type: string; relation_type: string }>
+export function computeEffectiveConfidence(
+  storedConfidence: number,
+  lastAccessedAt: string | null,
+  createdAt: string,
+  halfLifeDays = 30,
+): number {
+  return storedConfidence * decayFactor(lastAccessedAt, createdAt, halfLifeDays);
 }
 ```
 
-Constructs synthetic `nodes` and `links` entirely from props — no API call. Renders
-`<GraphView mini nodes={syntheticNodes} links={syntheticLinks} onNodeClick={noop} />`.
+**Decay is computed lazily on read** — no background writer, no write storms. Accessed facts are reinforced by bumping `last_accessed_at` and `access_count`.
 
-Rendered inside `ApprovalCard` behind a collapsible "Preview in graph" toggle (off by
-default). Use a `max-h` CSS transition for expand/collapse animation.
+**`recallKnowledge()` and `queryEntities()` changes:**
+- On returning results: fire `UPDATE entities SET last_accessed_at = now(), access_count = access_count + 1 WHERE id = ?` for each returned entity
+- Include `effective_confidence` (computed via `computeEffectiveConfidence`) as a field in the returned JSON
 
-**Integration point:** New `approval-mini-graph.tsx`. Import into `approval-card.tsx`.
-No API changes. No new hooks.
+**Nightly consolidation addition in `consolidator.ts`:**
+Add a decay sweep pass after the episode batch loop:
+```sql
+SELECT id, confidence, last_accessed_at, created_at FROM entities
+WHERE effective_confidence_check < 0.1
+```
+(computed in JS via `computeEffectiveConfidence`) — entities below threshold are surfaced to the `approval_queue` with `reason: 'decay_candidate'` for human review. Not auto-deleted.
+
+**New prepared statements:** `updateEntityAccess`, `updateObservationAccess`, `selectEntitiesForDecayCheck`.
+
+**`config.ts` change:** Add `decayHalfLifeDays: number` (from `MYCO_DECAY_HALF_LIFE_DAYS`, default `30`).
 
 ---
 
-### 10. Approvals Onboarding Banner (NEW component)
+### Feature 8: Relationship Strength Scoring
 
-**What exists:** The approvals page shows an empty state when the queue is empty, but
-no explanation of what the queue is or how items appear. All "brain" language should
-become "Myco" language.
+**Integration classification:** ADD COLUMNS to `relationships` + EXTEND EXISTING insert statement
 
-**Approach:**
+**Schema changes:**
+```sql
+ALTER TABLE relationships ADD COLUMN strength             REAL NOT NULL DEFAULT 1.0;
+ALTER TABLE relationships ADD COLUMN reinforcement_count  INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE relationships ADD COLUMN last_reinforced_at   TEXT;
+```
 
-New `components/approvals-onboarding.tsx`. Dismissable card rendered at top of
-`approvals.tsx` when `localStorage.getItem('myco-approvals-onboarded')` is falsy.
-Content: what Myco's consolidation cycle does, why items need review (low confidence,
-contradictions, merges), what approve/reject means for the knowledge graph.
+**Key change to `insertRelationship` prepared statement:**
+The existing statement uses `INSERT OR IGNORE`. Change to upsert:
+```sql
+INSERT INTO relationships (id, from_id, to_id, type, metadata, session_id, agent_id, source_type, confidence, created_at, strength, reinforcement_count, last_reinforced_at)
+VALUES (?, ?, ?, ?, '{}', ?, ?, ?, ?, ?, 1.0, 1, ?)
+ON CONFLICT(from_id, to_id, type) DO UPDATE SET
+  reinforcement_count = reinforcement_count + 1,
+  last_reinforced_at  = excluded.created_at,
+  strength            = MIN(1.0, strength + 0.1)
+```
 
-Dismiss stores the localStorage flag. A `useState` initializer reads the flag once.
-No global state management needed.
+The UNIQUE(from_id, to_id, type) constraint is the enforcement mechanism; the conflict action handles the reinforcement increment.
 
-**Integration point:** New `approvals-onboarding.tsx`. Import into `approvals.tsx`.
-No API changes.
+**`selectGraphRelationships` change:** Include `strength` and `reinforcement_count` in SELECT so the dashboard graph can use edge width/opacity.
+
+**Dashboard impact:** `react-force-graph-2d` edge rendering uses `strength` as `linkWidth` or opacity. This change flows through `api-server/routes/graph.ts` → `packages/dashboard/src/hooks/use-graph.ts` → `graph-view.tsx`.
+
+**Decay integration:** `computeEffectiveConfidence` can be applied to relationships using `last_reinforced_at` as the reference date. API returns `effective_strength` alongside `strength` for the dashboard.
 
 ---
 
-## New vs Modified Components Summary
+### Feature 9: Import / Export
 
-| Component | Status | Feature(s) |
-|-----------|--------|-----------|
-| `graph-view.tsx` | MODIFY | Timeline entry pulses (`newNodeIds` prop), cluster boundary overlay (`clusterMap` prop), confidence filter (`confidenceThreshold` prop), animated search highlight + auto-zoom, neighborhood subgraph filtering (`neighborhoodData` prop), particle system (`onRenderFramePre`) |
-| `graph-toolbar.tsx` | MODIFY | Clusters toggle button, neighborhood dismiss badge, confidence slider |
-| `graph-analytics.tsx` | MODIFY | Import cluster utility from `lib/graph-clusters.ts` instead of inline union-find |
-| `graph.tsx` (route) | MODIFY | `clustersEnabled` state, `neighborhoodNodeId` state, `confidenceThreshold` state, `newNodeIds` computation, wire all new props |
-| `timeline-slider.tsx` | MODIFY | Styled progress track replacing native range input, speed options extended |
-| `activity-feed.tsx` | MODIFY | Replace hardcoded `slate-*` classes with CSS variable theme |
-| `approval-card.tsx` | MODIFY | Activate `selectable`/`selected` props (interface already defined), add "Preview in graph" toggle |
-| `approvals.tsx` (route) | MODIFY | `selectedIds` state, batch action bar, pass selectable props, onboarding banner |
-| `use-approvals.ts` | MODIFY | Add `useBatchResolveApprovals` mutation hook |
-| `api.ts` | MODIFY | Add `GrowthSeries` type, `fetchGrowth()`, `batchResolveApprovals()` |
-| `lib/graph-clusters.ts` | NEW | Shared union-find: `detectClusters(nodes, links) => Map<nodeId, clusterRootId>` |
-| `hooks/use-neighborhood.ts` | NEW | BFS subgraph extraction at depth 1 or 2 |
-| `hooks/use-growth.ts` | NEW | TanStack Query wrapper for `/api/stats/growth` |
-| `components/growth-chart.tsx` | NEW | Canvas sparkline: entities/observations/relationships over time |
-| `components/approval-mini-graph.tsx` | NEW | Synthetic mini-graph from approval metadata (no API) |
-| `components/approvals-onboarding.tsx` | NEW | Dismissable onboarding card |
-| `api-server/routes/stats.ts` | NEW | `GET /api/stats/growth` |
-| `api-server/routes/approvals.ts` | MODIFY | Add `POST /api/approvals/batch` |
+**Integration classification:** NEW MODULE in `mcp-server` + NEW MCP TOOLS + NEW API ROUTES
+
+**No schema changes.** Export reads existing tables; import uses existing write path.
+
+**New file:** `packages/mcp-server/src/import-export.ts`
+
+Export format (`MycoExport`):
+```typescript
+interface MycoExport {
+  version: '1.0';
+  exported_at: string;
+  entities: Entity[];
+  observations: Observation[];
+  relationships: Relationship[];
+}
+```
+
+Import formats to handle:
+- `myco` — native format above (trivial: call `rememberEntity` for each observation)
+- `mem0` — entities with `facts` arrays (map fact text → observation)
+- `mcp-memory-service` — entities with `observations` arrays (the JSONL reference format)
+
+**`tools.ts` changes:** Register two new MCP tools — `export_graph` and `import_graph`.
+
+**`cli.ts` changes:** Add `myco export > graph.json` and `myco import graph.json` CLI subcommands.
+
+**`api-server` changes:** Add `GET /api/export` and `POST /api/import` routes to the existing `entitiesRoutes` or a new `importExportRoutes` group.
+
+**SourceType extension:** Add `'import'` to the union in `types.ts`.
 
 ---
 
-## New API Endpoints
+## Schema Migration Plan
 
-### GET /api/stats/growth
+All migrations follow the existing `try/catch ALTER TABLE` pattern in `schema.ts` — safe to run on every startup against both new and existing databases.
 
+### Complete v5.0 Migration Block
+
+```typescript
+// v5.0 M1: Temporal fact versioning
+try { db.exec(`ALTER TABLE observations ADD COLUMN superseded_by TEXT REFERENCES observations(id)`); } catch {}
+try { db.exec(`ALTER TABLE observations ADD COLUMN valid_from TEXT NOT NULL DEFAULT (datetime('now'))`); } catch {}
+try { db.exec(`ALTER TABLE observations ADD COLUMN valid_until TEXT`); } catch {}
+try { db.exec(`CREATE INDEX IF NOT EXISTS idx_observations_active ON observations(valid_until) WHERE valid_until IS NULL`); } catch {}
+
+// v5.0 M2: Entity access tracking (for decay)
+try { db.exec(`ALTER TABLE entities ADD COLUMN last_accessed_at TEXT`); } catch {}
+try { db.exec(`ALTER TABLE entities ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0`); } catch {}
+
+// v5.0 M3: Observation access tracking (for decay)
+try { db.exec(`ALTER TABLE observations ADD COLUMN last_accessed_at TEXT`); } catch {}
+try { db.exec(`ALTER TABLE observations ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0`); } catch {}
+
+// v5.0 M4: Relationship strength scoring
+try { db.exec(`ALTER TABLE relationships ADD COLUMN strength REAL NOT NULL DEFAULT 1.0`); } catch {}
+try { db.exec(`ALTER TABLE relationships ADD COLUMN reinforcement_count INTEGER NOT NULL DEFAULT 1`); } catch {}
+try { db.exec(`ALTER TABLE relationships ADD COLUMN last_reinforced_at TEXT`); } catch {}
 ```
-Query params: days=30 (default 30, max 90)
-Response: { series: Array<{ date: string, entities: number, observations: number, relationships: number }> }
-```
 
-Three SQLite `GROUP BY strftime('%Y-%m-%d', created_at)` queries, merged by date in JS.
-The `created_at` index already exists on all three tables. Mount at `/api/stats` in
-`api-server/src/index.ts`.
+All new columns have safe defaults — no data backfill required for existing rows.
 
-### POST /api/approvals/batch
+### Migration Ordering (dependency constraints)
 
-```
-Body: { ids: string[], status: 'approved' | 'rejected' }
-Response: { resolved: number, failed: number }
-```
-
-Added to the existing `approvalsRoutes` Hono app. Wraps single-approve logic in an
-outer `db.transaction()` loop.
+| Migration | Required By | Can Ship Independently? |
+|-----------|------------|------------------------|
+| M1 (temporal) | Features 1 and 3 | Yes — must ship before F1 and F3 |
+| M2-M3 (access tracking) | Feature 7 | Yes — independent |
+| M4 (relationship strength) | Feature 8 | Yes — independent |
 
 ---
 
-## Build Order (Dependency-Aware)
+## Package Dependency Graph After v5.0
 
-### Phase 1 — Theme Foundation (no feature dependencies, unblocks accurate visual QA)
-1. Apply bioluminescent CSS variables to `activity-feed.tsx` (currently `slate-*`),
-   `approvals.tsx` heading, and any remaining hardcoded colors in sidebar.
+**Before:**
+```
+mcp-server → core → SQLite
+api-server → core → SQLite
+dashboard  → api-server (HTTP)
+```
 
-### Phase 2 — Graph Core Features (each builds on stable `GraphView` from prior step)
-2. **Confidence filter** — Trivial prop addition to `GraphView`. Establishes the
-   pattern for props that modify `decoratedNodes` filtering.
-3. **Cluster detection** — Extract `lib/graph-clusters.ts`. Wire to `GraphView` and
-   `GraphToolbar`. Update `GraphAnalytics` to import from it.
-4. **Search auto-zoom + animated highlight** — Self-contained inside `GraphView`.
-5. **Neighborhood explorer** — New `hooks/use-neighborhood.ts`, state in `graph.tsx`,
-   button in `EntityPanel`, dismiss in `GraphToolbar`.
+**After:**
+```
+mcp-server → core (now includes embed-client + memory-ops) → SQLite
+api-server → core (now includes embed-client + memory-ops) → SQLite
+dashboard  → api-server (HTTP)
+```
 
-### Phase 3 — Timeline and Particles (requires Phase 2 GraphView to be stable)
-6. **Timeline animated playback** — Restyle `TimelineSlider`, add `newNodeIds` prop
-   to `GraphView`.
-7. **Particle effects** — Add particle system to `GraphView` using `onRenderFramePre`.
-   Safest to add after all other `GraphView` changes are merged.
+The only structural change: `embed-client.ts` and the core write/read functions move from `mcp-server` into `core`. The package graph topology is unchanged — no new package-level dependencies are introduced.
 
-### Phase 4 — Growth Chart (API work first, then UI)
-8. **Stats API endpoint** — Add `routes/stats.ts` and mount in `index.ts`. Independent
-   of all dashboard changes.
-9. **Growth chart** — Requires endpoint. Add `use-growth.ts` and `growth-chart.tsx`,
-   wire into `routes/index.tsx`.
+---
 
-### Phase 5 — Approvals Overhaul (relatively independent, only needs Phase 1 theme)
-10. **Approvals onboarding** — localStorage toggle, zero dependencies.
-11. **Batch approvals** — API endpoint first (`POST /api/approvals/batch`), then
-    `useBatchResolveApprovals` hook, then `approvals.tsx` UI. `ApprovalCard` selectable
-    props need no interface changes.
-12. **Inline mini-graph preview** — Requires `GraphView` to be stable (Phase 2).
-    Synthetic data, no new API work.
+## New Files Summary
 
-### Phase 6 — Analytics Panel Enhancement (requires cluster utility from Phase 2)
-13. Add cluster-aware sections to `GraphAnalytics`. Final polish pass.
+| File | Package | Purpose |
+|------|---------|---------|
+| `packages/core/src/memory-ops.ts` | core | Business logic extracted from `mcp-server/tools.ts` (enables REST API reuse) |
+| `packages/core/src/embed-client.ts` | core | Moved from `mcp-server/` (needed by `memory-ops.ts`) |
+| `packages/core/src/decay.ts` | core | `computeEffectiveConfidence()` and `decayFactor()` — lazy decay computation |
+| `packages/mcp-server/src/auto-extractor.ts` | mcp-server | Episode-level auto-extraction on `log_episode` |
+| `packages/mcp-server/src/dedup-resolver.ts` | mcp-server | Write-path dedup and conflict resolution |
+| `packages/mcp-server/src/consolidation-trigger.ts` | mcp-server | Threshold-based micro-consolidation on episode insert |
+| `packages/mcp-server/src/codebase-ingester.ts` | mcp-server | `codify` tool — project structure to graph knowledge |
+| `packages/mcp-server/src/import-export.ts` | mcp-server | JSON export and multi-format import |
+| `packages/api-server/src/routes/memory.ts` | api-server | Write-path REST routes (`/api/memory/*`) |
+| `packages/api-server/src/middleware/auth.ts` | api-server | Optional API key guard for write routes |
+
+## Modified Files Summary
+
+| File | Package | Change |
+|------|---------|--------|
+| `packages/core/src/schema.ts` | core | 4 migration blocks (M1-M4) |
+| `packages/core/src/types.ts` | core | Extend `SourceType` union; add new columns to `Entity`, `Observation`, `Relationship` interfaces |
+| `packages/core/src/statements.ts` | core | ~15 new prepared statements; update `insertRelationship` to upsert |
+| `packages/core/src/config.ts` | core | Add `consolidationThreshold`, `apiKey`, `decayHalfLifeDays` |
+| `packages/mcp-server/src/tools.ts` | mcp-server | Becomes thin MCP adapter after logic moves to `core`; registers 4 new tools |
+| `packages/mcp-server/src/consolidator.ts` | mcp-server | Add decay sweep pass to nightly cycle |
+| `packages/mcp-server/src/cli.ts` | mcp-server | Add `export` and `import` subcommands |
+| `packages/api-server/src/index.ts` | api-server | Mount `/api/memory` route group; add auth middleware |
+| `packages/api-server/src/routes/entities.ts` | api-server | Filter `valid_until IS NULL` by default; add `?include_history=true` |
+| `packages/api-server/src/routes/graph.ts` | api-server | Include `strength`, `reinforcement_count` on relationship edges |
+
+---
+
+## Data Flow Changes
+
+### Write Path (v5.0)
+
+```
+rememberEntity(content, entity_name, ...)
+    │
+    ├── resolveDedup()              [NEW: dedup-resolver.ts]
+    │     ├── NOOP  → return early (exact duplicate)
+    │     ├── QUEUE → approval_queue insert, return
+    │     ├── UPDATE → retireObservation() first, then continue   [uses M1 columns]
+    │     └── ADD   → continue normally
+    │
+    ├── upsertEntity()              [existing — find by name+type or insert]
+    ├── insertObservation()         [now sets valid_from, valid_until=NULL]
+    ├── embedText() → vec_embeddings
+    ├── upsertRelationship()        [CHANGED: INSERT ... ON CONFLICT DO UPDATE strength/count]
+    └── discoverRelationships()     [existing]
+```
+
+### Episode Log Path (v5.0)
+
+```
+logEpisode(event_type, payload, agent_id)
+    │
+    ├── insertEpisode()            [existing — synchronous, fast]
+    │
+    ├── setImmediate (async, non-blocking)
+    │     ├── extractAndStoreEpisode()       [NEW: auto-extractor.ts]
+    │     │     └── extractFacts() → rememberEntity() or approval_queue
+    │     └── checkAndTriggerMicroConsolidation()  [NEW: consolidation-trigger.ts]
+    │           └── if unconsolidated_count >= threshold: runConsolidation() async
+    │
+    └── return { id, session_id }  [immediate — not blocked by LLM]
+```
+
+### Recall Path (v5.0)
+
+```
+recallKnowledge(query, limit, as_of?, ...)
+    │
+    ├── embedText(query)
+    ├── knnSearch with valid_until IS NULL filter  (or point-in-time as_of filter)
+    ├── [for each returned result]
+    │     ├── updateObservationAccess()   [NEW: bump last_accessed_at, access_count]
+    │     └── computeEffectiveConfidence()  [NEW: decay.ts — added to return payload]
+    └── return results with effective_confidence field
+```
+
+---
+
+## Recommended Build Order
+
+Features have dependencies flowing upward — build phases must respect them.
+
+| Phase | Features | Why This Order |
+|-------|----------|----------------|
+| **Phase A** | Schema M1-M4 + type updates in `core` | All other features need correct types and columns. Zero functional change — safe to ship first as a standalone migration. |
+| **Phase B** | Temporal versioning (F1) + Dedup resolver (F3) | F3 requires the `retireObservation` mechanism from F1. Both modify the write path together — ship atomically to avoid an intermediate broken state where UPDATE action has no retirement target. |
+| **Phase C** | Relationship strength (F8) | Independent of Phase B. Can be developed in parallel. Only touches `insertRelationship` statement and `selectGraphRelationships`. |
+| **Phase D** | Memory decay (F7) | Independent of B and C. New `decay.ts` module, access column updates on read path, nightly decay sweep. |
+| **Phase E** | `memory-ops.ts` refactor (F6 prerequisite) | Must happen before REST write routes. Moving embed-client and functions from mcp-server to core is a refactor, not a feature — do it as its own phase to isolate risk. Tests must pass before moving on. |
+| **Phase F** | REST API write routes (F6) | Builds on Phase E. Add `memory.ts` routes and auth middleware. |
+| **Phase G** | Auto-extraction (F2) + Incremental consolidation (F4) | F2 is a prerequisite for F4's episode-level trigger. Both touch `logEpisode`. Ship together to avoid multiple modifications to the same function. |
+| **Phase H** | Codebase ingestion (F5) + Import/export (F9) | Pure additions on top of stable write path from B-G. No dependencies on each other; can be developed in parallel within Phase H. |
+
+---
+
+## Architectural Patterns
+
+### Pattern 1: Lazy Decay Computation
+
+**What:** `effective_confidence` is computed on the fly at read time using `computeEffectiveConfidence()`, not written back to the database.
+
+**When to use:** Any metric that degrades over time without user interaction. Single-user SQLite at local scale has no need for a decay writer process.
+
+**Trade-offs:** Slightly more CPU on reads; avoids write storms, background job complexity, and stale-value problems. The `last_accessed_at` update on read is a tiny single-row UPDATE (fast path with the access index).
+
+### Pattern 2: Fire-and-Forget Async for LLM Calls
+
+**What:** Background LLM work (auto-extraction, micro-consolidation) is launched via `setImmediate()` inside synchronous MCP tool handlers. The tool response returns before the LLM call completes.
+
+**When to use:** Any operation where the MCP caller should not block on Ollama latency. `log_episode` is the primary case — agents call it frequently.
+
+**Trade-offs:** LLM errors are logged but invisible to the caller. Episodes are always saved (safe); extraction failure is recoverable (nightly cycle catches up). `.catch(console.error)` is the error surface.
+
+### Pattern 3: Shared Business Logic in `packages/core`
+
+**What:** Write operations and embedding logic live in `packages/core` rather than `packages/mcp-server`. Both the MCP tool handlers and the REST API routes import from `@myco/core`.
+
+**When to use:** Any function that both MCP and REST need to call.
+
+**Trade-offs:** `core` grows slightly larger, but the alternative (logic duplication or circular imports) is worse. The move is safe because `core` has no dependency on `mcp-server` — the direction of the refactor is already correct.
+
+### Pattern 4: Migration-Safe Schema Evolution
+
+**What:** Every schema change uses try/catch `ALTER TABLE` blocks in `schema.ts` that are safe to re-run on startup. New columns always have safe defaults.
+
+**When to use:** Always. Never create a migration that fails on an existing database.
+
+**Trade-offs:** No migration version tracking. Acceptable for single-user local SQLite where the schema only ever grows (no column removal, no renames).
 
 ---
 
 ## Anti-Patterns to Avoid
 
-### Fetching Cluster Data from the Server
-All cluster detection is computable client-side from the graph payload already fetched.
-Adding a `/api/graph/clusters` endpoint would be a server round-trip for work that
-takes <2ms in the browser with union-find on a graph of <10k nodes.
+### Anti-Pattern 1: Awaiting LLM in MCP Tool Response
 
-### Lifting Timeline State into a React Context
-`timelineEnabled` and `timelineDate` are local to the graph route. There is no reason
-to put them in Context or a global store. The only consumer is `graph.tsx` and its
-children. Context adds indirection without benefit here.
+**What people do:** Call `extractFacts()` inside `logEpisode()` and await it before returning.
 
-### Splitting GraphView into Subcomponents
-`graph-view.tsx` is ~600 lines. Splitting it into `GraphCanvas`, `GraphControls`,
-`GraphOverlay`, etc. is tempting but counterproductive: ForceGraph2D's imperative ref
-must be colocated with all canvas callbacks (`nodeCanvasObject`, `onRenderFramePre`,
-etc.). Splitting the ref responsibility creates either prop-drilling or ref-forwarding
-complexity that outweighs the organizational gain. Add new props to the existing
-component.
+**Why it's wrong:** LLM inference over Ollama takes 1–5 seconds. MCP `log_episode` is called on every agent action. Blocking here creates a 1-5 second freeze in every agent session.
 
-### Using a Charting Library for the Growth Chart
-Recharts, Nivo, and Chart.js each add >200KB to the bundle. The growth chart is two
-or three simple area sparklines. A ~60-line Canvas implementation matches the
-bioluminescent aesthetic better than any default charting theme, adds zero bundle
-weight, and follows the same `hexToRgba` + `createLinearGradient` pattern already
-established in `graph-view.tsx`.
+**Do this instead:** `setImmediate(() => extractAndStoreEpisode(...).catch(console.error))`. The episode is written synchronously, the tool returns immediately, extraction happens in background.
 
-### Adding a Particle Library
-The existing canvas system in `graph-view.tsx` already renders at 60fps. A separate
-particle library (framer-motion particles, tsParticles) would create two competing
-animation loops targeting the same canvas. Implement particles natively in
-`onRenderFramePre`.
+### Anti-Pattern 2: Eager Decay Writes
+
+**What people do:** Add a cron job that scans all entities every hour and writes updated decay scores to the DB.
+
+**Why it's wrong:** Creates write pressure against the SQLite WAL, races with concurrent reads from the MCP server and API server, and the written score is stale the moment it's computed.
+
+**Do this instead:** Compute `effective_confidence` lazily in `computeEffectiveConfidence()` at read time. Store only `last_accessed_at` (updated on access). The nightly cycle handles entities that have decayed below a meaningful threshold.
+
+### Anti-Pattern 3: Business Logic Duplication Across MCP and REST
+
+**What people do:** Implement `remember` logic directly in `tools.ts` and then re-implement it in `routes/memory.ts`.
+
+**Why it's wrong:** Two implementations diverge. Bug fixes and feature additions (e.g., dedup, temporal versioning) must be applied twice.
+
+**Do this instead:** `packages/core/src/memory-ops.ts` is the single source of truth. `tools.ts` and `routes/memory.ts` are thin adapters that validate transport-specific input and call the shared function.
+
+### Anti-Pattern 4: `INSERT OR IGNORE` for Reinforceable Relationships
+
+**What people do:** Keep the existing `INSERT OR IGNORE` for relationships after adding the `strength` and `reinforcement_count` columns.
+
+**Why it's wrong:** Every duplicate relationship silently discards the reinforcement event. `reinforcement_count` never increments, `strength` never increases.
+
+**Do this instead:** Use `ON CONFLICT(from_id, to_id, type) DO UPDATE SET reinforcement_count = reinforcement_count + 1, strength = MIN(1.0, strength + 0.1)`. The UNIQUE constraint is still enforced; conflict handling now does useful work.
 
 ---
 
-## Data Flow Changes Summary
+## Integration Points Summary
 
-```
-Before (v3.0):
-  /api/graph      → useGraph     → graph.tsx (timeline filter) → GraphView
+### packages/core (touched by every feature)
 
-After (v4.0):
-  /api/graph          → useGraph     → graph.tsx
-                                          ↓ (multiple new props)
-                                       GraphView (+ clusterMap, confidenceThreshold,
-                                                    neighborhoodData, newNodeIds)
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| `schema.ts` → DB | SQL DDL on startup | 4 new migration blocks added |
+| `statements.ts` → `MycoStatements` | Prepared statements interface | ~15 new entries; `insertRelationship` changes from IGNORE to upsert |
+| `types.ts` → all packages | TypeScript interfaces | `SourceType` union gains 3 new values; interfaces gain new optional columns |
+| `memory-ops.ts` → mcp-server + api-server | Direct import (`@myco/core`) | The refactor that enables REST write routes |
 
-  /api/stats/growth   → useGrowth    → index.tsx → GrowthChart
+### packages/mcp-server (new tools)
 
-  /api/approvals      → useApprovals → approvals.tsx
-                                          → ApprovalCard (selectable activated)
-                                          → ApprovalMiniGraph (synthetic, no API)
-                                          → ApprovalsOnboarding (localStorage)
+| Tool | Status | Notes |
+|------|--------|-------|
+| `remember` | Extended | Dedup resolver on write path |
+| `recall` | Extended | `as_of` parameter; decay-adjusted effective_confidence |
+| `log_episode` | Extended | Auto-extractor + micro-consolidation trigger (both async) |
+| `codify` | New | Codebase ingestion |
+| `export_graph` | New | Full JSON export |
+| `import_graph` | New | Multi-format import |
 
-  /api/approvals/batch → useBatchResolveApprovals → approvals.tsx (batch bar)
-```
+### packages/api-server (new write surface)
+
+| Route | Status | Notes |
+|-------|--------|-------|
+| `POST /api/memory/*` | New | Full write-path REST API; optional API key auth |
+| `GET /api/entities/:id` | Extended | `valid_until IS NULL` default filter; `?include_history=true` option |
+| `GET /api/graph` | Extended | `strength`, `reinforcement_count` on edges; `effective_strength` field |
+| `GET /api/export` | New | Proxies `exportGraph()` |
+| `POST /api/import` | New | Proxies `importGraph()` |
 
 ---
 
 ## Sources
 
-- Source code read directly from codebase (HIGH confidence — current production code):
-  `graph-view.tsx`, `graph-toolbar.tsx`, `graph-analytics.tsx`, `timeline-slider.tsx`,
-  `entity-panel.tsx`, `activity-feed.tsx`, `approval-card.tsx`, `approvals.tsx`,
-  `use-approvals.ts`, `api.ts`, `routes/graph.ts`, `routes/dashboard.ts`,
-  `routes/approvals.ts`, `core/schema.ts`
-- ForceGraph2D `onRenderFramePre`, `centerAt()`, `zoom()`, `refresh()` APIs: in-use
-  patterns (`onEngineStop`, `nodeCanvasObject`, imperative ref) confirmed from existing
-  code; named callbacks confirmed as part of the library's documented API surface
-  (MEDIUM confidence — requires verification against current react-force-graph-2d docs
-  before implementation)
-- SQLite `strftime` GROUP BY pattern: confirmed in schema.ts that `created_at` is
-  stored as ISO text string; standard SQLite function (HIGH confidence)
-- `ApprovalCard` selectable props (`selectable`, `selected`, `onToggleSelect`) confirmed
-  present in the TypeScript interface but not passed from `approvals.tsx` (HIGH
-  confidence — read both files)
+- Direct analysis of `packages/core/src/schema.ts` — confirmed existing columns, migration pattern, all table structures (HIGH confidence)
+- Direct analysis of `packages/core/src/statements.ts` — confirmed `INSERT OR IGNORE` on line 159, `MycoStatements` interface, all 88 prepared statements (HIGH confidence)
+- Direct analysis of `packages/mcp-server/src/tools.ts` — confirmed `rememberEntity()`, `recallKnowledge()`, `forgetEntity()`, all MCP tool registrations (HIGH confidence)
+- Direct analysis of `packages/mcp-server/src/consolidator.ts` — confirmed `extractFacts()`, `detectContradiction()`, `findMergeCandidates()` exist and are importable by new modules (HIGH confidence)
+- Direct analysis of `packages/api-server/src/index.ts` — confirmed existing 5 route groups, read-only current state (HIGH confidence)
+- SQLite documentation: `ON CONFLICT DO UPDATE` (upsert) syntax — standard SQLite 3.24+ feature (HIGH confidence)
+- better-sqlite3 docs: synchronous API pattern — confirmed consistent with existing codebase usage (HIGH confidence)
+
+---
+
+*Architecture research for: Myco v5.0 Feature Parity & Differentiation*
+*Researched: 2026-03-27*

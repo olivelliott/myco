@@ -1,189 +1,227 @@
 # Project Research Summary
 
 **Project:** Myco
-**Domain:** Interactive knowledge graph dashboard — bioluminescent PWA with animated visualization and agent memory management
+**Domain:** Local-first MCP memory server — knowledge graph, temporal fact versioning, agent memory, REST API
 **Researched:** 2026-03-27
-**Confidence:** HIGH (codebase audit + verified package sources)
+**Confidence:** HIGH
 
 ## Executive Summary
 
-Myco v4.0 is a dashboard enhancement milestone, not a greenfield build. The existing stack (React 19, Vite 8, Tailwind v4, shadcn/ui, TanStack Query/Router, react-force-graph-2d, Hono) is fully in production and must not be re-evaluated. The v4.0 work is scoped to adding visual depth (bioluminescent theme, particle effects, cluster visualization), completing table-stakes graph interactions (search zoom, confidence filter, neighborhood explorer), and upgrading the approval queue (batch actions, onboarding, mini-graph preview). All new capabilities require only six additional npm packages totaling ~81-86KB gzipped.
+Myco v5.0 is a feature parity and differentiation milestone for an already-working, production-grade local MCP memory server. The existing stack (better-sqlite3, sqlite-vec, Ollama, Vercel AI SDK, Hono, React 19 PWA) is fully validated and should not change. The v5.0 work is narrowly scoped: add 9 features using only 2 new npm dependencies (`fast-glob` and `p-queue`) — all other capabilities are schema migrations and new TypeScript classes layered over the existing foundation. The overall architecture is correct and the codebase audit is HIGH confidence because researchers read the actual source files rather than inferring from documentation.
 
-The recommended approach is to build in dependency order: theme foundation first (unblocks visual QA), then graph core features (confidence filter, clusters, search zoom, neighborhood explorer), then timeline animation and particles (which must be layered on a stable GraphView), then growth chart (needs a new API endpoint), then approvals overhaul. Every feature except the growth chart and batch approvals is purely client-side — no new API endpoints needed. The architecture preserves the existing data flow (`/api/graph` → TanStack Query → in-memory filtering) and extends it with new props on `GraphView` rather than splitting the component.
+The recommended approach is to build in strict dependency order: schema migrations first, then temporal versioning paired with dedup resolution (they share the `retireObservation` mechanism), then relationship strength and memory decay as independent parallel tracks, then the core refactor moving business logic from `mcp-server` into `packages/core` (the prerequisite for REST write routes), then auto-extraction and incremental consolidation together (both modify `logEpisode`), and finally codebase ingestion and import/export as pure additions on a stable foundation. ARCHITECTURE.md defines this as Phases A through H and that ordering should drive the roadmap directly.
 
-The dominant risk is the react-force-graph-2d simulation reheating bug. The existing `filteredData` in `graph.tsx` creates a new object reference on every `timelineDate` tick, which reheats the physics simulation 10 times per second during playback. If this is not fixed before adding cluster boundaries, neighborhood isolation, and particle effects, every new feature will appear broken. Fixing graphData reference identity is a prerequisite for all canvas features, not a nice-to-have.
+The key risks are concentrated in two areas: (1) the dedup and temporal versioning subsystem, where a wrong entity merge is harder to undo than a missed one, and where LLM hallucination during auto-extraction can flood the graph with ghost entities if the approval gate is not enforced — these risks are fully mitigated by routing all auto-extracted and merge-candidate items through the human approval queue unconditionally; (2) the schema migration pattern, where the existing `try/catch ALTER TABLE` approach is already accumulating technical debt and will become a measurable startup bottleneck by the end of v5.0 unless a `schema_migrations` tracking table is introduced before the first feature phase begins.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The existing stack is correct and should not change. Six targeted additions cover all v4.0 needs. See `.planning/research/STACK.md` for full rationale.
+The production stack is already in place and needs no architectural changes for v5.0. All 9 features are implemented via SQLite schema migrations, new TypeScript classes, and extensions to existing pipelines. The only additions are `fast-glob@3.3.3` (file discovery for `codify`) and `p-queue@8.1.0` (serialized async job queue for incremental consolidation). Both are ESM-compatible with the monorepo's `"type": "module"` setting and have no native bindings.
 
-**New additions only:**
-- `shadcn chart` (via CLI): knowledge growth chart — already in the shadcn ecosystem, wraps Recharts 3.8.1, zero new npm deps beyond recharts (~40KB gzipped)
-- `graphology` 0.26.0 + `graphology-communities-louvain` 2.0.2: Louvain community detection for cluster visualization — TypeScript-native, O(n log n), runs in under 2ms for under 10k nodes
-- `d3-polygon` 3.0.1: convex hull computation for cluster boundary rendering — 3KB gzipped, already partially present as a d3 family member
-- `motion` 12.x (via `LazyMotion + domAnimation`): UI transition animations for approval cards and confidence bars — 15KB gzipped with LazyMotion (vs. 34KB full bundle)
-- Glow and particle effects: NO new library — implemented via Canvas 2D `ctx.shadowBlur` in `nodeCanvasObject` and particle state in `useRef` via `onRenderFramePre`
+**New dependencies (only 2):**
+- `fast-glob@3.3.3`: File discovery for `codify` tool — stable, no native bindings, .gitignore-aware, already a transitive dependency via Vite
+- `p-queue@8.1.0`: Incremental consolidation job queue — serializes LLM calls; `p-limit` (already present as a transitive dep) is insufficient because it drops excess work rather than serializing it
 
-**Critical version notes:** React 19 peer dep issue in Recharts is resolved in 3.x (no override needed). Motion v12 imports from `motion/react` not `framer-motion`. `onRenderFramePost` availability must be verified against the installed react-force-graph-2d version before implementing cluster overlays.
+**Explicitly rejected additions:**
+- `tree-sitter` (native bindings + version gap vs Node 22) — TypeScript Compiler API is already installed as `typescript@5.9`
+- `compromise` / `wink-nlp` / `natural` (rule-based NLP, cannot handle tech-specific entities) — use `generateObject` via existing Vercel AI SDK
+- `ts-fsrs` / spaced-repetition libraries (designed for explicit user feedback loops) — SQL exponential decay is the correct model for passive automated decay
+- Any cloud vector DB — violates local-first constraint; sqlite-vec handles the scale
+- `ai-sdk-ollama@3.x` — requires Vercel AI SDK v6; project is locked to `ai@4.3.19` + `ollama-ai-provider@1.2.0`; do not upgrade in v5.0
 
 ### Expected Features
 
 See `.planning/research/FEATURES.md` for full codebase audit and competitive analysis.
 
-**Must have (table stakes — gaps in current v3.0):**
-- Stable hover without node drift — nodes still potentially drift; fix `cooldownTicks` pattern
-- Search auto-zoom to result — opacity fade exists but camera does not move (low effort fix via `fgRef.current.centerAt`)
-- Confidence threshold filter slider — data exists on every node, filter UI not built
-- Neighborhood explorer (ego graph) — highlight-only exists; isolate-subgraph mode does not
-- Batch approve/reject in approval queue — each item requires individual action (tedious at scale)
+**Must have — P1 (table stakes, closes competitive gaps against Mem0 and mcp-memory-service):**
+- JSON export / import — backup, portability, unblocks user trust
+- Import from Anthropic reference server JSONL format — migration path for existing users
+- REST API audit + OpenAPI documentation — required for LangGraph, CrewAI, AutoGen clients
+- Conflict resolution at observation level (ADD / UPDATE / NOOP) — prevents graph bloat on repeated agent sessions
+- Memory importance decay — keeps graph fresh, prevents stale facts competing with current ones in recall
+- Relationship strength scoring — enriches graph, enables weighted recall and visual edge thickness
 
-**Should have (differentiators):**
-- Cluster visualization with convex hull boundaries — signature visual differentiator (Kumu-style)
-- Timeline entry animation for newly appearing nodes — makes knowledge accumulation story visceral
-- Confidence badges on entity panel observations — epistemic transparency
-- "Myco" language pass + branded empty states — brand coherence, removes legacy "brain" strings
+**Should have — P2 (differentiators, go beyond what competitors ship):**
+- Temporal fact versioning — point-in-time queries (`as_of` parameter), `valid_from`/`valid_until` on observations
+- Incremental consolidation — sub-24-hour knowledge formation rather than nightly-only
+- Auto-dedup sweep (scheduled job) — cleanup for existing graph noise
+- `extract` MCP tool — passive entity capture from raw text without explicit `remember` calls
 
-**Defer to v4.1+:**
-- Knowledge growth chart on home page (requires new API endpoint — cut if schedule is tight)
-- Inline mini-graph preview in approvals (requires neighborhood API endpoint)
-- Right-click context menu on nodes (nice to have, not critical path)
-- Node-level confidence badge overlay on canvas (post-cluster visual polish)
+**Defer to v5.1+ — P3:**
+- Codebase-to-graph ingestion (`codify`) — highest complexity, unique differentiator, but depends on all memory quality features being stable first
+- Auto-entity extraction from raw episode text (fully passive, always-on) — risk of graph noise too high without proven conflict resolution
 
-**Anti-features (do not build):**
-- Betweenness centrality computed in browser (O(VE) — freezes UI at 500+ nodes)
-- 3D graph view (visually impressive, practically useless per Obsidian community feedback)
-- Graph editing directly on canvas (UX complexity, dashboard is read-and-approve)
-- Semantic search in dashboard (blocks on Ollama inference, Ollama may not be running)
+**Anti-features confirmed (do not build):**
+- Full bi-temporal transaction-time tracking — `created_at` already serves as transaction time; valid-time only is sufficient
+- Cloud sync / multi-machine access — violates local-first constraint by project definition
+- Multi-model embedding support — requires full re-embed; deferred until migration tooling exists
+- Real-time WebSocket updates in dashboard — short-interval TanStack Query polling is sufficient
+- Natural language-to-graph queries — `recall` (semantic) + `query` (structured) already cover realistic patterns
+- Codebase ingestion at full AST depth — graph becomes a code search tool; surface-level only
 
 ### Architecture Approach
 
-All v4.0 features integrate into the existing component tree by adding props to `GraphView` rather than splitting it or adding new data-fetching layers. The `graph.tsx` route orchestrates all new state. Client-side filtering in `decoratedNodes` useMemo is the correct home for confidence threshold, neighborhood isolation, and cluster detection — no server round-trips. Two new API endpoints are required: `GET /api/stats/growth` (growth chart) and `POST /api/approvals/batch` (batch resolve). See `.planning/research/ARCHITECTURE.md` for the full integration map and component-by-component breakdown.
+The existing 4-package monorepo (`core`, `mcp-server`, `api-server`, `dashboard`) is the correct architecture and is not changing structurally. The single refactor required by v5.0 is moving `embed-client.ts` and the core write/read functions (`rememberEntity`, `recallKnowledge`, `queryEntities`, `forgetEntity`, `logEpisode`) from `packages/mcp-server/src/tools.ts` into a new `packages/core/src/memory-ops.ts`. This resolves the circular dependency that currently prevents the REST API from sharing business logic with the MCP server. After the refactor, both `tools.ts` and the new `routes/memory.ts` are thin adapters over shared functions in `@myco/core`.
 
-**Major components and their v4.0 responsibilities:**
-1. `graph-view.tsx` (MODIFY) — receives `clusterMap`, `confidenceThreshold`, `neighborhoodData`, `newNodeIds` props; hosts particle system via `onRenderFramePre`; adds search auto-zoom
-2. `graph.tsx` route (MODIFY) — owns all new state (`clustersEnabled`, `neighborhoodNodeId`, `confidenceThreshold`, `newNodeIds`); defines `GraphMode` union type; wires all new props
-3. `lib/graph-clusters.ts` (NEW) — shared `detectClusters(nodes, links)` utility extracted from inline analytics union-find
-4. `hooks/use-neighborhood.ts` (NEW) — BFS subgraph at depth 1 or 2 from a focal node
-5. `approvals.tsx` + `use-approvals.ts` (MODIFY) — batch action bar, `useBatchResolveApprovals` mutation
-6. `api-server/routes/stats.ts` (NEW) — `GET /api/stats/growth` with SQLite `strftime` GROUP BY
+**Major components and their v5.0 changes:**
+1. `packages/core` — Schema migrations (4 blocks), new `memory-ops.ts` and `decay.ts`, updated `statements.ts` (~15 new prepared statements; `insertRelationship` changes from `INSERT OR IGNORE` to upsert on line 159)
+2. `packages/mcp-server` — New modules: `auto-extractor.ts`, `dedup-resolver.ts`, `consolidation-trigger.ts`, `codebase-ingester.ts`, `import-export.ts`; `tools.ts` becomes a thin MCP adapter registering 4 new tools
+3. `packages/api-server` — New write-path routes (`/api/memory/*`), optional API key auth middleware, export/import endpoints
+4. `packages/dashboard` — Relationship `strength` as `linkWidth` in force graph, temporal timeline filter for history view
+
+**Key architectural patterns established by research:**
+- Lazy decay computation: `effective_confidence` computed at read time from `last_accessed_at`, never written back to DB — avoids write storms and race conditions
+- Fire-and-forget async for all LLM calls: `setImmediate(() => extractAndStoreEpisode(...))` — MCP tool responses must never block on Ollama latency
+- Shared business logic in `packages/core`: single source of truth for write operations; avoids duplicate logic between MCP and REST paths
+- Migration-safe schema evolution: `try/catch ALTER TABLE` with safe `DEFAULT` values, but a `schema_migrations` table must be introduced before v5.0 adds more columns (SQLite `ALTER TABLE` cannot use non-constant `DEFAULT` expressions)
 
 ### Critical Pitfalls
 
-See `.planning/research/PITFALLS.md` for full detail and sources. Top five:
+See `.planning/research/PITFALLS.md` for full detail, sources, and recovery strategies. Top five:
 
-1. **graphData reference identity — silent reheat trap** — `filteredData` in `graph.tsx` creates a new object on every `timelineDate` change (10x/second during playback), reheating the physics simulation continuously. Fix: separate structural data from visual data; pass visual state (opacity, color) via refs that `nodeCanvasObject` reads directly, not via `graphData`. This is a prerequisite before any other canvas feature.
+1. **Schema migration accumulation** — The existing `try/catch ALTER TABLE` pattern runs every migration on every startup. v5.0 adds 10+ new columns across 4 tables. Introduce a `schema_migrations` table (run-once semantics) as the very first deliverable before any feature adds columns. SQLite `ALTER TABLE` also cannot use non-constant `DEFAULT` expressions — columns with temporal defaults must be added as `NULL` and backfilled immediately after `ALTER TABLE`.
 
-2. **Timeline setInterval vs. requestAnimationFrame** — `setInterval` at 100ms fires 10 React state updates/second, cascading into simulation reheats. Fix: drive timeline playback via `requestAnimationFrame` loop; store cutoff timestamp in `useRef`; update React state only on manual scrub or play completion.
+2. **LLM hallucination creating ghost entities** — Auto-extraction removes the human "I explicitly asked to remember this" signal. Without gating, a 5% hallucination rate produces 1-2 ghost entities per nightly run that permanently pollute recall. Mitigation is unconditional: all auto-extracted entities route to the approval queue at confidence < 0.7; `evidence_quote` must be a verifiable substring of the source text; `source_type: 'auto_extracted'` is mandatory for retroactive cleanup.
 
-3. **Cluster boundaries on wrong canvas layer** — DOM or SVG overlays above the canvas capture pointer events, making nodes inside cluster regions unclickable. Fix: draw cluster hulls via `onRenderFramePost` on the canvas itself; use `pointer-events: none` on any DOM labels.
+3. **Wrong entity merges are irreversible without soft-delete** — The existing Levenshtein-only dedup (`isMergeCandidate`) will merge `"Vite"` and `"Vim"` (distance = 2). Merge candidates must require both Levenshtein ≤ 2 AND cosine similarity > 0.92. All merge proposals must route through the approval queue — no auto-approve threshold applies to merges. Add a `merged_into` column (soft-delete) before enabling any auto-dedup.
 
-4. **Particle state in React state** — storing particle positions in `useState` inside an animation loop causes a render feedback loop, collapsing frame rate to single digits. Fix: all particle state in `useRef`; particle physics runs entirely inside `onRenderFramePre`; zero React state involvement; cap particle pool at 200 entries.
+4. **Incremental consolidation race conditions** — If the nightly cron and an incremental trigger both select the same unconsolidated episodes before either marks them as processed, the same episodes get processed twice and produce duplicates that bypass dedup. Implement a `consolidation_lock` table with an exclusive-lock row and a 5-minute expiry before enabling any incremental triggers.
 
-5. **Graph mode state proliferation** — adding cluster, neighborhood, path, and search modes as independent `useState` variables creates unmaintainable conditionals. Fix: define `type GraphMode = 'browse' | 'path' | 'neighborhood' | 'search'` before implementing any new modes; refactor existing `pathMode: boolean` first.
+5. **Write amplification on recall from relationship strength** — Updating `strength` and `last_reinforced_at` synchronously on every `recall` converts a ~5ms read-only operation into a write-path operation. Under concurrent agent sessions, recall latency climbs to ~50ms and WAL file size grows continuously. Update relationship strength only on `remember` (explicit re-assertion) and in the nightly consolidation batch via a `reinforcement_events` staging table.
 
 ## Implications for Roadmap
 
-Based on research, the architecture file defines a clear 6-phase build order driven by technical dependencies. This directly maps to recommended roadmap phases.
+Based on research, the architecture file defines a clear 8-phase build order (Phases A–H) where each boundary is determined by a hard dependency or isolation requirement. That ordering should be adopted directly for the roadmap.
 
-### Phase 1: Theme Foundation
-**Rationale:** Unblocks accurate visual QA for all subsequent phases. Pure CSS/class changes with no logic dependencies.
-**Delivers:** Bioluminescent CSS variables applied across `activity-feed.tsx`, `approvals.tsx`, sidebar, and remaining hardcoded `slate-*` classes. "Myco" language pass removes legacy "brain" strings. Branded empty states for approvals and graph.
-**Addresses:** FEATURES.md differentiator #7 (Myco language + empty states)
-**Avoids:** Discovering theme inconsistencies mid-feature QA on later phases
+### Phase 1: Schema Foundation
 
-### Phase 2: Graph Core Features
-**Rationale:** All four features modify `GraphView` independently. Must precede particle effects (Phase 3) since particles layer on a stable render loop. The graphData reference identity fix is the first task in this phase — it unblocks everything else.
-**Delivers:** Confidence threshold filter, cluster detection + hull rendering, search auto-zoom + animated highlight, neighborhood explorer (depth 1/2 toggle)
-**Uses:** `graphology` + `graphology-communities-louvain` + `d3-polygon` (new STACK.md additions)
-**Implements:** `lib/graph-clusters.ts` (NEW), `hooks/use-neighborhood.ts` (NEW), `GraphMode` union type, `graph-view.tsx` prop additions
-**Avoids:** Pitfalls #1 (graphData reheat), #3 (cluster canvas layer), #5 (mode state proliferation), #9 (LOD for performance cliff)
+**Rationale:** Every subsequent feature depends on correct column types and a reliable migration framework. Zero functional change to the running system — safe to ship and validate in isolation.
+**Delivers:** `schema_migrations` tracking table; all v5.0 columns added with safe defaults (temporal, decay, relationship strength); `SourceType` union extended; TypeScript interfaces updated in `core/types.ts`; `config.ts` additions (`consolidationThreshold`, `apiKey`, `decayHalfLifeDays`)
+**Addresses:** Schema migration accumulation pitfall (Pitfall 5 in PITFALLS.md)
+**Avoids:** Non-constant DEFAULT expression failure in `ALTER TABLE`; startup delay from 15+ migration attempts per boot
 
-### Phase 3: Timeline Animation and Particles
-**Rationale:** Depends on Phase 2's stable `GraphView`. The `newNodeIds` prop and `onRenderFramePre` particle system must be added after all other `GraphView` changes are merged to avoid conflicts in the canvas callback chain.
-**Delivers:** `requestAnimationFrame`-driven timeline playback (replaces setInterval), animated node entry pulse on timeline advance, particle burst system for node clicks and new entries, restyled timeline slider UI replacing native range input
-**Implements:** `useRef`-based timeline cutoff (ARCHITECTURE.md pattern), particle pool in `useRef` capped at 200 entries
-**Avoids:** Pitfall #2 (setInterval fights rAF), Pitfall #4 (particle state in React state)
+### Phase 2: Temporal Versioning + Dedup Resolution
 
-### Phase 4: Growth Chart
-**Rationale:** Requires a new backend endpoint; independent of all dashboard component changes. Can be parallelized with Phase 3 if two tracks are available.
-**Delivers:** `GET /api/stats/growth` endpoint, `growth-chart.tsx` custom Canvas sparkline (no charting library), `hooks/use-growth.ts`, integration into home page route
-**Uses:** SQLite `strftime GROUP BY` pattern, custom Canvas gradient matching existing `graph-view.tsx` bioluminescent patterns
-**Avoids:** Adding Recharts/Nivo for a 3-line sparkline (ARCHITECTURE.md anti-pattern: >200KB for a 60-line Canvas impl)
+**Rationale:** These two features share the `retireObservation()` mechanism — temporal versioning creates it, dedup resolution uses it. Shipping one without the other leaves the write path in a broken intermediate state where an UPDATE conflict decision has no retirement target. They must ship atomically.
+**Delivers:** `valid_from`/`valid_until` columns active on all observation writes; `retireObservation()` prepared statement; `dedup-resolver.ts` gating all `rememberEntity()` writes with ADD/UPDATE/NOOP/QUEUE decisions; `as_of` parameter on `recall` tool for point-in-time queries
+**Addresses:** Temporal fact versioning (P2 differentiator), conflict resolution at observation level (P1 table stakes)
+**Avoids:** Unsynchronized writes creating version history without a supersession mechanism; SQLite `CURRENT_TIMESTAMP` instability (all `valid_from` values generated in application code before transactions open)
 
-### Phase 5: Approvals Overhaul
-**Rationale:** Relatively independent of graph work; needs only Phase 1 theme. Inline mini-graph preview (optional) requires Phase 2 stable GraphView.
-**Delivers:** Dismissable onboarding banner (`localStorage`-gated), batch approve/reject with `POST /api/approvals/batch`, `useBatchResolveApprovals` mutation with optimistic cache removal, `ApprovalCard` selectable mode activated (interface already defined), optional inline mini-graph preview from approval metadata
-**Implements:** `components/approvals-onboarding.tsx` (NEW), batch endpoint in `approvals.ts` (MODIFY), `use-approvals.ts` batch mutation (MODIFY)
-**Avoids:** Undo/redo system (use 5-second toast/commit window — the Gmail pattern per FEATURES.md anti-features)
+### Phase 3: Relationship Strength Scoring
 
-### Phase 6: Analytics Panel Enhancement
-**Rationale:** Depends on `lib/graph-clusters.ts` from Phase 2. Final polish pass — reorganizes existing code, no novel risk.
-**Delivers:** `GraphAnalytics` refactored to import from shared cluster utility (removes inline union-find duplication), cluster-aware analytics breakdown section, confidence badges on `entity-panel.tsx` observations
-**Implements:** Refactor only — no new APIs, no new hooks
+**Rationale:** Independent of Phase 2 — only touches `insertRelationship` prepared statement and `selectGraphRelationships`. Can be developed in parallel with Phase 2 if bandwidth allows; must land after Phase 1 schema is in place.
+**Delivers:** `strength` and `reinforcement_count` on relationships; `INSERT OR IGNORE` replaced with upsert `ON CONFLICT DO UPDATE`; edge thickness in dashboard force graph via `linkWidth`
+**Addresses:** Relationship strength scoring (P1 table stakes)
+**Avoids:** Write amplification on recall (Pitfall 9) — strength updated only on `remember`, not `recall`; `INSERT OR IGNORE` silently discarding reinforcement events
+
+### Phase 4: Memory Importance Decay
+
+**Rationale:** Independent of Phases 2 and 3. New `decay.ts` module in `packages/core` is purely additive. Access tracking columns (M2-M3) already exist from Phase 1. Lazy read-time computation means no new write paths in the hot path.
+**Delivers:** `computeEffectiveConfidence()` and `decayFactor()` in `core/decay.ts`; `last_accessed_at` bumped on every recall; `decay_exempt` entity types defined (preference, constraint, decision, architecture); nightly consolidation decay sweep surfacing dormant entities to approval queue (not auto-deleted)
+**Addresses:** Memory importance decay (P1 table stakes)
+**Avoids:** Decaying important architectural facts (Pitfall 8) — decay applied only to `auto_extracted` source type in v5.0 initially; explicit memories are exempt; decay floor of 0.1 enforced to prevent floating-point underflow
+
+### Phase 5: Core Refactor (memory-ops.ts)
+
+**Rationale:** The REST write routes cannot be added to `api-server` until business logic moves from `mcp-server/tools.ts` to `packages/core/memory-ops.ts`. This refactor has no user-visible effect — it is a structural prerequisite for Phase 6. Isolated as its own phase so the full test suite validates correctness before dependent features build on it.
+**Delivers:** `packages/core/src/memory-ops.ts` with all write/read functions; `embed-client.ts` moved to `core`; `tools.ts` becomes a thin MCP adapter importing from `@myco/core`; all existing tests continue passing
+**Addresses:** REST API architectural prerequisite; business logic duplication anti-pattern
+**Avoids:** Circular imports between `mcp-server` and `api-server`
+
+### Phase 6: REST API Write Routes
+
+**Rationale:** Builds directly on Phase 5. Extends the existing Hono API server with write-path routes and optional API key auth. Opens Myco to LangGraph, CrewAI, and AutoGen clients — closes the most critical competitive gap against cloud-based alternatives.
+**Delivers:** `POST /api/memory/*` route group (remember, recall, query, forget, log-episode, consolidate); optional `MYCO_API_KEY` auth middleware; REST API audit confirming existing read routes cover CRUD; OpenAPI documentation
+**Addresses:** REST API for non-MCP access (P1 table stakes)
+**Avoids:** REST API breaking MCP stdio transport (Pitfall 6) — separate processes maintained; `busy_timeout = 5000` on both DB connections; bulk import wrapped in single transaction
+
+### Phase 7: Auto-Extraction + Incremental Consolidation
+
+**Rationale:** Both features modify `logEpisode()` via `setImmediate`. Shipping them together avoids two sequential modifications to the same function. Auto-extraction depends on the stable write path from Phases 2-4 (dedup, decay, temporal versioning must all be in place before extracted entities flow through them).
+**Delivers:** `auto-extractor.ts` (LLM extraction on `log_episode`, fire-and-forget via `setImmediate`); `consolidation-trigger.ts` (threshold-based micro-consolidation on episode insert); `extract` MCP tool for on-demand passive capture; `consolidation_lock` table preventing race conditions; `source_type: 'auto_extracted'` mandatory approval queue routing
+**Addresses:** Auto-entity extraction (P2), incremental consolidation (P2), `extract` MCP tool (P2)
+**Avoids:** LLM hallucination ghost entities (Pitfall 2) — approval queue mandatory for all auto-extracted facts, `evidence_quote` substring verification required; race conditions in incremental consolidation (Pitfall 3) — lock mechanism built first
+
+### Phase 8: Codebase Ingestion + Import/Export
+
+**Rationale:** Pure additions on top of the stable write path from Phases 1-7. No dependencies on each other — can be developed in parallel within the phase. Codebase ingestion is the highest-complexity feature and is correctly deferred until the memory quality foundation is solid.
+**Delivers:** `codify` MCP tool (`codebase-ingester.ts`, TypeScript Compiler API + `fast-glob`); `export_graph` and `import_graph` MCP tools; CLI `export`/`import` subcommands; `GET /api/export` + `POST /api/import` REST endpoints; Mem0 and reference server import adapters with dry-run + execute two-phase approach
+**Addresses:** Codebase-to-graph ingestion (P3); import/export (P1 table stakes)
+**Avoids:** Codebase ingestion scope explosion (Pitfall 7) — surface-level only (packages, public exports, conventions); clean-slate re-ingestion via `source_type: 'codebase'` delete-before-insert; destructive import without dry-run (Pitfall 10) — two-phase dry-run + execute is mandatory
 
 ### Phase Ordering Rationale
 
-- Theme first because visual regressions in dark mode are impossible to QA against a half-converted palette; it also takes the least time and sets the visual baseline for all screenshots
-- graphData reference identity fix is Phase 2 task 0 — every subsequent canvas feature depends on a simulation that does not continuously reheat
-- Particles after all other GraphView changes to prevent merge conflicts in the canvas callback chain; `onRenderFramePre` particle loop is the last thing added to avoid interference
-- Growth chart as standalone phase because the API work is completely independent and can be parallelized if bandwidth allows
-- Approvals overhaul late because `ApprovalCard` selectable props already exist in the TypeScript interface — it is the lowest-risk scope and the batch API endpoint is the only non-trivial backend work
-- Analytics panel last because it only reorganizes existing computation, adding zero user-visible risk
+- Phase 1 must be first: all other phases rely on the migration framework and correct column types; the `try/catch ALTER TABLE` debt must be paid before adding more columns
+- Phases 2, 3, and 4 have no ordering constraint between them after Phase 1; Phases 3 and 4 can be done concurrently if two tracks are available
+- Phase 2 must precede Phase 7: auto-extraction adds entities that must flow through dedup resolution (`dedup-resolver.ts` from Phase 2)
+- Phase 5 must precede Phase 6: the refactor is the only prerequisite for REST write routes; no other features depend on this ordering
+- Phase 7 must follow Phases 2-4: all memory quality features (dedup, decay, temporal versioning) must be in place before auto-extracted entities begin entering the graph
+- Phase 8 must follow Phase 7: codebase ingestion routes through the same write path as auto-extraction; import uses the conflict resolution established in Phase 2
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 2 (Cluster Visualization):** `onRenderFramePost` vs `onRenderFramePre` availability must be verified against the installed `react-force-graph-2d` version before choosing the canvas hook. If `onRenderFramePost` does not exist, hull rendering approach changes (draw under nodes rather than over).
-- **Phase 3 (Timeline rAF pattern):** The `requestAnimationFrame` + `useRef` timeline replacement is a significant rework of the existing `setInterval` implementation — consider a brief spike to validate the rAF/ref pattern keeps the slider UI in sync before committing to full implementation.
+Phases requiring careful implementation attention (high integration complexity despite established patterns):
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (Theme):** Pure CSS class replacement — no research needed
-- **Phase 4 (Growth Chart):** SQLite `strftime GROUP BY` is well-documented; Canvas gradient sparkline follows existing patterns in `graph-view.tsx`
-- **Phase 5 (Approvals):** `ApprovalCard` selectable interface already defined; batch endpoint follows existing single-approve logic in a `db.transaction()` loop
-- **Phase 6 (Analytics refactor):** Extract-and-reuse of existing union-find — no novel patterns
+- **Phase 2 (Temporal + Dedup):** The atomic retirement of old observations + insertion of new ones must be tested against concurrent writes. SQLite `CURRENT_TIMESTAMP` instability (Pitfall 1) requires application-side timestamp generation at all write sites — audit every call to `insertObservation` before shipping.
+- **Phase 5 (Core Refactor):** Moving functions between packages in a monorepo is mechanical but must not break the MCP stdio contract. Run the full test suite after the move before any Phase 6 work begins. Do not start Phase 6 until tests are green.
+- **Phase 7 (Auto-Extraction):** Extraction prompt quality determines approval queue noise level. Plan for prompt iteration — the first version will have higher rejection rates. The `evidence_quote` substring verification is load-bearing, not a nice-to-have.
+
+Phases with well-established patterns (standard execution, no additional research needed):
+
+- **Phase 1 (Schema Foundation):** Pure SQLite DDL with safe defaults; `schema_migrations` table pattern is well-documented
+- **Phase 3 (Relationship Strength):** Single prepared statement change from `INSERT OR IGNORE` to upsert; minimal risk
+- **Phase 4 (Memory Decay):** Pure TypeScript function; lazy computation; no new write paths
+- **Phase 6 (REST API):** Extending an existing Hono router; follows existing route group patterns in `api-server`
+- **Phase 8 (Import/Export):** JSON serialization with better-sqlite3; no novel patterns; TypeScript Compiler API is stable public API
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All additions verified via npm + official docs. Recharts React 19 compat confirmed in 3.x changelog. Motion v12 React 19 compat confirmed. |
-| Features | HIGH | Competitive analysis against Neo4j Bloom, Obsidian, Kumu, Gephi + direct codebase audit of all v3.0 shipped components |
-| Architecture | HIGH | Based on direct codebase read of all relevant source files. Integration points verified (e.g., `ApprovalCard` selectable props confirmed in TypeScript interface but not yet wired) |
-| Pitfalls | HIGH | Library-specific pitfalls verified against GitHub issues #202, #223, #226, #25, #231 on react-force-graph; animation pitfalls verified against MDN and React patterns |
+| Stack | HIGH | Existing stack is in production; only 2 new deps needed and both confirmed stable. Vercel AI SDK version lock explicitly documented — do not upgrade in v5.0. |
+| Features | HIGH | Multi-source competitive research (Mem0, Zep/Graphiti, mcp-memory-service, Neo4j agent-memory) + direct codebase audit; P1/P2/P3 prioritization is well-reasoned with dependency analysis |
+| Architecture | HIGH | Based on direct source file analysis of all 4 packages; `insertRelationship` upsert change confirmed on specific line number (line 159 in statements.ts); circular dependency problem confirmed by architecture researcher |
+| Pitfalls | HIGH | 10 pitfalls with prevention strategies derived from known SQLite constraints + verified against current codebase behavior; recovery paths documented for each |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **`onRenderFramePost` existence in installed version:** MEDIUM confidence. Verify before Phase 2 cluster implementation by checking TypeScript types in the installed `react-force-graph-2d` package. Fallback: draw hulls in `onRenderFramePre` (hulls render under nodes, acceptable trade-off).
-- **Graphology-communities-louvain maintenance cadence:** Last published ~9 months ago. The Louvain algorithm is stable and does not require ongoing updates, but verify no breaking changes against graphology 0.26.0 before writing integration code.
-- **`hasZoomedRef` reset conditions:** PITFALLS.md flags that the zoom guard should reset on confidence filter changes removing over 20% of nodes. Validate this threshold empirically during Phase 2 implementation.
-- **Growth chart scope decision:** FEATURES.md marks the growth chart as a "defer to v4.1" candidate. Roadmapper should make an explicit go/defer call — Phase 4 is fully independent and can be cut without affecting any other phase.
+- **Auto-extraction prompt quality:** The `generateObject` prompt for entity/relationship extraction is not defined in research. Plan for 1-2 prompt iteration cycles during Phase 7 implementation. The prompt is the highest-variance element of the feature — start with a constrained schema and expand.
+- **Consolidation lock mechanism details:** The `consolidation_lock` table design (row structure, expiry logic, atomic check-and-lock SQL pattern) is described conceptually but not fully specified. Design this explicitly before starting Phase 7 to prevent the race condition pitfall.
+- **Decay parameter tuning:** The half-life constant (`MYCO_DECAY_HALF_LIFE_DAYS`, default 30) and decay floor (0.1) are reasonable starting values but require empirical tuning. Build decay observability into the dashboard from day one — surface effective_confidence distributions so tuning is data-driven.
+- **`codify` abstraction level contract:** Research recommends "surface-level only" but the exact filtering rules (what counts as a public export vs. internal symbol, depth limits) are not fully specified. Define the abstraction level contract in the Phase 8 plan before writing any ingestion code to prevent scope creep.
 
 ## Sources
 
 ### Primary (HIGH confidence)
 
-- Direct codebase audit: `packages/dashboard/src/` — all component files read (informs FEATURES.md and ARCHITECTURE.md)
-- npm registry: recharts 3.8.1, graphology 0.26.0, graphology-communities-louvain 2.0.2, d3-polygon 3.0.1, motion 12.x — all version-verified (STACK.md)
-- shadcn/ui docs: chart component, CSS variable theming, automatic dark mode via `--chart-1` through `--chart-5`
-- GitHub: vasturiano/react-force-graph — issues #202, #223, #226, #25, #231 — performance thresholds and simulation behavior (PITFALLS.md)
-- motion.dev docs: LazyMotion bundle sizes confirmed (15KB domAnimation vs. 34KB full bundle)
+- Direct codebase analysis: `packages/core/src/schema.ts` — confirmed existing columns, migration pattern, all table structures
+- Direct codebase analysis: `packages/core/src/statements.ts` — confirmed `INSERT OR IGNORE` on line 159, `MycoStatements` interface, all 88 prepared statements
+- Direct codebase analysis: `packages/mcp-server/src/tools.ts` — confirmed `rememberEntity()`, `recallKnowledge()`, all MCP tool registrations
+- Direct codebase analysis: `packages/mcp-server/src/consolidator.ts` — confirmed `extractFacts()`, `detectContradiction()`, `findMergeCandidates()` available for reuse
+- Direct codebase analysis: `packages/api-server/src/index.ts` — confirmed existing 5 route groups, currently read-only
+- npm: fast-glob@3.3.3 — last published January 5, 2025; stable; 10k+ dependents
+- npm: p-queue@8.1.0 — Sindresorhus, 10M+ weekly downloads; ESM-only, Node.js 22 compatible
+- TypeScript wiki: Using the Compiler API — `createSourceFile` confirmed stable public API
+- SQLite documentation: `ON CONFLICT DO UPDATE` (upsert) syntax; WAL mode; `julianday()` for date arithmetic
+- Vercel AI SDK docs: `generateObject` with Zod schema — confirmed with existing `ai@4.3.19`
 
 ### Secondary (MEDIUM confidence)
 
-- Neo4j Bloom product docs — competitive feature comparison
-- Obsidian graph view docs + community forum — neighborhood explorer validation ("Local Graph is the most-used feature")
-- Kumu clustering docs — cluster visualization competitive reference
-- graphology-communities-louvain v2.0.2 — algorithm stability assumed from Louvain specification stability
-- ForceGraph2D `onRenderFramePost` API — confirmed in library docs; specific version availability not pinned against installed package
+- GitHub: tree-sitter/tree-sitter issue #5334 — npm v0.25 gap vs v0.26 core; Node 24 requirement (issue thread, March 2026)
+- DEV Community: "I built memory decay for AI agents using the Ebbinghaus forgetting curve" (2025) — decay formula pattern for MCP servers
+- GitHub: gannonh/memento-mcp — memory decay + reinforcement reference implementation
+- Zep/Graphiti GitHub + arXiv 2501.13956 (Jan 2025) — bi-temporal modeling approach
+- Mem0 paper arXiv 2504.19413 (Apr 2025) — conflict resolution as core value, 20-40% noise reduction from dedup
+- mcp-memory-service GitHub (doobidoo) — competitive feature comparison
+- SQLite Forum: temporal tables discussion — confirms `try/catch ALTER TABLE` limitation for non-constant defaults
 
 ### Tertiary (LOW confidence)
 
-- Performance thresholds (under 200 / 200-500 / 500-1500 / 1500+ nodes): derived from library issues + canvas benchmarks, not first-party benchmarks on this codebase
-- Mobile OLED glow rendering behavior: inferred from general OLED display characteristics, not tested on device
+- npm: compromise@14.15.0 — English-only NLP limitation confirmed; rejected from stack (no further validation needed)
+- Mem0 export format schema `{ memories: [{ id, content, metadata, created_at }] }` — inferred from docs, not tested against a live export
 
 ---
 *Research completed: 2026-03-27*

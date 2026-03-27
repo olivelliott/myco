@@ -1,269 +1,240 @@
-# Feature Landscape: Knowledge Graph Dashboard UX
+# Feature Landscape: v5.0 Feature Parity & Differentiation
 
-**Domain:** Personal knowledge graph visualization dashboard (agent memory + knowledge graph explorer)
+**Domain:** Local-first MCP memory server — knowledge graph, agent memory, temporal facts, REST API
 **Researched:** 2026-03-27
-**Milestone:** v4.0 Dashboard & Graph Experience
-**Confidence:** HIGH (codebase audit + multi-source competitive research)
+**Milestone:** v5.0 Feature Parity & Differentiation
+**Confidence:** HIGH (codebase audit + multi-source competitive research: Mem0, Zep/Graphiti, mcp-memory-service, Neo4j agent-memory)
 
 ---
 
-## What Is Already Shipped (Do Not Re-Implement)
+## Context: What Already Exists (Do Not Re-Implement)
 
-Before categorizing features, this is a complete inventory of what exists in `packages/dashboard` as of v3.0:
+Before categorizing the nine target features, this is what Myco already ships as of v4.0:
 
-| Feature | Component | Status |
-|---------|-----------|--------|
-| Force-directed graph with type-color nodes | `graph-view.tsx` | Shipped |
-| Neighbor illumination on hover (dim all non-neighbors) | `graph-view.tsx` | Shipped |
-| Hover rings (double-ring on hovered node) | `graph-view.tsx` | Shipped |
-| Relationship label on hover + deep zoom | `graph-view.tsx` | Shipped |
-| Gradient-colored links between different types | `graph-view.tsx` | Shipped |
-| Dashed links for auto-discovered relationships | `graph-view.tsx` | Shipped |
-| Search with opacity fade (non-matching nodes to 0.15) | `graph-view.tsx` | Shipped |
-| Entity type filter dropdown | `graph-view.tsx` | Shipped |
-| Drag-to-pin nodes (fx/fy set on drag) | `graph-view.tsx` | Shipped |
-| Right-click to unpin | `graph-view.tsx` | Shipped |
-| Pin indicator (amber dot at top-right of pinned node) | `graph-view.tsx` | Shipped |
-| Path tracing via BFS (highlight shortest path) | `graph.tsx` | Shipped |
-| Timeline slider with play/pause + speed (1x/2x/5x) | `timeline-slider.tsx` | Shipped |
-| Analytics panel: node/edge/type counts, density, avg degree | `graph-analytics.tsx` | Shipped |
-| Analytics panel: confidence bands (high/mid/low bars) | `graph-analytics.tsx` | Shipped |
-| Analytics panel: type distribution with mini-bars | `graph-analytics.tsx` | Shipped |
-| Analytics panel: top hubs (clickable, zooms to node) | `graph-analytics.tsx` | Shipped |
-| Analytics panel: bridge nodes (multi-type connectors) | `graph-analytics.tsx` | Shipped |
-| Analytics panel: relationship type breakdown + auto-discovery % | `graph-analytics.tsx` | Shipped |
-| Analytics panel: hovered-node context (degree, obs, confidence) | `graph-analytics.tsx` | Shipped |
-| Entity detail panel (slide-in, observations list) | `entity-panel.tsx` | Shipped |
-| Graph toolbar (path mode, timeline toggle, analytics toggle) | `graph-toolbar.tsx` | Shipped |
-| Graph legend (entity type → color mapping) | `graph-legend.tsx` | Shipped |
-| Approval queue (per-item approve/reject/edit) | `approvals.tsx` + `approval-card.tsx` | Shipped |
-| Merge resolution card | `merge-card.tsx` | Shipped |
-| Activity feed | `activity-feed.tsx` | Shipped |
-| Stat cards | `stat-card.tsx` | Shipped |
-| Zoom-to-fit on engine stop | `graph-view.tsx` | Shipped |
-| Stable physics (tuned d3 forces, velocity decay 0.4) | `graph-view.tsx` | Shipped |
+| Capability | Where |
+|------------|-------|
+| `remember` / `recall` / `query` / `forget` / `log_episode` / `consolidate` / `list_pending_approvals` / `resolve_approval` MCP tools | `packages/mcp-server/src/tools.ts` |
+| Semantic search via sqlite-vec KNN + FTS5 fallback | `tools.ts recallKnowledge()` |
+| Auto-relationship discovery (name mention + semantic similarity) | `relationship-discovery.ts` |
+| Entity merge detection via Levenshtein + semantic embedding in consolidation | `consolidator.ts isMergeCandidate()` |
+| Nightly 2am consolidation pipeline (episodes → LLM extraction → approval queue) | `consolidator.ts`, `scheduler.ts` |
+| Project namespace isolation (nullable `project` column on entities) | `schema.ts`, `tools.ts` |
+| Hono REST API on port 3001 with 5 route groups | `packages/api-server/` |
+| React PWA dashboard: graph explorer, approval queue, activity feed | `packages/dashboard/` |
+| GSD hook for auto-logging phase completions | separate package |
+| Prepared statement caching, dotenv config, batch embeddings | `core`, `embed-client.ts` |
 
 ---
 
-## Table Stakes
+## Feature Landscape
 
-Features users expect from a knowledge graph dashboard. Missing = product feels incomplete or broken.
+### Table Stakes (Users Expect These)
 
-### 1. Stable Hover Without Node Drift
-**Why expected:** Any graph tool that makes nodes fly away on hover is immediately untrustworthy. Users cannot explore if the graph reorganizes during interaction.
-**Current state:** PARTIALLY SHIPPED. Physics tuned (charge -120, distanceMax 300, velocityDecay 0.4), but hover still re-heats simulation via `onNodeHover`. The issue is that `onNodeHover` does not re-heat, but node drag does. Hover physics should be verified stable — if nodes still drift, the fix is `cooldownTicks: 0` after initial layout, not during interaction.
-**Complexity:** Low — configuration change + test
-**Dependencies:** `graph-view.tsx` d3 force config; `d3VelocityDecay`, `d3AlphaDecay` props
-**Reference:** react-force-graph docs — `cooldownTime` and `cooldownTicks` after engine stop freeze layout; hover itself does not reheat unless `onNodeHover` calls `fgRef.current.d3ReheatSimulation()`
+Features users assume exist in any serious memory/knowledge-graph system. Missing = competitive gap, feels incomplete against Mem0 / mcp-memory-service.
 
-### 2. Search with Auto-Zoom to Result
-**Why expected:** Neo4j Bloom, Obsidian, every production graph tool — typing a name and pressing Enter should zoom the camera to the matched node. Current behavior: matching nodes glow but camera does not move.
-**Current state:** PARTIAL — opacity fade on search exists; zoom-to-result does NOT.
-**Complexity:** Low — call `fgRef.current.centerAt(x, y, 400)` then `fgRef.current.zoom(2, 400)` on first match; coordinates are on the GraphNode after layout
-**Dependencies:** `graph-view.tsx` search state + `fgRef`; requires node to have x/y set (available after engine stabilizes)
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| **JSON export of full knowledge graph** | Every database tool exports its data. Users need backup, migration, and inspection. Competitive: mcp-memory-service exports to JSON, Mem0 provides API export. | LOW | Single SQLite dump: entities + observations + relationships + metadata as one JSON object. No schema negotiation needed for personal use. |
+| **JSON import from export format** | Paired with export — migration, restore from backup, moving between machines. | LOW | Validate schema on load, skip or merge duplicates, log conflicts. Naively trust on import or offer a `--merge` flag. |
+| **Import from Anthropic reference server format** | Many users started with the official `@modelcontextprotocol/server-memory` JSONL format. Migration path needed to grow adoption. | MEDIUM | JSONL → entity+observation transform. The reference format stores `{entities: [], relations: []}` per line. Map to Myco's entity+observation+relationship model. |
+| **Auto-entity extraction from conversation text** | Mem0 does this. Zep does this. Users expect passive capture — they should not have to manually call `remember` for everything. Explicit `remember` calls are supplemental, not the only path. | HIGH | LLM-based NER + relationship extraction on incoming text. Fits into `log_episode` pipeline: extract entities from episode payload, auto-queue for review or auto-approve above threshold. Requires careful prompt engineering to avoid noise. |
+| **Conflict resolution: ADD / UPDATE / NOOP on new memories** | When a new `remember` arrives and an entity already exists with a similar observation, the system should decide intelligently — not blindly append duplicate facts. Mem0's core value proposition is conflict-aware memory management. | HIGH | Classify each new observation: ADD (genuinely new), UPDATE (contradicts existing — supersede), NOOP (duplicate — skip). Embed new content vs existing observations for existing entity; cosine similarity threshold for NOOP gate; LLM call for UPDATE detection. Existing mergeCandidate logic handles entity identity; this is at observation level. |
+| **REST API: entity CRUD + recall** | mcp-memory-service ships REST endpoints so LangGraph, CrewAI, and AutoGen can access memory without MCP transport. Any agent framework that is not Claude Code cannot call MCP tools. | MEDIUM | `packages/api-server` already exists with 5 route groups. Need to ensure `POST /entities`, `GET /recall`, `POST /episodes`, `DELETE /entities/:id`, `GET /graph` are all present and OpenAPI-documented. Much may already exist — audit before building. |
+| **Memory importance decay scoring** | Without forgetting, the graph grows unboundedly and older irrelevant facts compete equally with current facts in recall. Zep/Graphiti use bi-temporal invalidation; simpler systems use exponential decay. Users expect knowledge to stay current. | MEDIUM | Add `importance` score (0.0–1.0) and `last_accessed_at` timestamp to observations. Decay via: `effective_score = importance * exp(-λ * days_since_access)`. λ tunable per entity type. Decay job runs nightly alongside consolidation. High-importance facts have very slow decay (months). Low-importance facts fade in days. |
+| **Relationship strength scoring** | Relationships should carry weight reflecting reinforcement. "TypeScript uses strict mode" mentioned once vs twenty times should have different edge weights for graph queries and visualization. | MEDIUM | Add `strength` (0.0–1.0) and `reinforcement_count` to relationships. Each time a relationship is re-confirmed (same from/to/type), increment count and update strength = min(1.0, count * 0.1 + recency_bonus). Decay similarly to importance. Used in recall ranking and graph edge thickness. |
 
-### 3. Confidence Threshold Filter
-**Why expected:** Confidence is a core data attribute in Myco. Users need to hide low-confidence noise and see only high-confidence facts. Neo4j Bloom uses property sliders; yfiles guide recommends filter-on-attribute as essential.
-**Current state:** NOT SHIPPED. Confidence data exists on nodes (`GraphNode.confidence`), analytics panel shows confidence bands, but no filter slider.
-**Complexity:** Low — add a range input to toolbar; filter `decoratedNodes` by `n.confidence >= threshold`
-**Dependencies:** `graph-toolbar.tsx` (add slider), `graph-view.tsx` `decoratedNodes` useMemo (add confidence filter gate)
+### Differentiators (Competitive Advantage)
 
-### 4. Neighborhood Explorer (Ego Graph)
-**Why expected:** Obsidian's Local Graph is its most-used feature — isolating a node's 1-hop or 2-hop subgraph to reduce visual clutter. Neo4j Bloom, Kumu, and every serious graph tool has this. Without it, dense graphs become unusable at 100+ nodes.
-**Current state:** NOT SHIPPED. Neighbor illumination (dim non-neighbors) exists but does not isolate — all nodes remain rendered.
-**Complexity:** Medium — when a node is "focused", filter `decoratedNodes` to only include that node + its N-hop neighbors; add depth slider (1 or 2 hops); provide "exit neighborhood" button
-**Dependencies:** `graph.tsx` state management; `neighborMap` already computed in `graph-view.tsx`; needs a new `focusedNodeId` + `neighborDepth` prop pair
+Features that go beyond what competitors offer for a local-first, privacy-preserving MCP memory server.
 
-### 5. Empty State / Onboarding Explanation
-**Why expected:** First-time users see an empty graph with no explanation of what Myco is, what the approval queue is, or what to do. Research from 2025 shows 69% of top-tier retention products have strong first-session experiences. The approvals page shows "All caught up" with zero context.
-**Current state:** PARTIAL — approvals page has a minimal "All caught up" message; graph has no empty state
-**Complexity:** Low — two empty-state components with explanatory copy and a suggested next action
-**Dependencies:** `approvals.tsx`, `index.tsx` (home page)
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| **Temporal fact versioning (bi-temporal)** | Zep uses bi-temporal modeling — facts have `valid_from` / `valid_until`. Myco can go further: query "what did I know about X on date Y?" This is uniquely powerful for developer agents tracking project decisions over time. | HIGH | Add `valid_from` TEXT and `valid_until` TEXT (NULL = currently valid) to observations. When UPDATE conflict is detected, set `valid_until = now` on old observation, insert new observation with `valid_from = now`. Add `as_of` parameter to `recall` and `query` tools for point-in-time queries. Schema migration with safe defaults. |
+| **Incremental consolidation (on-write trigger)** | Currently consolidation only happens at 2am or via manual trigger. Waiting up to 24 hours to process episodes means agents operate on stale knowledge. Competing systems (Graphiti) consolidate synchronously or near-synchronously. | HIGH | After every `log_episode`, check if unconsolidated episode count > threshold (e.g., 20) or time since last consolidation > max interval (e.g., 4 hours). If so, queue a lightweight consolidation job. Full nightly run does deep analysis; incremental run does fast fact extraction only. Avoids blocking the MCP tool response — fire the consolidation asynchronously. |
+| **Codebase-to-graph ingestion (`codify` tool)** | No MCP memory server currently has native codebase awareness. An agent can call `codify({ path: './packages/core' })` and Myco automatically ingests the package structure, exported functions, dependencies, and key patterns as graph entities. This closes the gap between "project context" in CLAUDE.md and structured memory. | HIGH | Parse TypeScript/JavaScript via ts-morph or TypeScript Compiler API (not full AST — just module-level: exports, imports, class/function names). Create entities for packages, functions, and key conventions. Create relationships: `package uses library`, `function is_part_of package`. Limit scope to surface structure — not line-by-line semantics. |
+| **Auto-dedup with configurable merge strategy** | Existing consolidation catches entity-level duplicates via Levenshtein. But observation-level dedup is missing. Agents often store the same fact multiple times across sessions. A dedup sweep can reduce graph noise by 20–40% based on Mem0's benchmarks. | MEDIUM | Scheduled dedup job: for each entity, embed all observations, compute pairwise cosine similarity, mark pairs above threshold (0.95) as duplicates. Keep the higher-confidence one, tombstone the other. Add `dedup_of` reference column for audit trail. Dashboard shows dedup stats. |
+| **`extract` MCP tool for passive entity capture** | Complement `remember` with an `extract` tool: agent passes raw conversation text, Myco extracts entities and facts automatically using the consolidation LLM. Agent does not need to identify what to remember — Myco does it. Differentiates from all current MCP memory servers which require explicit tool invocation. | HIGH | Reuse the consolidation LLM pipeline as a single-shot extraction (not batch). Input: raw text. Output: proposed entities + observations, either auto-queued or returned for agent review. Tool completes in <2s for typical conversation snippets (300–500 tokens). Requires fast Ollama model (llama3.2). |
 
-### 6. Batch Approve/Reject in Approval Queue
-**Why expected:** When 20 low-confidence items accumulate after a consolidation run, individual approve/reject is tedious. Batch actions are standard in any queue-style UI (email, moderation tools).
-**Current state:** NOT SHIPPED — each item requires an individual action
-**Complexity:** Medium — checkbox selection state, "Select All" / "Approve Selected" / "Reject Selected" actions, bulk mutation
-**Dependencies:** `approvals.tsx`, `use-approvals` hook, API endpoint for bulk resolve (may need backend addition)
+### Anti-Features (Commonly Requested, Often Problematic)
 
----
-
-## Differentiators
-
-Features that set Myco apart from generic graph tools. Not expected, but valued by the target user (developer/power user who thinks in systems).
-
-### 1. Cluster Visualization with Auto-Detected Boundaries
-**What it does:** Automatically detects connected components (already computed in analytics as `componentCount`) and draws a soft convex hull or ellipse boundary around each cluster, with a subtle fill color and label.
-**Value:** Kumu's clustering is its standout feature — users immediately see macro-structure ("these 12 nodes form the 'TypeScript projects' cluster"). Without visual grouping, users must mentally trace connections.
-**Complexity:** Medium-High — cluster detection is already done (union-find in `computeMetrics`); rendering hulls on Canvas requires computing convex hull per component or using d3's `d3-polygon` convex hull; label placement is tricky
-**Dependencies:** Cluster membership must propagate from `computeMetrics` (in analytics panel) back to `GraphView` — currently these are separate calculations. Requires a shared `clusterMap: Map<nodeId, clusterId>` computed once and passed as prop.
-**Reference:** Kumu clustering docs; d3-polygon `polygonHull()`; Gephi community detection uses modularity — for Myco, connected-component grouping is sufficient (no need for Louvain algorithm)
-
-### 2. Timeline Playback with Animated Node Entry
-**What it does:** When timeline is scrubbed or playing, nodes that become visible at the current timestamp fade in with a brief glow burst rather than snapping into existence. The graph smoothly grows.
-**Value:** Neo4j Bloom's "Slicer" is explicitly called out as a standout feature. Temporal animation makes the knowledge accumulation story visceral — users see the graph grow from first agent session to present.
-**Current state:** Timeline slider exists and plays; nodes snap in/out (binary opacity change). Missing: entry animation.
-**Complexity:** Medium — requires tracking "newly appeared" nodes (compare previous timestamp's node set to current) and rendering them with an animated alpha ramp using `requestAnimationFrame` or a timestamp-based opacity in `nodeCanvasObject`
-**Dependencies:** `graph-view.tsx` node rendering; `timeline-slider.tsx`; need a `newlyAppearedNodeIds: Set<string>` prop + a per-frame alpha tracker
-
-### 3. Inline Mini-Graph Preview in Approval Queue
-**What it does:** When reviewing an approval item (a new entity or relationship), a small embedded graph shows where the proposed entity would connect in the existing knowledge graph — its 1-hop neighborhood in the current graph.
-**Value:** The approval queue currently shows text (entity name, type, observations). Adding spatial context lets users make faster, more confident decisions. "Should I approve this 'React' entity?" is easier when you can see it would connect to 'TypeScript', 'Vite', 'shadcn'.
-**Complexity:** Medium — reuse `GraphView` with `mini={true}` (already supported); pass a filtered subgraph of the entity's predicted neighborhood; requires a graph data query by entity name or type
-**Dependencies:** `approval-card.tsx`; `GraphView` mini mode (already exists); API endpoint to fetch neighborhood by entity ID or predicted name
-
-### 4. Knowledge Growth Chart on Home Page
-**What it does:** A line or area chart showing entities, observations, and relationships added over time — the "heartbeat" of the knowledge base.
-**Value:** Makes the value of Myco visible. Users see "I've accumulated 847 facts over 3 months of agent usage." This is motivating and diagnostic (flat line = agents not using brain tools).
-**Complexity:** Medium — requires a time-series API endpoint (`/api/stats/growth?interval=day`); chart with recharts or a lightweight canvas approach
-**Dependencies:** `api-server` stats route (may need new endpoint); `packages/core` needs a growth query; React chart component
-
-### 5. Entity Detail Panel: Confidence Visualization with Source Evidence
-**What it does:** The entity panel shows observations as a list. Enhanced version: each observation shows its confidence score as a color-coded badge (teal = high, amber = medium, rose = low), plus the source agent/session that created it, with a link to the relevant episode log.
-**Value:** Makes the epistemological provenance visible. Users understand why Myco believes something and can reject low-confidence observations directly from the panel.
-**Current state:** Entity panel shows observations as text list; no confidence badge, no agent/session attribution
-**Complexity:** Medium — data is available (`observation.confidence`, `observation.created_at`, provenance links); UI enhancement only
-**Dependencies:** `entity-panel.tsx`; provenance data from `packages/core` via API
-
-### 6. Right-Click Context Menu on Nodes
-**What it does:** Right-clicking a node opens a context menu: "Explore neighborhood", "Pin here", "Unpin", "Find paths to...", "View entity details", "Copy name".
-**Value:** Power users in every graph tool (Neo4j Bloom, Gephi, yEd) expect a context menu. Right-click currently only unpins — this is undiscoverable and wastes the interaction.
-**Current state:** `onNodeRightClick` unpins but shows no UI feedback
-**Complexity:** Medium — requires a canvas-positioned floating menu (not a native context menu — those don't work well with canvas); track right-click position, render a div overlay
-**Dependencies:** `graph-view.tsx`; new `NodeContextMenu` component; needs to surface `onNeighborhoodExplore`, `onPathFrom` callbacks
-
-### 7. "Myco" Language and Branded Empty States
-**What it does:** Replace all "brain" language with "Myco" throughout. Write empty states that explain the product in mycorrhizal-network metaphor language. First-time approvals page should say something like "Your knowledge web is quiet — once agents start remembering, inferences will surface here for your review."
-**Value:** Consistency and brand coherence. "brain" language is the old name. Empty states in the Slack/Pinterest pattern are proven to improve week-1 retention.
-**Current state:** Approvals page: "All caught up / No pending items. The next consolidation run will populate this queue." — functional but cold
-**Complexity:** Low — copy changes + empty-state component design
-**Dependencies:** All route files, any remaining "brain" strings in dashboard
-
----
-
-## Anti-Features
-
-Features to explicitly NOT build for v4.0.
-
-### 1. Betweenness Centrality / PageRank Computation in Browser
-**Why avoid:** Betweenness centrality is O(VE) — for a graph of 500 nodes and 1000 edges, this is 500,000 operations per render. Gephi computes this offline as a batch process. Running it on the main thread in a React component will freeze the UI.
-**What to do instead:** The analytics panel already surfaces "top hubs" (degree-based) and "bridge nodes" (type-diversity-based) — these are O(V+E) and feel analytically similar to the user. If true betweenness centrality is needed in a future milestone, compute it in a Web Worker or in the API server.
-
-### 2. 3D Graph View
-**Why avoid:** react-force-graph-3d exists, but 3D graphs are uniformly harder to navigate than 2D for exploratory knowledge graph use. Obsidian's 3D graph plugin is cited as "visually impressive but practically useless" in community forums. The bioluminescent deep-sea aesthetic works better in 2D with glow effects — depth is implied through lighting, not 3D perspective.
-**What to do instead:** Invest in 2D glow quality, node sizing by observation count, and cluster hull visuals. These give depth without the navigation penalty of 3D.
-
-### 3. Graph Editing Directly on Canvas
-**Why avoid:** Clicking a canvas to add edges, rename nodes, and edit relationships sounds powerful but requires significant UX complexity (mode switching, undo/redo, accidental clicks). Neo4j Bloom has this and it is one of its most-complained-about features.
-**What to do instead:** All graph mutations happen through MCP tools (agents write the graph), manual `brain remember` commands, or the approval queue. The dashboard is a read-and-approve interface, not an editor.
-
-### 4. Full-Text Semantic Search in Dashboard
-**Why avoid:** Semantic search requires embedding queries via Ollama + vector similarity lookup. This is a server-side operation. Adding a semantic search input in the dashboard implies an API endpoint that blocks on Ollama inference, which may be slow (200ms–2s per query), and Ollama may not be running.
-**What to do instead:** The existing name-based search (client-side substring match with opacity fade) is fast, reliable, and offline-capable. The MCP `recall` tool handles semantic search for agents. If semantic search in the dashboard becomes a priority, it belongs in a future milestone with proper loading states and Ollama health awareness.
-
-### 5. Undo/Redo in Approval Queue
-**Why avoid:** Approval decisions are durable writes to the knowledge graph. An undo system requires tombstoning or soft-delete, which adds schema complexity. The approval queue already has a low error rate (each item shows full context before action).
-**What to do instead:** Add a confirmation toast that shows what was approved/rejected with a brief "Undo" window (5 seconds, in-memory only) — if the user doesn't click undo within 5s, the write commits. This is the Gmail pattern: low complexity, high perceived safety.
-
-### 6. Export to External Graph Tools (GraphML, GEXF)
-**Why avoid:** Out of scope for v4.0. Myco's value is the local SQLite store + agent integration. Export workflows fragment the knowledge base and create maintenance burden.
-**What to do instead:** The SQLite file is portable — power users can access it directly with any SQLite tool. Defer export to a future milestone if user demand emerges.
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| **Full bi-temporal model with transaction time (T' dimension)** | Zep paper describes both valid-time AND transaction-time (when data was ingested vs when it was true). "Complete" temporal audit trail. | Two timestamp dimensions multiplies schema complexity. Transaction time is the `created_at` column Myco already has. Valid time (valid_from/valid_until) is the differentiating dimension. Storing T' separately is academic overkill for a personal memory server. | Ship valid-time only (`valid_from` / `valid_until`). `created_at` serves as transaction time. |
+| **Cloud sync / remote backup** | Users want to access memory from multiple machines. | Violates the core local-first constraint. Adds authentication, network dependency, and privacy concerns. Out of scope by project definition. | Export/import JSON for manual transfer. Power users can sync the SQLite file via their own tooling (rsync, Syncthing). |
+| **Multi-model embedding support (swap Ollama for OpenAI embeddings)** | Some users prefer OpenAI text-embedding-3-small for quality or want to avoid running Ollama. | Embedding model changes require re-embedding the entire existing vector store. Storing embeddings from different models in the same `vec_embeddings` table produces incorrect similarity scores. Allows dimension mismatches (768 vs 1536). | Keep Ollama + nomic-embed-text as the only embedding path. If OpenAI support is later added, require a full re-embed operation with clear migration tooling. |
+| **Real-time WebSocket memory updates in dashboard** | "The dashboard should update live as agents write to memory." | A single-user local tool doesn't need WebSockets. The overhead is real (connection management, reconnect logic) and the value is low (user is unlikely to be watching the dashboard while an agent is running). | Short-interval polling (10s) on dashboard pages that show live data. Already fits the existing TanStack Query pattern. |
+| **Natural language to graph query (text-to-Cypher equivalent)** | "Ask Myco a question and it queries the graph." | SQLite does not have Cypher. Text-to-SQL for graph traversals requires LLM calls on every query, is error-prone, and duplicates what `recall` already does semantically. | `recall` (semantic) + `query` (structured filters) together cover the realistic query patterns. Invest in filter expressiveness before adding LLM query translation. |
+| **Full RDF / JSON-LD export** | Standards compliance, interoperability with semantic web tools. | RDF + JSON-LD vocabulary alignment requires ontology design decisions (what namespace, what predicates). A personal dev tool does not benefit from W3C semantic web compliance. Adds schema surface area with no user value for the target audience. | Export as opinionated JSON (entity/observation/relationship arrays). Document the schema clearly. Power users who need RDF can build a thin transform on top. |
+| **Codebase ingestion via full AST (line-by-line semantics)** | "Index every function, every variable, every comment." | Full AST ingestion of a 50k LOC codebase creates thousands of entities. Graph becomes a code search tool, not a knowledge tool. Noise drowns signal. Recall performance degrades. | Surface-level only: packages, key exports, conventions, dependencies. The CLAUDE.md file + `remember` calls handle the nuanced project knowledge. `codify` is a bootstrap tool, not a continuous sync. |
 
 ---
 
 ## Feature Dependencies
 
 ```
-Cluster visualization ──────────────────────────→ shared clusterMap (analytics → graph-view)
-Neighborhood explorer ──────────────────────────→ focusedNodeId state + N-hop filter
-Search auto-zoom ────────────────────────────────→ node x/y available post-layout + fgRef.centerAt
-Confidence filter ───────────────────────────────→ graph-toolbar slider + decoratedNodes filter
-Timeline entry animation ────────────────────────→ newlyAppearedNodeIds prop + per-frame alpha
-Inline mini-graph in approvals ──────────────────→ GraphView mini mode (exists) + neighborhood API
-Growth chart (home page) ────────────────────────→ new /api/stats/growth endpoint
-Entity panel confidence badges ──────────────────→ observation confidence data via API
-Right-click context menu ────────────────────────→ canvas overlay + callback props
-Batch approvals ─────────────────────────────────→ checkbox state + bulk API endpoint (may need backend)
+auto-entity extraction (`extract` tool)
+    └──requires──> consolidation LLM pipeline (already exists in consolidator.ts)
+    └──enhances──> incremental consolidation (extract can trigger immediate processing)
+
+temporal fact versioning
+    └──requires──> schema migration: add valid_from / valid_until to observations
+    └──requires──> UPDATE conflict detection in memory (auto-dedup/conflict resolution)
+    └──enhances──> recall tool (new as_of parameter)
+    └──enhances──> graph timeline in dashboard (edges get validity windows)
+
+auto-dedup / conflict resolution (observation level)
+    └──requires──> embeddings exist for all observations (pending re-embed queue already exists)
+    └──enhances──> temporal fact versioning (UPDATE action sets valid_until on old observation)
+    └──requires──> memory importance decay (need scores to decide which duplicate to keep)
+
+memory importance decay
+    └──requires──> importance column + last_accessed_at column on observations (schema migration)
+    └──enhances──> recall ranking (weight results by effective score)
+    └──enhances──> auto-dedup (keep higher-importance observation on dedup)
+
+relationship strength scoring
+    └──requires──> strength + reinforcement_count columns on relationships (schema migration)
+    └──enhances──> graph visualization (edge thickness in dashboard)
+    └──enhances──> recall ranking (stronger relationships score higher in traversal)
+
+codebase-to-graph ingestion (`codify` tool)
+    └──requires──> TypeScript Compiler API / ts-morph (new dev dependency)
+    └──uses──> existing remember() and relationship creation flow
+    └──uses──> project namespace isolation (codify targets a specific project namespace)
+
+incremental consolidation
+    └──requires──> nightly consolidation pipeline (already exists)
+    └──uses──> consolidation LLM pipeline (reuses same extraction logic)
+    └──enhances──> auto-entity extraction (incremental path for extracted entities)
+
+REST API for non-MCP access
+    └──partially exists──> packages/api-server (Hono, 5 route groups)
+    └──needs──> OpenAPI spec, recall endpoint, entity CRUD verification
+    └──enhances──> all features (exposes every new capability to non-Claude agents)
+
+import/export
+    └──requires──> stable schema (no pending migrations)
+    └──used by──> migration from reference server format
+    └──compatible with──> project namespace (export scoped to project or all)
 ```
 
----
+### Dependency Notes
 
-## Competitive Analysis: What Each Tool Does Well
-
-### Neo4j Bloom
-- **Slicer**: Property-driven timeline playback — similar to what Myco's timeline slider does, but animates node entry (Myco: snap-in)
-- **Perspectives**: Save named "views" with different filter/layout combinations — not needed for v4.0 (single-user, single graph)
-- **Natural language search**: "Find all technologies used by projects" — too complex for v4.0; the MCP recall tool handles this for agents
-- **Scene-level expand**: Right-clicking a node offers "Expand" to pull in connected nodes — similar to neighborhood explorer
-
-### Obsidian Graph View
-- **Local Graph**: The most-valued feature by far — click a note, switch to local view showing only connected notes at configurable depth. This is the neighborhood explorer.
-- **Node filters**: Tag-based, folder-based, link-type filtering alongside the global view — Myco equivalent is entity type filter (already exists) + confidence filter (not yet built)
-- **Depth slider**: 1, 2, 3, or 4 hops from selected node in local graph — Myco's neighborhood explorer should include a depth control
-- **Community feedback**: "The global graph is decorative; the local graph is useful" — validates neighborhood explorer over full-graph aesthetics
-
-### Kumu.io
-- **Clustering**: Turn any profile attribute into automatic cluster nodes — Myco's entity type is a natural cluster axis
-- **Lens system**: Switch between different visual rules (size by degree, color by confidence, etc.) — advanced; defer beyond v4.0
-- **Focus**: Click an element to "focus" it, dimming everything outside its neighborhood — this is the neighborhood explorer pattern
-- **Sidebar**: Rich element profile panel — similar to Myco's EntityPanel
-
-### Gephi
-- **Modularity / community detection**: Louvain algorithm for cluster detection — O(n log n), runs offline. For v4.0, connected-component grouping is sufficient
-- **Filter panel**: Multi-attribute filter composition (degree range, attribute value, etc.) — Myco only needs confidence threshold for v4.0
-- **Statistics**: All graph metrics in one panel — Myco's GraphAnalytics panel already covers the relevant subset
-
-### Roam Research
-- **Sidebar multi-panel**: Open multiple nodes side-by-side — not relevant for Myco's use case (single-focus explorer)
-- **Linked references**: Every node shows backlinks — Myco's EntityPanel should show "entities that reference this entity" (relationships where this entity is target), not just outgoing relationships. Currently PARTIAL.
-
-### yfiles Knowledge Graph Guide
-- **Badges for confidence**: Display confidence as a small badge overlay on the node (colored dot or percentage). Myco currently encodes confidence in the analytics panel but not on the node itself. Node-level confidence badge is recommended.
-- **Progressive disclosure**: Start collapsed, expand on click — Myco's click-to-open EntityPanel implements this correctly
-- **Lens tools**: Focus+context view — equivalent to neighborhood explorer
+- **Temporal versioning requires conflict resolution:** The UPDATE action in conflict resolution is what creates the version trail — without conflict detection, temporal versioning has no mechanism to activate.
+- **Conflict resolution requires decay scores:** When deciding which observation to keep during dedup, importance score is the tiebreaker. Build decay before dedup sweep.
+- **Incremental consolidation is independent of all schema changes:** It can ship before temporal versioning, decay, or strength scoring.
+- **Import/export should ship before temporal versioning:** Exporting during a schema transition risks incomplete data. Ship export when the schema is stable.
+- **REST API audit is a prerequisite for external integrations:** Many features (decay background job, dedup sweep, codify) need API exposure. Verify the existing API coverage before building new endpoints.
 
 ---
 
-## MVP Recommendation for v4.0
+## MVP Definition for v5.0
 
-Prioritize in this order:
+### Launch With (Core Parity)
 
-**Must ship (table stakes gaps):**
-1. Hover stability verification (low effort, high trust impact)
-2. Search auto-zoom (low effort, standard expectation)
-3. Confidence threshold filter slider (low effort, data already exists)
-4. Neighborhood explorer (medium effort, highest exploration value)
-5. Batch approve/reject (medium effort, queue usability)
+These are the features that close competitive gaps and make Myco the credible choice over mcp-memory-service and Mem0 for local-first MCP use:
 
-**Should ship (differentiators with good ROI):**
-6. Cluster visualization with hull rendering (medium-high effort, signature visual)
-7. Timeline entry animation (medium effort, makes temporal story vivid)
-8. Confidence badges on entity panel observations (medium effort, epistemic transparency)
-9. "Myco" language pass + branded empty states (low effort, brand consistency)
+- [ ] **JSON export / import** — backup, portability, migration. Low effort, high value, unblocks user trust.
+- [ ] **Import from Anthropic reference server format** — migration path for users already using the reference JSONL server.
+- [ ] **REST API audit + OpenAPI documentation** — verify existing routes cover CRUD + recall; document them; expose to LangGraph/CrewAI users.
+- [ ] **Conflict resolution (ADD / UPDATE / NOOP at observation level)** — the core dedup problem. Prevents graph bloat on repeated agent sessions.
+- [ ] **Memory importance decay** — keeps the graph fresh; prevents old irrelevant facts from polluting recall results.
+- [ ] **Relationship strength scoring** — enriches the graph; enables weighted recall and visual edge thickness.
 
-**Defer to v4.1 or later:**
-- Growth chart (requires new backend endpoint)
-- Inline mini-graph in approvals (requires neighborhood API endpoint)
-- Right-click context menu (nice to have, not critical path)
-- Node-level confidence badge overlay (visual polish, post-cluster work)
+### Add After Core Parity (Differentiators)
+
+- [ ] **Temporal fact versioning** — requires conflict resolution to be solid first. High architectural value; point-in-time queries unlock historical debugging.
+- [ ] **Incremental consolidation** — requires stable consolidation pipeline (already exists). Unblocks faster knowledge formation.
+- [ ] **Auto-dedup sweep (scheduled job)** — requires decay + conflict resolution. Cleanup sweep for existing graph noise.
+- [ ] **`extract` MCP tool for passive entity capture** — high value, depends on conflict resolution not blowing up with extracted entities.
+
+### Future Consideration (v5.1+)
+
+- [ ] **Codebase-to-graph ingestion (`codify`)** — highest complexity, unique differentiator. Defer until core memory quality features are solid.
+- [ ] **Auto-entity extraction from raw episode text** — similar to `extract` but fully passive; risk of noise is high without robust conflict resolution and dedup already running.
+
+---
+
+## Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| JSON export / import | HIGH | LOW | P1 |
+| Import from reference server format | MEDIUM | MEDIUM | P1 |
+| REST API audit + OpenAPI docs | HIGH | LOW | P1 |
+| Conflict resolution (ADD/UPDATE/NOOP) | HIGH | HIGH | P1 |
+| Memory importance decay | HIGH | MEDIUM | P1 |
+| Relationship strength scoring | MEDIUM | MEDIUM | P1 |
+| Temporal fact versioning | HIGH | HIGH | P2 |
+| Incremental consolidation | MEDIUM | MEDIUM | P2 |
+| Auto-dedup sweep (scheduled) | MEDIUM | MEDIUM | P2 |
+| `extract` MCP tool | HIGH | HIGH | P2 |
+| Codebase-to-graph ingestion (`codify`) | HIGH | HIGH | P3 |
+| Auto-entity extraction (fully passive) | MEDIUM | HIGH | P3 |
+
+**Priority key:**
+- P1: Must have for v5.0 launch — closes competitive gaps
+- P2: Strong differentiators — ship in v5.0 if P1 is solid
+- P3: Future milestone — defer until product quality is validated
+
+---
+
+## Competitor Feature Analysis
+
+| Feature | Mem0 | Zep/Graphiti | mcp-memory-service | Myco v4.0 | Myco v5.0 target |
+|---------|------|-------------|-------------------|-----------|-----------------|
+| Auto entity extraction from text | Yes (LLM NER) | Yes (LLM NER) | No | No | P2 (`extract` tool) |
+| Conflict resolution (ADD/UPDATE/NOOP) | Yes (core feature) | Yes (via invalidation) | Partial | Partial (entity merge only) | P1 |
+| Temporal fact versioning | No | Yes (bi-temporal) | No | No | P2 |
+| Memory importance decay | Partial (recency score) | Yes (temporal invalidation) | No | No | P1 |
+| Relationship strength scoring | No | Partial | No | No | P1 |
+| JSON export/import | Yes | Yes | Yes | No | P1 |
+| REST API for non-MCP access | Yes (cloud) | Yes (cloud) | Yes | Partial (audit needed) | P1 |
+| Codebase ingestion | No | No | No | No | P3 |
+| Incremental consolidation | Yes (real-time) | Yes (real-time) | No | No (nightly only) | P2 |
+| Human approval queue | No | No | No | Yes (shipped) | — keep advantage |
+| Local-first / no cloud | No | No | Yes | Yes | — keep advantage |
+| Project namespacing | No | Partial | No | Yes (shipped) | — keep advantage |
+| Nightly consolidation cron | No | No | No | Yes (shipped) | — keep advantage |
+
+---
+
+## Implementation Complexity Notes
+
+### Low complexity (1-2 days each)
+- **JSON export**: Single SQL dump across 3 tables, serialize to JSON, add CLI command + API endpoint.
+- **JSON import**: Parse + validate, upsert with conflict skip, log results.
+- **Reference server import**: Transform JSONL → entity/observation/relationship + call existing rememberEntity().
+- **REST API audit**: Read existing route files, verify coverage, write OpenAPI spec (can use Hono's Zod validator introspection).
+
+### Medium complexity (3-5 days each)
+- **Memory importance decay**: Schema migration (2 new columns), importance scoring at write time (LLM or heuristic), decay job in nightly cron, integrate into recall ranking.
+- **Relationship strength scoring**: Schema migration (2 new columns on relationships), increment on upsert, decay in nightly cron, expose in graph API.
+- **Incremental consolidation**: Threshold check after log_episode, async consolidation trigger, avoid double-processing already-consolidated episodes (consolidated_at column already exists).
+- **Auto-dedup sweep**: Batch embedding comparison per entity, threshold-based tombstoning, audit log.
+
+### High complexity (1-2 weeks each)
+- **Conflict resolution at observation level**: Embed new observation, compare against existing for same entity, classify as ADD/UPDATE/NOOP, UPDATE action requires temporal fact versioning to work correctly.
+- **Temporal fact versioning**: Schema migration with valid_from/valid_until, all write paths must set valid_from, UPDATE action supersedes via valid_until, recall as_of parameter, migration for existing data (set valid_from = created_at, valid_until = NULL).
+- **`extract` MCP tool**: Reuse consolidation LLM pipeline as synchronous single-shot mode, tune prompts for direct text input (not episode log format), handle auto-approve vs queue routing.
+- **Codebase-to-graph ingestion**: ts-morph dependency, package boundary detection, selective export extraction, convention extraction (harder — needs CLAUDE.md awareness), project namespace integration.
 
 ---
 
 ## Sources
 
-- Neo4j Bloom product page and documentation — https://neo4j.com/product/bloom/
-- Neo4j graph visualization guide — https://neo4j.com/docs/getting-started/graph-visualization/graph-visualization/
-- Visual graph analytics with Bloom (Feb 2026) — https://shrawansaproo.medium.com/visual-graph-analytics-using-neo4j-bloom-to-watch-your-data-come-to-life-31cb5a49a314
-- Obsidian graph view documentation — https://help.obsidian.md/plugins/graph
-- Obsidian graph view community usage thread — https://forum.obsidian.md/t/whats-the-point-of-the-graph-view-how-are-you-using-it/71316
-- Obsidian 3D graph view analysis — https://noduslabs.com/featured/obsidian-3d-graph-view-plugin-with-network-science-insights/
-- Kumu clustering documentation — https://docs.kumu.io/guides/clustering
-- Kumu tour and features — https://kumu.io/tour
-- yfiles knowledge graph visualization guide — https://www.yfiles.com/resources/how-to/guide-to-visualizing-knowledge-graphs
-- react-force-graph documentation — https://vasturiano.github.io/react-force-graph/
-- react-force-graph GitHub — https://github.com/vasturiano/react-force-graph
-- Gephi network analysis guide — https://medium.com/eni-digitalks/network-analysis-with-gephi-a-practical-guide-e2f5287fa6c3
-- Mem0 graph memory blog (Jan 2026) — https://mem0.ai/blog/graph-memory-solutions-ai-agents
-- Empty state / onboarding research — https://raw.studio/blog/empty-states-error-states-onboarding-the-hidden-ux-moments-users-notice/
-- Cambridge Intelligence: social network analysis centrality — https://cambridge-intelligence.com/keylines-faqs-social-network-analysis/
-- Codebase audit: packages/dashboard/src/ — direct source read, HIGH confidence
+- Zep/Graphiti GitHub — https://github.com/getzep/graphiti
+- Zep temporal knowledge graph paper (Jan 2025) — https://arxiv.org/abs/2501.13956
+- Mem0 paper (Apr 2025) — https://arxiv.org/abs/2504.19413
+- Mem0 graph memory docs — https://docs.mem0.ai/open-source/features/graph-memory
+- doobidoo/mcp-memory-service GitHub — https://github.com/doobidoo/mcp-memory-service
+- Neo4j agent-memory GitHub — https://github.com/neo4j-labs/agent-memory
+- AI agent memory forgetting curve analysis (2025) — https://dev.to/sudarshangouda/ai-agent-memory-part-2-the-case-for-intelligent-forgetting-4i48
+- Neo4j codebase knowledge graph blog — https://neo4j.com/blog/developer/codebase-knowledge-graph/
+- TypeScript AST analyzer — https://github.com/olasunkanmi-SE/ts-codebase-analyzer
+- code-graph-rag (multi-language, tree-sitter) — https://github.com/vitali87/code-graph-rag
+- Codebase audit: packages/mcp-server/src/, packages/core/src/, packages/api-server/src/ — direct source read, HIGH confidence
+
+---
+*Feature research for: Myco v5.0 — Feature Parity & Differentiation*
+*Researched: 2026-03-27*
