@@ -1,92 +1,82 @@
-# Requirements: Myco
+# Requirements: Myco v5.0
 
 **Defined:** 2026-03-27
 **Core Value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
 
-## v4.0 Requirements
+## v5.0 Requirements
 
-Requirements for Dashboard & Graph Experience milestone. Each maps to roadmap phases.
+Requirements for Feature Parity & Differentiation milestone. Each maps to roadmap phases.
 
-### Graph Core
+### Schema & Infrastructure
 
-- [x] **GRPH-01**: Graph nodes remain stable on hover — no drift, repulsion, or physics reheat
-- [x] **GRPH-02**: User can isolate a node's 1-2 hop neighborhood in a focused subgraph view
-- [x] **GRPH-03**: Graph auto-detects entity clusters via Louvain community detection and renders convex hull boundaries
-- [x] **GRPH-04**: User can filter graph nodes by confidence threshold via slider control
-- [x] **GRPH-05**: User can search entities with animated highlight and auto-zoom to matching nodes
-- [x] **GRPH-06**: User can scrub timeline from earliest to latest entity with smooth playback animation showing the graph grow
-- [x] **GRPH-07**: Graph uses a clean interaction mode system (explore/path/neighborhood/search) with visible mode indicator
-- [x] **GRPH-08**: Graph applies level-of-detail rendering — skip gradients and labels when zoomed out for 500+ node performance
+- [ ] **INFRA-01**: System uses a versioned schema migration framework instead of try/catch ALTER TABLE pattern
+- [ ] **INFRA-02**: Existing databases upgrade cleanly on startup with no data loss
 
-### Dashboard Theme
+### Temporal Versioning
 
-- [x] **THME-01**: All dashboard pages use bioluminescent deep-sea visual theme with consistent CSS variables
-- [x] **THME-02**: All "brain" language throughout dashboard updated to "Myco"
+- [ ] **TEMP-01**: Observations track `valid_from` and `valid_until` timestamps for fact versioning
+- [ ] **TEMP-02**: User can query "what was true at time X" via the recall/query tools with a timestamp parameter
+- [ ] **TEMP-03**: Superseded observations are soft-retired (valid_until set) rather than deleted
 
-### Home Page
+### Conflict Resolution & Dedup
 
-- [ ] **HOME-01**: Home page displays knowledge growth chart showing entities, observations, and relationships over time
-- [ ] **HOME-02**: Activity stream shows rich entity cards with type colors and context instead of plain text
-- [ ] **HOME-03**: Home page shows health metrics: consolidation status, embedding coverage, orphaned nodes, confidence distribution
-- [ ] **HOME-04**: Home page graph preview is larger and interactive, clickable to enter full graph view
+- [ ] **DEDUP-01**: When a new memory conflicts with an existing observation, the system classifies it as ADD/UPDATE/NOOP
+- [ ] **DEDUP-02**: UPDATE actions retire the old observation (temporal) and insert the new version
+- [ ] **DEDUP-03**: Entity merges use soft-delete (`merged_into` column) so merges are reversible
+- [ ] **DEDUP-04**: Near-duplicate observations are detected and deduplicated at write time
 
-### Approvals
+### Incremental Consolidation
 
-- [ ] **APRV-01**: Approvals page shows guided onboarding explaining Myco's knowledge extraction and approval flow
-- [ ] **APRV-02**: User can select multiple approval items and approve/reject in batch
-- [ ] **APRV-03**: Approval cards show confidence visualization with source evidence and episode links
-- [ ] **APRV-04**: Approval cards show inline mini-graph preview of where the entity would connect
+- [ ] **CONSOL-01**: Episodes are consolidated on-the-fly after `log_episode`, not just at the nightly 2am cycle
+- [ ] **CONSOL-02**: A consolidation lock prevents race conditions between incremental and nightly consolidation
+- [ ] **CONSOL-03**: Nightly cycle performs deeper analysis (relationship inference, contradiction detection) beyond incremental
+
+### Auto-Entity Extraction
+
+- [ ] **EXTRACT-01**: The system passively extracts entities and relationships from conversation context via LLM
+- [ ] **EXTRACT-02**: Extraction runs asynchronously (fire-and-forget) and never blocks the MCP tool response
+- [ ] **EXTRACT-03**: All auto-extracted items route through the approval queue before becoming permanent knowledge
+
+### Import/Export
+
+- [ ] **IO-01**: User can export the entire knowledge graph as a JSON file via MCP tool
+- [ ] **IO-02**: User can import knowledge from a JSON file via MCP tool
+- [ ] **IO-03**: Export → import round-trip is idempotent (no data loss or duplication)
+- [ ] **IO-04**: Import supports adapters for common formats (Mem0, MCP reference server JSONL)
+
+### REST API
+
+- [ ] **API-01**: Memory write operations (remember, forget, import, export) are accessible via HTTP endpoints
+- [ ] **API-02**: REST API includes OpenAPI/Swagger documentation
+- [ ] **API-03**: Optional API key authentication protects write endpoints
+
+### Memory Decay
+
+- [ ] **DECAY-01**: Observation importance score decays over time based on age and reinforcement frequency
+- [ ] **DECAY-02**: Decay is computed lazily at read time (not stored, no write-path overhead)
+- [ ] **DECAY-03**: Recall results factor in importance decay when ranking
+
+### Relationship Strength
+
+- [ ] **STRENGTH-01**: Relationships have a strength score that increases when reinforced by multiple remember calls
+- [ ] **STRENGTH-02**: Strength scoring uses an upsert pattern (ON CONFLICT DO UPDATE) on the existing relationships table
+- [ ] **STRENGTH-03**: Relationship strength is visible in query results and the dashboard graph
 
 ## Future Requirements
 
-### Graph Advanced
-
-- **GRPH-F01**: 3D graph view toggle (deferred — navigation penalty exceeds visual benefit per research)
-- **GRPH-F02**: Betweenness centrality computation (deferred — O(VE) freeze risk in browser at scale)
-- **GRPH-F03**: Graph export to PNG/SVG
-
-### Dashboard Advanced
-
-- **HOME-F01**: Customizable dashboard layout (drag-and-drop widgets)
-- **APRV-F01**: Approval card inline editing before approve
+- [ ] **CODIFY-01**: `codify` MCP tool turns project structure and conventions into graph knowledge via TypeScript Compiler API — *deferred to v5.1*
+- [ ] **CODIFY-02**: Codebase ingestion supports incremental re-ingestion (diff from previous run) — *deferred to v5.1*
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| Canvas-based graph editing (add/remove nodes in UI) | High complexity for a read-and-approve interface — knowledge enters via MCP tools |
-| Real-time WebSocket updates | Polling via TanStack Query (60s) is sufficient for single-user |
-| Mobile-native graph gestures (pinch-zoom custom) | react-force-graph-2d handles touch adequately; custom gestures add fragility |
-| Obsidian/Roam graph parity | Different use case — Myco is agent knowledge, not personal notes |
+- Cloud storage or external APIs — everything runs locally
+- Multi-user / team features — single user, single machine
+- Real-time collaboration between concurrent agent sessions
+- Tree-sitter for AST parsing — TypeScript Compiler API chosen instead (research: tree-sitter npm has v0.25/v0.26 gap, requires Node 24)
+- NLP libraries for entity extraction — LLM via Ollama chosen instead (research: NLP libraries fail on technical domain entities)
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| GRPH-01 | Phase 14 | Complete |
-| GRPH-02 | Phase 14 | Complete |
-| GRPH-03 | Phase 14 | Complete |
-| GRPH-04 | Phase 14 | Complete |
-| GRPH-05 | Phase 14 | Complete |
-| GRPH-06 | Phase 15 | Complete |
-| GRPH-07 | Phase 14 | Complete |
-| GRPH-08 | Phase 14 | Complete |
-| THME-01 | Phase 13 | Complete |
-| THME-02 | Phase 13 | Complete |
-| HOME-01 | Phase 16 | Pending |
-| HOME-02 | Phase 16 | Pending |
-| HOME-03 | Phase 16 | Pending |
-| HOME-04 | Phase 16 | Pending |
-| APRV-01 | Phase 17 | Pending |
-| APRV-02 | Phase 17 | Pending |
-| APRV-03 | Phase 17 | Pending |
-| APRV-04 | Phase 17 | Pending |
-
-**Coverage:**
-- v4.0 requirements: 18 total
-- Mapped to phases: 18
-- Unmapped: 0
-
----
-*Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after roadmap creation*
+| Requirement | Phase | Plan | Status |
+|-------------|-------|------|--------|
+| *Populated by roadmapper* | | | |
