@@ -12,17 +12,28 @@ Open source under Apache 2.0. Everything runs locally — SQLite, Ollama, no clo
 
 Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
 
+## Current Milestone: v4.0 Dashboard & Graph Experience
+
+**Goal:** Transform the Myco dashboard into a polished, bioluminescent analytics experience with a deeply interactive knowledge graph.
+
+**Target features:**
+- Graph overhaul: fix hover physics, timeline scrub playback, cluster visualization, neighborhood explorer, confidence filter, search with auto-zoom, enhanced analytics
+- Bioluminescent deep-sea visual theme across all dashboard pages
+- Home page: knowledge growth chart, richer activity stream, health metrics, interactive graph preview
+- Approvals refresh: guided onboarding, batch actions, confidence visualization, inline graph preview, "Myco" language (not "brain")
+- Competitive research: Chroma, Mem0, similar tools — best practices for knowledge graph UX
+
 ## Current State
 
 **Shipped:** v3.0 — 2026-03-26
 **Codebase:** ~5,000 LOC TypeScript across 4 packages
 **Tech Stack:** Node.js 22, TypeScript 5.9, better-sqlite3, sqlite-vec, Ollama, Hono, React 19, Vite 8, Tailwind v4, shadcn/ui
 **License:** Apache 2.0
-**90 tests** passing across 6 test files
+**98 tests** passing across 6 test files
 
 ### Architecture
 - `packages/core` — shared DB, schema, types, provenance, prepared statement factory
-- `packages/mcp-server` — MCP tools (remember, recall, query, log_episode, consolidate, approvals), consolidation pipeline, cron scheduler, CLI
+- `packages/mcp-server` — MCP tools (remember, recall, query, log_episode, forget, consolidate, approvals), consolidation pipeline, cron scheduler, CLI
 - `packages/api-server` — Hono REST API on port 3001 (5 route groups)
 - `packages/dashboard` — React PWA with approval queue, knowledge graph explorer, activity dashboard
 
@@ -58,7 +69,23 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 
 ### Active
 
-None — v3.0 milestone complete.
+- [ ] Knowledge graph: stable hover physics, no node drift on interaction
+- [ ] Knowledge graph: full timeline scrub with animated playback from first to latest entity
+- [ ] Knowledge graph: auto-detected cluster visualization with group boundaries
+- [ ] Knowledge graph: neighborhood explorer isolating a node's local subgraph
+- [ ] Knowledge graph: confidence threshold filter slider
+- [ ] Knowledge graph: search with animated highlight and auto-zoom
+- [ ] Knowledge graph: enhanced analytics panel with graph intelligence
+- [ ] Dashboard: bioluminescent deep-sea visual theme across all pages
+- [ ] Home page: knowledge growth chart (entities/observations/relationships over time)
+- [ ] Home page: rich activity stream with entity cards
+- [ ] Home page: health metrics (consolidation, embeddings, orphans, confidence)
+- [ ] Home page: larger interactive graph preview
+- [ ] Approvals: guided onboarding explaining Myco's approval flow
+- [ ] Approvals: batch approve/reject actions
+- [ ] Approvals: confidence visualization with source evidence
+- [ ] Approvals: inline mini-graph preview for entities under review
+- [ ] All "brain" language updated to "Myco" throughout dashboard
 
 ## Completed Milestones
 
@@ -78,7 +105,9 @@ None — v3.0 milestone complete.
 - v1.0 shipped 2026-03-21 with all 15 requirements validated across 5 phases
 - v2.0 shipped 2026-03-22 — rename to Myco, open source packaging, tech debt cleanup
 - v3.0 shipped 2026-03-26 — 20 requirements validated across 4 phases (config, prepared statements, query filters, error handling, namespace isolation)
-- 90 tests passing across 6 test files (core, mcp-server, gsd-hook, statements, embed-client, recall-filters)
+- v4.0 started 2026-03-27 — dashboard & graph experience overhaul
+- 98 tests passing across 6 test files (core, mcp-server, gsd-hook, statements, embed-client, recall-filters)
+- Design direction: bioluminescent deep-sea aesthetic — dark void, rich glows, organic depth, mycorrhizal metaphor
 - Vercel AI SDK v4.3.19 used for consolidation (v6 incompatible with ollama-ai-provider)
 - MCP SDK uses `registerTool()` with Zod v4
 - Named "Myco" from mycorrhizal networks — underground fungal webs connecting ecosystems
@@ -135,4 +164,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-26 after v3.0 milestone*
+*Last updated: 2026-03-27 after v4.0 milestone start*

@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: v3.0 milestone complete
-stopped_at: "Completed quick task 260327-f8o: forget MCP tool"
-last_updated: "2026-03-27T15:09:15.250Z"
+milestone: v4.0
+milestone_name: dashboard-graph-experience
+status: Defining requirements
+stopped_at: ""
+last_updated: "2026-03-27T00:00:00.000Z"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -16,15 +16,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-25)
+See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 12 — namespace-isolation
+**Current focus:** v4.0 Dashboard & Graph Experience
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-27 — Milestone v4.0 started
 
 ## Performance Metrics
 
