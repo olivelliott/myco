@@ -14,7 +14,7 @@ Requirements for Dashboard & Graph Experience milestone. Each maps to roadmap ph
 - [x] **GRPH-03**: Graph auto-detects entity clusters via Louvain community detection and renders convex hull boundaries
 - [x] **GRPH-04**: User can filter graph nodes by confidence threshold via slider control
 - [x] **GRPH-05**: User can search entities with animated highlight and auto-zoom to matching nodes
-- [ ] **GRPH-06**: User can scrub timeline from earliest to latest entity with smooth playback animation showing the graph grow
+- [x] **GRPH-06**: User can scrub timeline from earliest to latest entity with smooth playback animation showing the graph grow
 - [x] **GRPH-07**: Graph uses a clean interaction mode system (explore/path/neighborhood/search) with visible mode indicator
 - [x] **GRPH-08**: Graph applies level-of-detail rendering — skip gradients and labels when zoomed out for 500+ node performance
 
@@ -68,7 +68,7 @@ Requirements for Dashboard & Graph Experience milestone. Each maps to roadmap ph
 | GRPH-03 | Phase 14 | Complete |
 | GRPH-04 | Phase 14 | Complete |
 | GRPH-05 | Phase 14 | Complete |
-| GRPH-06 | Phase 15 | Pending |
+| GRPH-06 | Phase 15 | Complete |
 | GRPH-07 | Phase 14 | Complete |
 | GRPH-08 | Phase 14 | Complete |
 | THME-01 | Phase 13 | Complete |

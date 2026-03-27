@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Dashboard & Graph Experience
 status: Ready to plan
-stopped_at: Completed 14-02-PLAN.md
-last_updated: "2026-03-27T19:09:56.902Z"
+stopped_at: Completed 15-01-PLAN.md
+last_updated: "2026-03-27T19:32:42.123Z"
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # Project State
@@ -45,6 +45,7 @@ Plan: Not started
 | Phase 14 P01 | 352 | 2 tasks | 5 files |
 | Phase 14 P03 | 4 minutes | 2 tasks | 5 files |
 | Phase 14-graph-core-features P02 | 18 | 2 tasks | 5 files |
+| Phase 15-timeline-animation P01 | 5 minutes | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,9 @@ Recent decisions affecting current work:
 - [Phase 14]: activeNodes/activeLinks derived in GraphView from neighborhoodData prop — filtering co-located with rendering
 - [Phase 14-graph-core-features]: Cluster hulls drawn via onRenderFramePost (canvas layer) to avoid pointer event capture per Pitfall 3
 - [Phase 14-graph-core-features]: Confidence filter fades nodes to opacity 0.05 (not remove) — preserves graph topology while hiding noise
+- [Phase 15-timeline-animation]: rAF loop in TimelineSlider writes to cutoffRef.current; canvas painter reads ref directly — zero React re-renders during auto-play
+- [Phase 15-timeline-animation]: Timeline visibility controlled via nodeCanvasObject early-return (nodeMs > cutoffMs) — graphData reference never modified during playback
+- [Phase 15-timeline-animation]: created_at_ms pre-computed on decoratedNodes to avoid per-frame Date parsing at 60fps
 
 ### Pending Todos
 
@@ -87,6 +91,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-27T19:05:54.384Z
-Stopped at: Completed 14-02-PLAN.md
+Last session: 2026-03-27T19:32:31.067Z
+Stopped at: Completed 15-01-PLAN.md
 Resume file: None
