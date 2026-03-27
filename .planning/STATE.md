@@ -1,15 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: Proactive Knowledge & Onboarding
+milestone: v5.0
+milestone_name: Feature Parity & Differentiation
 status: Defining requirements
-stopped_at: null
-last_updated: "2026-03-27T23:00:00.000Z"
+stopped_at: Completed 19-02-PLAN.md — dedup integration, temporal recall, entity merge
+last_updated: "2026-03-27T21:46:48.538Z"
+last_activity: 2026-03-27 — Milestone v6.0 started
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 6
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -67,6 +68,7 @@ Recent decisions affecting current work:
 - [Phase 19]: sqlite-vec returns Euclidean distance between normalized vectors — dedup thresholds corrected to NOOP<0.40 UPDATE<0.84 (equivalent to cosine 0.08 and 0.35)
 - [Phase 19]: retireObservation is a sync function — better-sqlite3 UPDATE is synchronous, no async needed
 - [Phase 19]: Ollama-down fallback: exact string match for NOOP, ADD otherwise — avoids data loss at cost of rare duplicate
+- [Phase 19]: Pre-dedup tests that store multiple distinct observations need embedText mocked to null — live Ollama classifies similar content as NOOP, preventing second insert
 
 ### Pending Todos
 
@@ -80,6 +82,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T20:52:09.201Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-03-27T21:46:42.489Z
+Stopped at: Completed 19-02-PLAN.md — dedup integration, temporal recall, entity merge
 Resume file: None

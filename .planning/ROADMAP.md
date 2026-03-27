@@ -64,7 +64,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 **Milestone Goal:** Close competitive gaps against Mem0, Zep, and mcp-memory-service and add differentiating features — temporal fact versioning, conflict-aware dedup, memory decay, relationship strength, REST API with OpenAPI docs, import/export, and incremental consolidation with passive auto-extraction.
 
 - [x] **Phase 18: Schema Foundation** - Versioned migration framework and all v5.0 schema columns added safely before any feature phase begins (completed 2026-03-27)
-- [ ] **Phase 19: Temporal Versioning + Dedup Resolution** - Observations track valid_from/valid_until; new memories route through ADD/UPDATE/NOOP classification before write
+- [x] **Phase 19: Temporal Versioning + Dedup Resolution** - Observations track valid_from/valid_until; new memories route through ADD/UPDATE/NOOP classification before write (completed 2026-03-27)
 - [ ] **Phase 20: Relationship Strength Scoring** - Relationship edges gain strength scores reinforced on every re-assertion; edge thickness reflects strength in the dashboard
 - [ ] **Phase 21: Memory Importance Decay** - Unreinforced facts fade via lazy decay at read time; recall ranking factors in effective confidence
 - [ ] **Phase 22: Core Refactor + REST Write Routes + Import/Export** - Business logic moves to packages/core; Hono server gains write endpoints, OpenAPI docs, API key auth, and export/import tools
@@ -96,10 +96,10 @@ Plans:
   3. When the same observation is submitted twice, the second call is classified as NOOP and does not create a duplicate row in the observations table
   4. When a conflicting fact is submitted (different value for same attribute), the old observation is soft-retired and the new one is inserted in a single atomic operation
   5. Entity merges use a `merged_into` column soft-delete — after a merge, the source entity still exists in the database with its `merged_into` field set, and prior observations remain queryable
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 19-01-PLAN.md — Dedup classification engine + temporal prepared statements
-- [ ] 19-02-PLAN.md — Wire dedup into remember/recall + entity merge + integration tests
+- [x] 19-02-PLAN.md — Wire dedup into remember/recall + entity merge + integration tests
 
 ### Phase 20: Relationship Strength Scoring
 **Goal**: Every relationship in the knowledge graph carries a strength score that grows each time it is reinforced by a `remember` call, and the dashboard graph visualizes edge weight via line thickness
@@ -111,7 +111,7 @@ Plans:
   3. The dashboard knowledge graph renders edges with varying line thickness proportional to relationship strength — a newly created relationship is visually thinner than a reinforced one
 **Plans:** 2 plans
 Plans:
-- [ ] 19-01-PLAN.md — Dedup classification engine + temporal prepared statements
+- [x] 19-01-PLAN.md — Dedup classification engine + temporal prepared statements
 - [ ] 19-02-PLAN.md — Wire dedup into remember/recall + entity merge + integration tests
 **UI hint**: yes
 
@@ -180,7 +180,7 @@ Plans:
 | 16. Home Page Enhancements | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 17. Approvals Overhaul | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 18. Schema Foundation | v5.0 | 2/2 | Complete    | 2026-03-27 |
-| 19. Temporal Versioning + Dedup Resolution | v5.0 | 1/2 | In Progress|  |
+| 19. Temporal Versioning + Dedup Resolution | v5.0 | 2/2 | Complete   | 2026-03-27 |
 | 20. Relationship Strength Scoring | v5.0 | 0/? | Not started | - |
 | 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |

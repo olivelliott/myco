@@ -14,16 +14,16 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 
 ### Temporal Versioning
 
-- [ ] **TEMP-01**: Observations track `valid_from` and `valid_until` timestamps for fact versioning
-- [ ] **TEMP-02**: User can query "what was true at time X" via the recall/query tools with a timestamp parameter
-- [ ] **TEMP-03**: Superseded observations are soft-retired (valid_until set) rather than deleted
+- [x] **TEMP-01**: Observations track `valid_from` and `valid_until` timestamps for fact versioning
+- [x] **TEMP-02**: User can query "what was true at time X" via the recall/query tools with a timestamp parameter
+- [x] **TEMP-03**: Superseded observations are soft-retired (valid_until set) rather than deleted
 
 ### Conflict Resolution & Dedup
 
-- [ ] **DEDUP-01**: When a new memory conflicts with an existing observation, the system classifies it as ADD/UPDATE/NOOP
-- [ ] **DEDUP-02**: UPDATE actions retire the old observation (temporal) and insert the new version
-- [ ] **DEDUP-03**: Entity merges use soft-delete (`merged_into` column) so merges are reversible
-- [ ] **DEDUP-04**: Near-duplicate observations are detected and deduplicated at write time
+- [x] **DEDUP-01**: When a new memory conflicts with an existing observation, the system classifies it as ADD/UPDATE/NOOP
+- [x] **DEDUP-02**: UPDATE actions retire the old observation (temporal) and insert the new version
+- [x] **DEDUP-03**: Entity merges use soft-delete (`merged_into` column) so merges are reversible
+- [x] **DEDUP-04**: Near-duplicate observations are detected and deduplicated at write time
 
 ### Incremental Consolidation
 
