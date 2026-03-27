@@ -13,6 +13,7 @@ export interface Entity {
   created_at: string; // ISO 8601 UTC
   updated_at: string; // ISO 8601 UTC
   project?: string | null; // NULL = global (visible to all queries)
+  merged_into?: string | null; // ID of entity this was merged into (soft-delete)
 }
 
 export interface Observation {
@@ -25,7 +26,12 @@ export interface Observation {
   source_type: SourceType;
   confidence: number;
   created_at: string;
-  needs_embedding?: number; // 0 or 1 — 1 means Ollama was unavailable at insert time
+  needs_embedding?: number;           // 0 or 1 — 1 means Ollama was unavailable at insert time
+  valid_from?: string | null;         // ISO 8601 — when this fact became true
+  valid_until?: string | null;        // ISO 8601 — when this fact was superseded (NULL = current)
+  last_accessed_at?: string | null;   // ISO 8601 — last time this observation was returned by recall
+  decay_exempt?: number;              // 0 or 1 — 1 means confidence never decays
+  reinforcement_count?: number;       // How many times this fact has been reinforced (default 1)
 }
 
 export interface Relationship {
@@ -39,6 +45,8 @@ export interface Relationship {
   source_type: SourceType;
   confidence: number;
   created_at: string;
+  strength?: number;                  // Strength score (default 1.0), increases on reinforcement
+  reinforcement_count?: number;       // How many times this relationship has been reinforced
 }
 
 export interface Episode {

@@ -111,7 +111,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     ),
 
     selectAllEntityNames: db.prepare(
-      `SELECT id, name FROM entities`
+      `SELECT id, name FROM entities WHERE merged_into IS NULL`
     ),
 
     deleteEntityById: db.prepare(
@@ -146,7 +146,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     ),
 
     selectObservationsByEntityId: db.prepare(
-      `SELECT id, content, confidence, created_at
+      `SELECT id, content, confidence, created_at, valid_from, valid_until, last_accessed_at, reinforcement_count
        FROM observations WHERE entity_id = ? ORDER BY created_at DESC LIMIT 20`
     ),
 
@@ -298,7 +298,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     ),
 
     countEntities: db.prepare(
-      `SELECT COUNT(*) as n FROM entities`
+      `SELECT COUNT(*) as n FROM entities WHERE merged_into IS NULL`
     ),
 
     countRelationships: db.prepare(
@@ -317,12 +317,13 @@ export function prepareStatements(db: Database.Database): MycoStatements {
       `SELECT e.id, e.name, e.type,
          (SELECT COUNT(*) FROM relationships r WHERE r.from_id = e.id OR r.to_id = e.id) AS connection_count
        FROM entities e
+       WHERE e.merged_into IS NULL
        ORDER BY connection_count DESC
        LIMIT 5`
     ),
 
     selectTypeBreakdown: db.prepare(
-      `SELECT type, COUNT(*) as count FROM entities GROUP BY type ORDER BY count DESC`
+      `SELECT type, COUNT(*) as count FROM entities WHERE merged_into IS NULL GROUP BY type ORDER BY count DESC`
     ),
 
     countEntitiesAfter: db.prepare(
@@ -361,7 +362,8 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     countOrphanedEntities: db.prepare(
       `SELECT COUNT(*) as n FROM entities e
-       WHERE NOT EXISTS (SELECT 1 FROM relationships r WHERE r.from_id = e.id OR r.to_id = e.id)`
+       WHERE e.merged_into IS NULL
+         AND NOT EXISTS (SELECT 1 FROM relationships r WHERE r.from_id = e.id OR r.to_id = e.id)`
     ),
 
     selectConfidenceDistribution: db.prepare(
@@ -373,6 +375,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
          END as bucket,
          COUNT(*) as count
        FROM entities
+       WHERE merged_into IS NULL
        GROUP BY bucket`
     ),
 
@@ -383,6 +386,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     selectRecentActivity: db.prepare(
       `SELECT e.id, e.name, e.type, e.confidence, e.created_at, 'created' as event
        FROM entities e
+       WHERE e.merged_into IS NULL
        ORDER BY e.created_at DESC
        LIMIT 20`
     ),
@@ -426,7 +430,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     ),
 
     selectEntitiesPaginated: db.prepare(
-      `SELECT id, name, type, confidence, created_at FROM entities ORDER BY updated_at DESC LIMIT ? OFFSET ?`
+      `SELECT id, name, type, confidence, created_at FROM entities WHERE merged_into IS NULL ORDER BY updated_at DESC LIMIT ? OFFSET ?`
     ),
 
     selectEntityById: db.prepare(
@@ -450,11 +454,12 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     selectGraphNodes: db.prepare(
       `SELECT id, name, type, confidence, summary, created_at,
          (SELECT COUNT(*) FROM observations WHERE entity_id = e.id) AS obs_count
-       FROM entities e`
+       FROM entities e
+       WHERE e.merged_into IS NULL`
     ),
 
     selectGraphRelationships: db.prepare(
-      `SELECT id, from_id, to_id, type, confidence, source_type, created_at FROM relationships`
+      `SELECT id, from_id, to_id, type, confidence, source_type, created_at, strength FROM relationships`
     ),
 
     selectEpisodesPaginated: db.prepare(
