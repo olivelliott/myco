@@ -162,8 +162,12 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     // ── Relationship statements ────────────────────────────────────────────
     insertRelationship: db.prepare(
-      `INSERT OR IGNORE INTO relationships (id, from_id, to_id, type, metadata, session_id, agent_id, source_type, confidence, created_at)
-       VALUES (?, ?, ?, ?, '{}', ?, ?, ?, ?, ?)`
+      `INSERT INTO relationships (id, from_id, to_id, type, metadata, session_id, agent_id, source_type, confidence, created_at)
+       VALUES (?, ?, ?, ?, '{}', ?, ?, ?, ?, ?)
+       ON CONFLICT(from_id, to_id, type)
+       DO UPDATE SET
+         strength = strength + 1,
+         reinforcement_count = reinforcement_count + 1`
     ),
 
     selectRelationshipExists: db.prepare(
@@ -460,7 +464,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     ),
 
     selectGraphRelationships: db.prepare(
-      `SELECT id, from_id, to_id, type, confidence, source_type, created_at FROM relationships`
+      `SELECT id, from_id, to_id, type, confidence, source_type, created_at, strength, reinforcement_count FROM relationships`
     ),
 
     selectEpisodesPaginated: db.prepare(

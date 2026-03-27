@@ -23,6 +23,8 @@ interface RelationshipRow {
   confidence: number;
   source_type: string;
   created_at: string;
+  strength: number;
+  reinforcement_count: number;
 }
 
 const graphQuerySchema = z.object({
@@ -73,6 +75,8 @@ export function graphRoutes(db: Database.Database, stmts: MycoStatements): Hono 
       confidence: row.confidence,
       source_type: row.source_type,
       created_at: row.created_at,
+      strength: row.strength,
+      reinforcement_count: row.reinforcement_count,
     }));
 
     return c.json({ nodes, links });
