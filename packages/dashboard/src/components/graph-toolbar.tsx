@@ -6,6 +6,10 @@ interface GraphToolbarProps {
   onModeChange: (mode: GraphInteractionMode) => void
   pathInfo?: string | null
   onClearPath: () => void
+  neighborhoodCenter?: string | null
+  neighborhoodDepth?: 1 | 2
+  onNeighborhoodDepthChange?: (depth: 1 | 2) => void
+  onExitNeighborhood?: () => void
   timelineEnabled: boolean
   onToggleTimeline: () => void
   legendOpen: boolean
@@ -19,6 +23,10 @@ export function GraphToolbar({
   onModeChange,
   pathInfo,
   onClearPath,
+  neighborhoodCenter,
+  neighborhoodDepth,
+  onNeighborhoodDepthChange,
+  onExitNeighborhood,
   timelineEnabled,
   onToggleTimeline,
   legendOpen,
@@ -97,6 +105,37 @@ export function GraphToolbar({
           <span className="flex-1 truncate">{pathInfo}</span>
           <button
             onClick={onClearPath}
+            className="opacity-60 hover:opacity-100 shrink-0"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {neighborhoodCenter && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded-md text-xs max-w-[220px]"
+          style={{
+            backgroundColor: 'rgba(6, 255, 200, 0.08)',
+            border: '1px solid var(--glow-teal)',
+            color: 'var(--text-primary)',
+          }}
+        >
+          <Focus size={12} style={{ color: 'var(--glow-teal)', flexShrink: 0 }} />
+          <span className="flex-1 truncate">{neighborhoodCenter}</span>
+          <button
+            onClick={() => onNeighborhoodDepthChange?.(neighborhoodDepth === 1 ? 2 : 1)}
+            className="text-xs px-1.5 py-0.5 rounded shrink-0"
+            style={{
+              backgroundColor: 'var(--bg-elevated)',
+              color: 'var(--glow-teal)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            {neighborhoodDepth ?? 1}h
+          </button>
+          <button
+            onClick={onExitNeighborhood}
             className="opacity-60 hover:opacity-100 shrink-0"
           >
             <X size={14} />

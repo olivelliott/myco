@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useGraph } from '../hooks/use-graph'
+import { useNeighborhood } from '../hooks/use-neighborhood'
 import { GraphView } from '../components/graph-view'
 import type { GraphNode } from '../components/graph-view'
 import { EntityPanel } from '../components/entity-panel'
@@ -117,14 +118,40 @@ function GraphPage() {
     return new Set(pathResult)
   }, [pathResult])
 
+  // Neighborhood mode: derive subgraph from mode state
+  const neighborhoodDepth = modeState.type === 'neighborhood' ? modeState.depth : 1
+  const neighborhoodCenterId = modeState.type === 'neighborhood' ? modeState.centerId : null
+
+  const neighborhoodData = useNeighborhood(
+    neighborhoodCenterId,
+    filteredData?.nodes ?? [],
+    filteredData?.links ?? [],
+    neighborhoodDepth as 1 | 2,
+  )
+
   const pathInfo = useMemo(() => {
     if (!pathResult || !filteredData) return null
     const nodeMap = new Map(filteredData.nodes.map((n: { id: string; name: string }) => [n.id, n.name]))
     return pathResult.map((id) => nodeMap.get(id) ?? id).join(' -> ')
   }, [pathResult, filteredData])
 
+  const lastClickRef = useRef<{ id: string; time: number } | null>(null)
+
   const handleNodeClick = useCallback(
     (node: GraphNode) => {
+      const now = Date.now()
+      const lastClick = lastClickRef.current
+
+      // Double-click detection (< 400ms between clicks on same node)
+      if (lastClick && lastClick.id === node.id && now - lastClick.time < 400) {
+        // Enter neighborhood mode
+        setModeState({ type: 'neighborhood', centerId: node.id, depth: 1 })
+        lastClickRef.current = null
+        return
+      }
+
+      lastClickRef.current = { id: node.id, time: now }
+
       if (modeState.type === 'path') {
         if (!modeState.source) {
           setModeState({ type: 'path', source: node.id, target: null })
@@ -133,9 +160,6 @@ function GraphPage() {
         } else {
           setModeState({ type: 'path', source: node.id, target: null })
         }
-      } else if (modeState.type === 'neighborhood') {
-        // Will be implemented in Plan 03
-        setSelectedNodeId(node.id)
       } else {
         setSelectedNodeId(node.id)
       }
@@ -196,6 +220,7 @@ function GraphPage() {
           onNodeClick={handleNodeClick}
           onNodeHover={handleNodeHover}
           highlightedPath={highlightedPath}
+          neighborhoodData={neighborhoodData}
         />
       )}
 
@@ -210,7 +235,7 @@ function GraphPage() {
           } else if (mode === 'explore') {
             setModeState(DEFAULT_MODE_STATE)
           } else if (mode === 'neighborhood') {
-            // Neighborhood entry is via double-click; toolbar click activates mode indicator
+            // Neighborhood entry is via double-click; toolbar chip just shows mode
             setModeState(DEFAULT_MODE_STATE)
           } else if (mode === 'search') {
             setModeState({ type: 'search', query: '' })
@@ -220,6 +245,18 @@ function GraphPage() {
         onClearPath={() => {
           setModeState({ type: 'path', source: null, target: null })
         }}
+        neighborhoodCenter={
+          modeState.type === 'neighborhood'
+            ? (filteredData?.nodes.find((n) => n.id === modeState.centerId)?.name ?? null)
+            : null
+        }
+        neighborhoodDepth={modeState.type === 'neighborhood' ? modeState.depth : 1}
+        onNeighborhoodDepthChange={(depth) => {
+          if (modeState.type === 'neighborhood') {
+            setModeState({ ...modeState, depth })
+          }
+        }}
+        onExitNeighborhood={() => setModeState(DEFAULT_MODE_STATE)}
         timelineEnabled={timelineEnabled}
         onToggleTimeline={() => setTimelineEnabled(!timelineEnabled)}
         legendOpen={legendOpen}
@@ -252,6 +289,10 @@ function GraphPage() {
         <EntityPanel
           nodeId={selectedNodeId}
           onClose={() => setSelectedNodeId(null)}
+          onExploreNeighborhood={(nodeId) => {
+            setModeState({ type: 'neighborhood', centerId: nodeId, depth: 1 })
+            setSelectedNodeId(null)
+          }}
         />
       )}
     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { X } from 'lucide-react'
+import { X, Focus } from 'lucide-react'
 import { fetchEntityDetail } from '../lib/api'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
@@ -11,6 +11,7 @@ import { ScrollArea } from './ui/scroll-area'
 interface EntityPanelProps {
   nodeId: string
   onClose: () => void
+  onExploreNeighborhood?: (nodeId: string) => void
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -30,7 +31,7 @@ function getTypeColor(type: string): string {
   return TYPE_COLORS[type.toLowerCase()] ?? '#818cf8'
 }
 
-export function EntityPanel({ nodeId, onClose }: EntityPanelProps) {
+export function EntityPanel({ nodeId, onClose, onExploreNeighborhood }: EntityPanelProps) {
   const [visible, setVisible] = useState(false)
 
   const { data, isLoading } = useQuery({
@@ -112,6 +113,22 @@ export function EntityPanel({ nodeId, onClose }: EntityPanelProps) {
                       {format(new Date(data.entity.created_at), 'MMM d, yyyy')}
                     </span>
                   </div>
+                  {onExploreNeighborhood && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onExploreNeighborhood(nodeId)}
+                      className="text-xs mt-2"
+                      style={{
+                        borderColor: 'var(--border-subtle)',
+                        color: 'var(--glow-teal)',
+                        backgroundColor: 'transparent',
+                      }}
+                    >
+                      <Focus size={14} className="mr-1" />
+                      Explore neighborhood
+                    </Button>
+                  )}
                 </div>
                 <Button variant="ghost" size="icon" onClick={onClose}>
                   <X className="h-4 w-4" />
