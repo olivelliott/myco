@@ -63,30 +63,30 @@ Requirements for Dashboard & Graph Experience milestone. Each maps to roadmap ph
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GRPH-01 | — | Pending |
-| GRPH-02 | — | Pending |
-| GRPH-03 | — | Pending |
-| GRPH-04 | — | Pending |
-| GRPH-05 | — | Pending |
-| GRPH-06 | — | Pending |
-| GRPH-07 | — | Pending |
-| GRPH-08 | — | Pending |
-| THME-01 | — | Pending |
-| THME-02 | — | Pending |
-| HOME-01 | — | Pending |
-| HOME-02 | — | Pending |
-| HOME-03 | — | Pending |
-| HOME-04 | — | Pending |
-| APRV-01 | — | Pending |
-| APRV-02 | — | Pending |
-| APRV-03 | — | Pending |
-| APRV-04 | — | Pending |
+| GRPH-01 | Phase 14 | Pending |
+| GRPH-02 | Phase 14 | Pending |
+| GRPH-03 | Phase 14 | Pending |
+| GRPH-04 | Phase 14 | Pending |
+| GRPH-05 | Phase 14 | Pending |
+| GRPH-06 | Phase 15 | Pending |
+| GRPH-07 | Phase 14 | Pending |
+| GRPH-08 | Phase 14 | Pending |
+| THME-01 | Phase 13 | Pending |
+| THME-02 | Phase 13 | Pending |
+| HOME-01 | Phase 16 | Pending |
+| HOME-02 | Phase 16 | Pending |
+| HOME-03 | Phase 16 | Pending |
+| HOME-04 | Phase 16 | Pending |
+| APRV-01 | Phase 17 | Pending |
+| APRV-02 | Phase 17 | Pending |
+| APRV-03 | Phase 17 | Pending |
+| APRV-04 | Phase 17 | Pending |
 
 **Coverage:**
 - v4.0 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18 (pending roadmap)
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initial definition*
+*Last updated: 2026-03-27 after roadmap creation*
