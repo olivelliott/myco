@@ -38,6 +38,8 @@ export type GraphLink = {
   confidence: number
   source_type: string
   created_at: string
+  strength?: number
+  reinforcement_count?: number
 }
 
 interface GraphViewProps {
@@ -48,6 +50,7 @@ interface GraphViewProps {
   links: Array<{
     source: string; target: string; type: string
     confidence?: number; source_type?: string; created_at?: string
+    strength?: number; reinforcement_count?: number
   }>
   onNodeClick: (node: GraphNode) => void
   onNodeHover?: (node: GraphNode | null) => void
@@ -673,9 +676,12 @@ export function GraphView({
           const alpha = isHoveredLink ? 0.7 : highlighted ? 0.35 : 0.04
           const srcColor = getNodeColor(l.source.type ?? '')
           const tgtColor = getNodeColor(l.target.type ?? '')
+          // Strength-based edge width: 1px at strength=1, 5px at strength>=10 (linear clamp)
+          const strength = (l as GraphLink).strength ?? 1.0
+          const strengthWidth = Math.min(5, Math.max(1, 1 + (strength - 1) * (4 / 9)))
           const width = isHoveredLink
-            ? (2 + (l.confidence ?? 1) * 2) / globalScale
-            : (0.8 + (l.confidence ?? 1) * 1) / globalScale
+            ? (strengthWidth + 1) / globalScale
+            : strengthWidth / globalScale
 
           // Curved link via quadratic bezier
           const midX = (l.source.x + l.target.x) / 2
@@ -741,6 +747,30 @@ export function GraphView({
 
             ctx.fillStyle = hexToRgba(srcColor, 0.9)
             ctx.fillText(label, cpX, cpY)
+
+            // Strength sub-label below type label
+            const reinforcementCount = (l as GraphLink).reinforcement_count ?? 0
+            if (strength > 1) {
+              const strengthLabel = `Strength: ${strength.toFixed(0)} (reinforced ${reinforcementCount}\u00d7)`
+              const sFontSize = Math.max(7 / globalScale, 1.5)
+              ctx.font = `400 ${sFontSize}px ui-sans-serif, system-ui, -apple-system, sans-serif`
+              const sTextWidth = ctx.measureText(strengthLabel).width
+              const sPad = 2 / globalScale
+
+              ctx.fillStyle = hexToRgba('#0a0a1e', 0.8)
+              ctx.beginPath()
+              ctx.roundRect(
+                cpX - sTextWidth / 2 - sPad,
+                cpY + fontSize / 2 + sPad,
+                sTextWidth + sPad * 2,
+                sFontSize + sPad,
+                3 / globalScale,
+              )
+              ctx.fill()
+
+              ctx.fillStyle = hexToRgba(srcColor, 0.7)
+              ctx.fillText(strengthLabel, cpX, cpY + fontSize / 2 + sPad + sFontSize / 2 + sPad / 2)
+            }
           }
         }}
         linkCanvasObjectMode={() => 'replace'}

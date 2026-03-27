@@ -94,6 +94,8 @@ export interface GraphData {
     confidence: number
     source_type: string
     created_at: string
+    strength: number
+    reinforcement_count: number
   }>
 }
 
