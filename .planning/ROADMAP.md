@@ -122,9 +122,10 @@ Plans:
   1. Two observations with the same base confidence score rank differently in recall results if one was accessed recently and the other has not been accessed in 30+ days
   2. The `computeEffectiveConfidence` function takes `last_accessed_at` and `reinforcement_count` as inputs and returns a value without reading from or writing to the database — it is a pure computation
   3. Entities marked as `decay_exempt` (preference, constraint, decision, architecture types) return their base confidence score unchanged regardless of access recency
-**Plans**: 1 plan
+**Plans**: 2 plans
 Plans:
-- [ ] 21-XX-PLAN.md — [To be planned]
+- [ ] 21-01-PLAN.md — Pure decay function (computeEffectiveConfidence) + unit tests + core export
+- [ ] 21-02-PLAN.md — Integrate decay scoring into recall/query pipelines + lazy last_accessed_at write
 
 ### Phase 22: Core Refactor + REST Write Routes + Import/Export
 **Goal**: Business logic is accessible to both MCP tools and REST clients from a shared `packages/core/memory-ops.ts` module, the REST API exposes full write operations with OpenAPI documentation and optional auth, and users can export or import their entire knowledge graph via MCP tool or HTTP endpoint
@@ -178,6 +179,6 @@ Plans:
 | 18. Schema Foundation | v5.0 | 1/1 | Complete    | 2026-03-27 |
 | 19. Temporal Versioning + Dedup Resolution | v5.0 | 3/3 | Complete    | 2026-03-27 |
 | 20. Relationship Strength Scoring | v5.0 | 0/1 | Not started | - |
-| 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |
+| 21. Memory Importance Decay | v5.0 | 0/2 | Not started | - |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |
