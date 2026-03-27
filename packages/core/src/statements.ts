@@ -60,6 +60,12 @@ export interface MycoStatements {
   countEntitiesAfter: Statement;
   countObservationsAfter: Statement;
   countRelationshipsAfter: Statement;
+  selectGrowthTimeSeries: Statement;
+  countEmbeddedObservations: Statement;
+  countOrphanedEntities: Statement;
+  selectConfidenceDistribution: Statement;
+  countUnconsolidatedEpisodes: Statement;
+  selectRecentActivity: Statement;
 
   // ── Forget / delete statements ──────────────────────────────────────────────
   deleteObservationById: Statement;
@@ -329,6 +335,56 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     countRelationshipsAfter: db.prepare(
       `SELECT COUNT(*) as n FROM relationships WHERE created_at > ?`
+    ),
+
+    selectGrowthTimeSeries: db.prepare(
+      `SELECT date(created_at) as day,
+         SUM(CASE WHEN src = 'entity' THEN 1 ELSE 0 END) as entities,
+         SUM(CASE WHEN src = 'observation' THEN 1 ELSE 0 END) as observations,
+         SUM(CASE WHEN src = 'relationship' THEN 1 ELSE 0 END) as relationships
+       FROM (
+         SELECT created_at, 'entity' as src FROM entities WHERE created_at > ?
+         UNION ALL
+         SELECT created_at, 'observation' as src FROM observations WHERE created_at > ?
+         UNION ALL
+         SELECT created_at, 'relationship' as src FROM relationships WHERE created_at > ?
+       ) combined
+       GROUP BY date(created_at)
+       ORDER BY day ASC`
+    ),
+
+    countEmbeddedObservations: db.prepare(
+      `SELECT
+         (SELECT COUNT(*) FROM observations) as total,
+         (SELECT COUNT(DISTINCT item_id) FROM vec_embeddings WHERE item_type = 'observation') as embedded`
+    ),
+
+    countOrphanedEntities: db.prepare(
+      `SELECT COUNT(*) as n FROM entities e
+       WHERE NOT EXISTS (SELECT 1 FROM relationships r WHERE r.from_id = e.id OR r.to_id = e.id)`
+    ),
+
+    selectConfidenceDistribution: db.prepare(
+      `SELECT
+         CASE
+           WHEN confidence >= 0.8 THEN 'high'
+           WHEN confidence >= 0.5 THEN 'medium'
+           ELSE 'low'
+         END as bucket,
+         COUNT(*) as count
+       FROM entities
+       GROUP BY bucket`
+    ),
+
+    countUnconsolidatedEpisodes: db.prepare(
+      `SELECT COUNT(*) as n FROM episodes WHERE consolidated_at IS NULL`
+    ),
+
+    selectRecentActivity: db.prepare(
+      `SELECT e.id, e.name, e.type, e.confidence, e.created_at, 'created' as event
+       FROM entities e
+       ORDER BY e.created_at DESC
+       LIMIT 20`
     ),
 
     // ── Forget / delete statements ────────────────────────────────────────────
