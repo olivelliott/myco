@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
 status: Ready to execute
-stopped_at: Completed 19-02-PLAN.md — soft-delete entity merge
-last_updated: "2026-03-27T21:50:08.884Z"
+stopped_at: Completed 19-03-PLAN.md — temporal as_of and history query filtering
+last_updated: "2026-03-27T22:07:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 19 (temporal-versioning-dedup-resolution) — EXECUTING
-Plan: 3 of 3
+Plan: 3 of 3 (complete)
 
 ## Performance Metrics
 
@@ -44,6 +44,7 @@ Plan: 3 of 3
 | Phase 18 P01 | 3 | 2 tasks | 6 files |
 | Phase 19-temporal-versioning-dedup-resolution P01 | 215 | 2 tasks | 6 files |
 | Phase 19 P02 | 4 | 1 tasks | 1 files |
+| Phase 19 P03 | 7 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,10 @@ Recent decisions affecting current work:
 - [Phase 19-02]: Soft-delete merge: secondary entity stays in DB with merged_into = primary.id rather than hard-deleted
 - [Phase 19-02]: Observations NOT reassigned during merge — they stay on source entity for historical queryability
 - [Phase 19-02]: Merged entities excluded from queryEntities results via default condition e.merged_into IS NULL
+- [Phase 19-03]: valid_until IS NULL added to JOIN clause (not WHERE) on knnSearchObservations and ftsSearchObservations — filters at join time
+- [Phase 19-03]: useDefaultTemporalOnly guard preserves fast path; any additional filter forces dynamic WHERE
+- [Phase 19-03]: history output includes valid_from/valid_until fields; default output omits them for backward compatibility
+- [Phase 19-03]: as_of queryEntities uses inline db.prepare() (STMT-02 exception) — runtime SQL construction required
 
 ### Pending Todos
 
@@ -79,6 +84,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T21:50:08.881Z
-Stopped at: Completed 19-02-PLAN.md — soft-delete entity merge
+Last session: 2026-03-27T22:07:00.000Z
+Stopped at: Completed 19-03-PLAN.md — temporal as_of and history query filtering
 Resume file: None

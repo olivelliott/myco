@@ -15,7 +15,7 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 ### Temporal Versioning
 
 - [x] **TEMP-01**: Observations track `valid_from` and `valid_until` timestamps for fact versioning
-- [ ] **TEMP-02**: User can query "what was true at time X" via the recall/query tools with a timestamp parameter
+- [x] **TEMP-02**: User can query "what was true at time X" via the recall/query tools with a timestamp parameter
 - [x] **TEMP-03**: Superseded observations are soft-retired (valid_until set) rather than deleted
 
 ### Conflict Resolution & Dedup
@@ -82,7 +82,7 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 | INFRA-01 | Phase 18 | TBD | Pending |
 | INFRA-02 | Phase 18 | TBD | Pending |
 | TEMP-01 | Phase 19 | TBD | Pending |
-| TEMP-02 | Phase 19 | TBD | Pending |
+| TEMP-02 | Phase 19 | 19-03 | Complete |
 | TEMP-03 | Phase 19 | TBD | Pending |
 | DEDUP-01 | Phase 19 | TBD | Pending |
 | DEDUP-02 | Phase 19 | TBD | Pending |
