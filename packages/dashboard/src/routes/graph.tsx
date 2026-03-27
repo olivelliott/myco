@@ -9,7 +9,7 @@ import { GraphToolbar } from '../components/graph-toolbar'
 import { GraphLegend } from '../components/graph-legend'
 import { GraphAnalytics } from '../components/graph-analytics'
 import { TimelineSlider } from '../components/timeline-slider'
-import { type GraphModeState, type GraphInteractionMode, DEFAULT_MODE_STATE } from '../lib/graph-types'
+import { type GraphModeState, DEFAULT_MODE_STATE } from '../lib/graph-types'
 import { detectCommunities, buildClusterInfos } from '../lib/graph-clusters'
 import type { ClusterInfo } from '../lib/graph-clusters'
 import { getNodeColor } from '../components/graph-view'
@@ -248,19 +248,12 @@ function GraphPage() {
 
       <GraphToolbar
         activeMode={modeState.type}
-        onModeChange={(mode: GraphInteractionMode) => {
-          if (mode === modeState.type) {
-            // Clicking active mode chip returns to explore
+        onExitMode={() => setModeState(DEFAULT_MODE_STATE)}
+        onTogglePathMode={() => {
+          if (modeState.type === 'path') {
             setModeState(DEFAULT_MODE_STATE)
-          } else if (mode === 'path') {
+          } else {
             setModeState({ type: 'path', source: null, target: null })
-          } else if (mode === 'explore') {
-            setModeState(DEFAULT_MODE_STATE)
-          } else if (mode === 'neighborhood') {
-            // Neighborhood entry is via double-click; toolbar chip just shows mode
-            setModeState(DEFAULT_MODE_STATE)
-          } else if (mode === 'search') {
-            setModeState({ type: 'search', query: '' })
           }
         }}
         pathInfo={pathInfo}
@@ -278,7 +271,6 @@ function GraphPage() {
             setModeState({ ...modeState, depth })
           }
         }}
-        onExitNeighborhood={() => setModeState(DEFAULT_MODE_STATE)}
         timelineEnabled={timelineEnabled}
         onToggleTimeline={() => setTimelineEnabled(!timelineEnabled)}
         legendOpen={legendOpen}

@@ -10,8 +10,10 @@ interface TimelineSliderProps {
   onPlayStateChange?: (playing: boolean) => void        // optional callback when play/pause toggles
 }
 
-// 1 real second = 1 day of timeline (86400000 ms / 1000 ms = 86400 ms of timeline per real ms)
-const TIMELINE_MS_PER_REAL_MS = 86_400_000 / 1000
+// Target: full timeline plays in ~10 seconds at 1x speed.
+// Computed dynamically from the actual date range so narrow ranges (same day)
+// still produce a visible frame-by-frame playback.
+const MIN_PLAYBACK_SECONDS = 10
 
 export function TimelineSlider({
   minMs,
@@ -37,6 +39,10 @@ export function TimelineSlider({
 
   const range = maxMs - minMs || 1
 
+  // Compute playback rate: range / (target seconds * 1000ms) = timeline ms per real ms
+  // This ensures even a 1-hour range takes ~10 seconds to play through
+  const timelineMsPerRealMs = range / (MIN_PLAYBACK_SECONDS * 1000)
+
   const stopPlayback = useCallback(() => {
     if (rafIdRef.current !== null) {
       cancelAnimationFrame(rafIdRef.current)
@@ -59,7 +65,7 @@ export function TimelineSlider({
 
       if (prevTimestampRef.current !== null) {
         const elapsed = timestamp - prevTimestampRef.current
-        const timelineAdvance = elapsed * TIMELINE_MS_PER_REAL_MS * speedRef.current
+        const timelineAdvance = elapsed * timelineMsPerRealMs * speedRef.current
         cutoffRef.current = Math.min(cutoffRef.current + timelineAdvance, maxMs)
 
         // Throttle display updates to ~4fps to avoid re-renders during playback
