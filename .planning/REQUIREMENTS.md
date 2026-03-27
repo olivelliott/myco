@@ -22,7 +22,7 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 
 - [x] **DEDUP-01**: When a new memory conflicts with an existing observation, the system classifies it as ADD/UPDATE/NOOP
 - [x] **DEDUP-02**: UPDATE actions retire the old observation (temporal) and insert the new version
-- [ ] **DEDUP-03**: Entity merges use soft-delete (`merged_into` column) so merges are reversible
+- [x] **DEDUP-03**: Entity merges use soft-delete (`merged_into` column) so merges are reversible
 - [x] **DEDUP-04**: Near-duplicate observations are detected and deduplicated at write time
 
 ### Incremental Consolidation
