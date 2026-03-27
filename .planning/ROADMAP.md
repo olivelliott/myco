@@ -66,7 +66,9 @@ Full details: `.planning/milestones/v3.0-ROADMAP.md`
   2. CSS variables for the theme are defined in one place and applied consistently — changing a variable updates all pages
   3. No visible "brain" string remains in the dashboard UI — all copy reads "Myco" (headings, labels, empty states, tooltips)
   4. Branded empty states exist for the graph view and approvals page, matching the deep-sea aesthetic
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 13-01-PLAN.md — Migrate all slate-* hardcoded classes to CSS variables and verify no "brain" terminology remains
 **UI hint**: yes
 
 ### Phase 14: Graph Core Features
@@ -136,7 +138,7 @@ Full details: `.planning/milestones/v3.0-ROADMAP.md`
 | 10. Prepared Statements | v3.0 | 2/2 | Complete | 2026-03-25 |
 | 11. Query Filters + Error Handling | v3.0 | 2/2 | Complete | 2026-03-25 |
 | 12. Namespace Isolation | v3.0 | 2/2 | Complete | 2026-03-26 |
-| 13. Theme + Language Foundation | v4.0 | 0/? | Not started | - |
+| 13. Theme + Language Foundation | v4.0 | 0/1 | Not started | - |
 | 14. Graph Core Features | v4.0 | 0/? | Not started | - |
 | 15. Timeline Animation | v4.0 | 0/? | Not started | - |
 | 16. Home Page Enhancements | v4.0 | 0/? | Not started | - |
