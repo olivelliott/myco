@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Feature Parity & Differentiation
-status: Defining requirements
-stopped_at: "Milestone v5.0 started"
-last_updated: "2026-03-27T19:35:00.000Z"
+milestone: v4.0
+milestone_name: Dashboard & Graph Experience
+status: Ready to execute
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-03-27T20:11:08.417Z"
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 5
+  completed_phases: 3
+  total_plans: 7
+  completed_plans: 6
 ---
 
 # Project State
@@ -19,14 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Defining requirements for v5.0
+**Current focus:** Phase 16 — home-page-enhancements
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-27 — Milestone v5.0 started
+Phase: 16 (home-page-enhancements) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -48,6 +46,7 @@ Last activity: 2026-03-27 — Milestone v5.0 started
 | Phase 14 P03 | 4 minutes | 2 tasks | 5 files |
 | Phase 14-graph-core-features P02 | 18 | 2 tasks | 5 files |
 | Phase 15-timeline-animation P01 | 5 minutes | 2 tasks | 3 files |
+| Phase 16-home-page-enhancements P01 | 8 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -74,6 +73,8 @@ Recent decisions affecting current work:
 - [Phase 15-timeline-animation]: rAF loop in TimelineSlider writes to cutoffRef.current; canvas painter reads ref directly — zero React re-renders during auto-play
 - [Phase 15-timeline-animation]: Timeline visibility controlled via nodeCanvasObject early-return (nodeMs > cutoffMs) — graphData reference never modified during playback
 - [Phase 15-timeline-animation]: created_at_ms pre-computed on decoratedNodes to avoid per-frame Date parsing at 60fps
+- [Phase 16]: Growth endpoint at /api/stats/growth separate from /api/dashboard — clean separation of time-series vs snapshot data
+- [Phase 16]: recentActivity added alongside recentEpisodes in dashboard response for backward compatibility
 
 ### Pending Todos
 
@@ -93,6 +94,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-27T19:32:31.067Z
-Stopped at: Completed 15-01-PLAN.md
+Last session: 2026-03-27T20:11:08.413Z
+Stopped at: Completed 16-01-PLAN.md
 Resume file: None
