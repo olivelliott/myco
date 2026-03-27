@@ -58,9 +58,9 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 
 ### Relationship Strength
 
-- [ ] **STRENGTH-01**: Relationships have a strength score that increases when reinforced by multiple remember calls
-- [ ] **STRENGTH-02**: Strength scoring uses an upsert pattern (ON CONFLICT DO UPDATE) on the existing relationships table
-- [ ] **STRENGTH-03**: Relationship strength is visible in query results and the dashboard graph
+- [x] **STRENGTH-01**: Relationships have a strength score that increases when reinforced by multiple remember calls
+- [x] **STRENGTH-02**: Strength scoring uses an upsert pattern (ON CONFLICT DO UPDATE) on the existing relationships table
+- [x] **STRENGTH-03**: Relationship strength is visible in query results and the dashboard graph
 
 ## Future Requirements
 

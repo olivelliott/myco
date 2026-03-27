@@ -65,7 +65,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 
 - [x] **Phase 18: Schema Foundation** - Versioned migration framework and all v5.0 schema columns added safely before any feature phase begins (completed 2026-03-27)
 - [x] **Phase 19: Temporal Versioning + Dedup Resolution** - Observations track valid_from/valid_until; new memories route through ADD/UPDATE/NOOP classification before write (completed 2026-03-27)
-- [ ] **Phase 20: Relationship Strength Scoring** - Relationship edges gain strength scores reinforced on every re-assertion; edge thickness reflects strength in the dashboard
+- [x] **Phase 20: Relationship Strength Scoring** - Relationship edges gain strength scores reinforced on every re-assertion; edge thickness reflects strength in the dashboard (completed 2026-03-27)
 - [ ] **Phase 21: Memory Importance Decay** - Unreinforced facts fade via lazy decay at read time; recall ranking factors in effective confidence
 - [ ] **Phase 22: Core Refactor + REST Write Routes + Import/Export** - Business logic moves to packages/core; Hono server gains write endpoints, OpenAPI docs, API key auth, and export/import tools
 - [ ] **Phase 23: Auto-Extraction + Incremental Consolidation** - Episodes trigger passive entity extraction and micro-consolidation on log_episode without blocking MCP responses
@@ -111,7 +111,7 @@ Plans:
   3. The dashboard knowledge graph renders edges with varying line thickness proportional to relationship strength — a newly created relationship is visually thinner than a reinforced one
 **Plans**: 1 plan
 Plans:
-- [ ] 20-01-PLAN.md — Upsert SQL, API strength passthrough, dashboard edge width + tooltip
+- [x] 20-01-PLAN.md — Upsert SQL, API strength passthrough, dashboard edge width + tooltip
 **UI hint**: yes
 
 ### Phase 21: Memory Importance Decay
@@ -178,7 +178,7 @@ Plans:
 | 17. Approvals Overhaul | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 18. Schema Foundation | v5.0 | 1/1 | Complete    | 2026-03-27 |
 | 19. Temporal Versioning + Dedup Resolution | v5.0 | 3/3 | Complete    | 2026-03-27 |
-| 20. Relationship Strength Scoring | v5.0 | 0/1 | Not started | - |
+| 20. Relationship Strength Scoring | v5.0 | 1/1 | Complete   | 2026-03-27 |
 | 21. Memory Importance Decay | v5.0 | 0/2 | Not started | - |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |

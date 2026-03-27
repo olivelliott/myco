@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Ready to execute
-stopped_at: Completed 19-03-PLAN.md — temporal as_of and history query filtering
-last_updated: "2026-03-27T22:07:00.000Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 20-01-PLAN.md — relationship strength scoring
+last_updated: "2026-03-27T22:49:36.100Z"
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 3
+  total_plans: 7
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 19 — temporal-versioning-dedup-resolution
+**Current focus:** Phase 20 — relationship-strength-scoring
 
 ## Current Position
 
-Phase: 19 (temporal-versioning-dedup-resolution) — EXECUTING
-Plan: 3 of 3 (complete)
+Phase: 20 (relationship-strength-scoring) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -45,6 +45,7 @@ Plan: 3 of 3 (complete)
 | Phase 19-temporal-versioning-dedup-resolution P01 | 215 | 2 tasks | 6 files |
 | Phase 19 P02 | 4 | 1 tasks | 1 files |
 | Phase 19 P03 | 7 | 2 tasks | 3 files |
+| Phase 20-relationship-strength-scoring P01 | 8 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - [Phase 19-03]: useDefaultTemporalOnly guard preserves fast path; any additional filter forces dynamic WHERE
 - [Phase 19-03]: history output includes valid_from/valid_until fields; default output omits them for backward compatibility
 - [Phase 19-03]: as_of queryEntities uses inline db.prepare() (STMT-02 exception) — runtime SQL construction required
+- [Phase 20]: ON CONFLICT targets (from_id, to_id, type) matching migration 001_baseline UNIQUE constraint — no new constraint needed for strength upsert
+- [Phase 20]: strengthWidth replaces confidence-based formula — edge visual weight reflects reinforcement frequency, not semantic confidence
 
 ### Pending Todos
 
@@ -84,6 +87,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T22:07:00.000Z
-Stopped at: Completed 19-03-PLAN.md — temporal as_of and history query filtering
+Last session: 2026-03-27T22:49:36.096Z
+Stopped at: Completed 20-01-PLAN.md — relationship strength scoring
 Resume file: None
