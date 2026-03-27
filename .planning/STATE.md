@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Ready to plan
-stopped_at: v5.0 roadmap created — Phase 18 ready to plan
-last_updated: "2026-03-27"
+status: Phase complete — ready for verification
+stopped_at: Completed 18-01-PLAN.md — schema migration framework + v5.0 columns
+last_updated: "2026-03-27T21:12:28.442Z"
 progress:
   total_phases: 6
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 18 — Schema Foundation
+**Current focus:** Phase 18 — schema-foundation
 
 ## Current Position
 
-Phase: 18 (schema-foundation) — READY TO PLAN
-Plan: 0 of ?
+Phase: 18 (schema-foundation) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -41,6 +41,7 @@ Plan: 0 of ?
 | - | - | - | - |
 
 *Updated after each plan completion*
+| Phase 18 P01 | 3 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -54,6 +55,9 @@ Recent decisions affecting current work:
 - [v5.0 research]: Relationship strength updated only on `remember` (not `recall`) to avoid write amplification
 - [v5.0 research]: `computeEffectiveConfidence` is a pure function at read time — no write-back to DB
 - [v5.0 research]: Phase 18 must land before any other v5.0 phase — migration framework prerequisite
+- [Phase 18]: columnExists() guards in migrations 002-005 handle v4.0 databases that already have those columns — avoids duplicate column errors without try/catch
+- [Phase 18]: Per-migration db.transaction() wrappers isolate failures; a partial failure rolls back only that migration, not prior work
+- [Phase 18]: NOT NULL columns with DB defaults typed as required number in TypeScript; nullable columns typed as optional string | null
 
 ### Pending Todos
 
@@ -67,6 +71,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27
-Stopped at: v5.0 roadmap written — ROADMAP.md and STATE.md created, REQUIREMENTS.md traceability updated
+Last session: 2026-03-27T21:12:28.437Z
+Stopped at: Completed 18-01-PLAN.md — schema migration framework + v5.0 columns
 Resume file: None
