@@ -43,8 +43,8 @@ A persistent cognitive layer for Claude Code agents — an MCP server that gives
                    │
                    ▼
 ┌──────────────────────────────────────────────────┐
-│  brain.db  (SQLite + sqlite-vec)                 │
-│  ~/.local/share/myco/brain.db                    │
+│  myco.db  (SQLite + sqlite-vec)                 │
+│  ~/.local/share/myco/myco.db                    │
 │                                                  │
 │  entities │ observations │ relationships         │
 │  episodes │ approval_queue │ vec_embeddings       │
@@ -190,10 +190,10 @@ All variables are optional — defaults work for a standard Ollama + local insta
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `MYCO_DB_PATH` | `~/.local/share/myco/brain.db` | Override database location (`BRAIN_DB_PATH` also accepted as fallback) |
+| `MYCO_DB_PATH` | `~/.local/share/myco/myco.db` | Override database location |
 | `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama server URL |
 | `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Ollama embedding model |
-| `BRAIN_CONSOLIDATION_MODEL` | `llama3.2` | LLM model for fact extraction |
+| `MYCO_CONSOLIDATION_MODEL` | `llama3.2` | LLM model for fact extraction |
 | `MYCO_API_PORT` | `3001` | API server port |
 | `MYCO_LOG_LEVEL` | `info` | Log level (`info` or `debug`) |
 

@@ -11,7 +11,7 @@ Performance and architecture optimization — hardened MCP server with configura
 
 ### Added
 
-- **dotenv configuration** — `.env` file support for `OLLAMA_HOST`, `MYCO_DB_PATH`, `BRAIN_CONSOLIDATION_MODEL`, `OLLAMA_EMBED_MODEL`, `MYCO_API_PORT`, `MYCO_LOG_LEVEL`
+- **dotenv configuration** — `.env` file support for `OLLAMA_HOST`, `MYCO_DB_PATH`, `MYCO_CONSOLIDATION_MODEL`, `OLLAMA_EMBED_MODEL`, `MYCO_API_PORT`, `MYCO_LOG_LEVEL`
 - **Startup logging** — resolved configuration values printed to stderr at startup
 - **Query filters on recall** — optional `entity_type`, `min_confidence`, and `project` parameters narrow search results
 - **Project namespace isolation** — `remember` accepts optional `project` param to scope entities; `recall`/`query` filter by project when specified

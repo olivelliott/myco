@@ -207,36 +207,11 @@ describe('openDatabase()', () => {
     }
   });
 
-  it('falls back to BRAIN_DB_PATH when MYCO_DB_PATH not set', () => {
-    const envPath = path.join(tempDir, 'brain-db-path-fallback.db');
+  it('default path contains myco.db when no env vars set', () => {
+    // Verify the default DB path resolution uses 'myco/myco.db'
     const originalMyco = process.env.MYCO_DB_PATH;
-    const originalBrain = process.env.BRAIN_DB_PATH;
-    delete process.env.MYCO_DB_PATH;
-    process.env.BRAIN_DB_PATH = envPath;
-    try {
-      openDatabase(); // no explicit path — should fall back to BRAIN_DB_PATH
-      expect(fs.existsSync(envPath)).toBe(true);
-    } finally {
-      if (originalMyco === undefined) {
-        delete process.env.MYCO_DB_PATH;
-      } else {
-        process.env.MYCO_DB_PATH = originalMyco;
-      }
-      if (originalBrain === undefined) {
-        delete process.env.BRAIN_DB_PATH;
-      } else {
-        process.env.BRAIN_DB_PATH = originalBrain;
-      }
-    }
-  });
-
-  it('default path contains myco directory segment when no env vars set', () => {
-    // Verify the default DB path resolution uses 'myco'
-    const originalMyco = process.env.MYCO_DB_PATH;
-    const originalBrain = process.env.BRAIN_DB_PATH;
     const originalXdg = process.env.XDG_DATA_HOME;
     delete process.env.MYCO_DB_PATH;
-    delete process.env.BRAIN_DB_PATH;
     // Point XDG_DATA_HOME to tempDir to avoid creating real home dir files
     process.env.XDG_DATA_HOME = tempDir;
     try {
@@ -244,10 +219,9 @@ describe('openDatabase()', () => {
       const dbFilePath = db.name;
       db.close();
       expect(dbFilePath).toContain('myco');
-      expect(dbFilePath).toContain('brain.db');
+      expect(dbFilePath).toContain('myco.db');
     } finally {
       if (originalMyco === undefined) { delete process.env.MYCO_DB_PATH; } else { process.env.MYCO_DB_PATH = originalMyco; }
-      if (originalBrain === undefined) { delete process.env.BRAIN_DB_PATH; } else { process.env.BRAIN_DB_PATH = originalBrain; }
       if (originalXdg === undefined) { delete process.env.XDG_DATA_HOME; } else { process.env.XDG_DATA_HOME = originalXdg; }
     }
   });

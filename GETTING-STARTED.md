@@ -95,7 +95,7 @@ Once the MCP server is in your **global** Claude Code settings (`-s user` scope)
 
 - Change how GSD works
 - Modify your files
-- Send data anywhere (everything stays in `~/.local/share/myco/brain.db`)
+- Send data anywhere (everything stays in `~/.local/share/myco/myco.db`)
 - Slow down your session (Ollama calls have 2s timeout with graceful fallback)
 
 Your existing workflows (GSD phases, trade journal, market analysis) continue exactly as-is. Myco just means Claude sessions can accumulate knowledge over time instead of starting from zero.
@@ -215,8 +215,8 @@ This only fires inside the `myco` project (project-scoped hook).
                    │
                    ▼
 ┌──────────────────────────────────────────────────┐
-│  brain.db  (SQLite + sqlite-vec)                 │
-│  ~/.local/share/myco/brain.db                    │
+│  myco.db  (SQLite + sqlite-vec)                 │
+│  ~/.local/share/myco/myco.db                    │
 │                                                  │
 │  entities │ observations │ relationships         │
 │  episodes │ approval_queue │ vec_embeddings       │
@@ -241,12 +241,12 @@ This only fires inside the `myco` project (project-scoped hook).
 
 | What | Where |
 |------|-------|
-| Database | `~/.local/share/myco/brain.db` |
+| Database | `~/.local/share/myco/myco.db` |
 | MCP server entry | `packages/mcp-server/dist/index.js` |
 | CLI tool | `myco-cli` (after `npm run build`) |
 | API server | `packages/api-server/src/index.ts` |
 | Dashboard | `packages/dashboard/` |
-| GSD hook | `.claude/hooks/gsd-brain-episode.js` |
+| GSD hook | `.claude/hooks/gsd-myco-episode.js` |
 | Project settings | `.claude/settings.json` |
 
 ## Environment Variables (All Optional)
@@ -255,10 +255,10 @@ All variables can be set in a `.env` file at the project root (loaded automatica
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `MYCO_DB_PATH` | `~/.local/share/myco/brain.db` | Override database location (BRAIN_DB_PATH also accepted as fallback) |
+| `MYCO_DB_PATH` | `~/.local/share/myco/myco.db` | Override database location |
 | `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama server URL |
 | `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Ollama embedding model |
-| `BRAIN_CONSOLIDATION_MODEL` | `llama3.2` | LLM model for fact extraction |
+| `MYCO_CONSOLIDATION_MODEL` | `llama3.2` | LLM model for fact extraction |
 | `MYCO_API_PORT` | `3001` | API server port |
 | `MYCO_LOG_LEVEL` | `info` | Log level (`info` or `debug`) |
 

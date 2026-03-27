@@ -402,7 +402,7 @@ Test each override individually (copy `.env.example` to `.env` and edit):
 
 - [ ] `MYCO_DB_PATH=/tmp/test-myco.db npm run dev` → uses custom DB path
 - [ ] `OLLAMA_HOST=http://localhost:11435 npm run dev` → connects to different Ollama port
-- [ ] `BRAIN_CONSOLIDATION_MODEL=mistral npm run dev` → uses different LLM for consolidation
+- [ ] `MYCO_CONSOLIDATION_MODEL=mistral npm run dev` → uses different LLM for consolidation
 - [ ] `MYCO_API_PORT=4000 npm run api` → API server starts on port 4000
 - [ ] Verify startup logs print resolved config to stderr
 
@@ -425,10 +425,10 @@ At any point, you can inspect the database directly:
 
 ```bash
 # Find your database
-ls ~/.local/share/myco/brain.db
+ls ~/.local/share/myco/myco.db
 
 # Open with sqlite3
-sqlite3 ~/.local/share/myco/brain.db
+sqlite3 ~/.local/share/myco/myco.db
 
 # Useful queries:
 SELECT COUNT(*) FROM entities;
