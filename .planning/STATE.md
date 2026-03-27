@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Ready to execute
-stopped_at: Completed 21-01-PLAN.md — memory importance decay pure function
-last_updated: "2026-03-27T22:57:00.474Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 21-02-PLAN.md — decay integration into recall pipeline
+last_updated: "2026-03-27T23:01:29.885Z"
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -47,6 +47,7 @@ Plan: 2 of 2
 | Phase 19 P03 | 7 | 2 tasks | 3 files |
 | Phase 20-relationship-strength-scoring P01 | 8 | 2 tasks | 4 files |
 | Phase 21-memory-importance-decay P01 | 2 | 2 tasks | 3 files |
+| Phase 21-memory-importance-decay P02 | 3 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,9 @@ Recent decisions affecting current work:
 - [Phase 20]: strengthWidth replaces confidence-based formula — edge visual weight reflects reinforcement frequency, not semantic confidence
 - [Phase 21]: computeEffectiveConfidence is pure (no DB handle) — DECAY-02 design confirmed
 - [Phase 21]: null lastAccessedAt defaults to 30 days — conservative decay for never-accessed observations
+- [Phase 21]: DECAY-03: recall results re-sorted by final_score (similarity * effective_confidence) not raw relevance_score
+- [Phase 21]: Lazy last_accessed_at write uses dynamic IN (?) — STMT-02 exception applies since placeholder count varies with result set
+- [Phase 21]: Empty result guard (scoredRows.length > 0) prevents SQL syntax error on empty IN () clause in lazy write
 
 ### Pending Todos
 
@@ -90,6 +94,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T22:57:00.469Z
-Stopped at: Completed 21-01-PLAN.md — memory importance decay pure function
+Last session: 2026-03-27T23:01:29.882Z
+Stopped at: Completed 21-02-PLAN.md — decay integration into recall pipeline
 Resume file: None
