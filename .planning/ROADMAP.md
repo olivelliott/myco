@@ -50,7 +50,7 @@ Full details: `.planning/milestones/v3.0-ROADMAP.md`
 **Milestone Goal:** Transform the Myco dashboard into a polished, bioluminescent analytics experience with a deeply interactive knowledge graph, enriched home page, and a streamlined approvals flow.
 
 - [x] **Phase 13: Theme + Language Foundation** - Bioluminescent CSS variables and "Myco" language pass across all dashboard pages (completed 2026-03-27)
-- [ ] **Phase 14: Graph Core Features** - Stable interaction mode system, confidence filter, cluster visualization, neighborhood explorer, search zoom, LOD rendering
+- [x] **Phase 14: Graph Core Features** - Stable interaction mode system, confidence filter, cluster visualization, neighborhood explorer, search zoom, LOD rendering (completed 2026-03-27)
 - [ ] **Phase 15: Timeline Animation** - requestAnimationFrame-driven timeline playback with animated node entry
 - [ ] **Phase 16: Home Page Enhancements** - Knowledge growth chart, rich activity stream, health metrics, interactive graph preview
 - [ ] **Phase 17: Approvals Overhaul** - Guided onboarding, batch actions, confidence visualization, inline mini-graph preview
@@ -83,10 +83,10 @@ Plans:
   5. Dragging the confidence threshold slider immediately filters nodes below the chosen value out of the visible graph
   6. Typing in the search box highlights matching nodes, moves the camera to center on the best match, and dims non-matching nodes
   7. Graphs with 500+ nodes skip per-node gradient and label rendering when zoomed out, keeping interaction smooth
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [x] 14-01-PLAN.md — Foundation: packages, GraphInteractionMode types, graphData stability fix, sim freeze, LOD rendering, mode toolbar
-- [ ] 14-02-PLAN.md — Cluster visualization with Louvain detection and convex hull rendering, confidence threshold slider
+- [x] 14-02-PLAN.md — Cluster visualization with Louvain detection and convex hull rendering, confidence threshold slider
 - [x] 14-03-PLAN.md — Neighborhood explorer (1-2 hop subgraph isolation) and search auto-zoom with pulse animation
 **UI hint**: yes
 
@@ -143,7 +143,7 @@ Plans:
 | 11. Query Filters + Error Handling | v3.0 | 2/2 | Complete | 2026-03-25 |
 | 12. Namespace Isolation | v3.0 | 2/2 | Complete | 2026-03-26 |
 | 13. Theme + Language Foundation | v4.0 | 1/1 | Complete    | 2026-03-27 |
-| 14. Graph Core Features | v4.0 | 2/3 | In Progress|  |
+| 14. Graph Core Features | v4.0 | 3/3 | Complete   | 2026-03-27 |
 | 15. Timeline Animation | v4.0 | 0/? | Not started | - |
 | 16. Home Page Enhancements | v4.0 | 0/? | Not started | - |
 | 17. Approvals Overhaul | v4.0 | 0/? | Not started | - |

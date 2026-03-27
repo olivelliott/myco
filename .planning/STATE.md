@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Dashboard & Graph Experience
-status: Ready to execute
-stopped_at: Completed 14-03-PLAN.md
-last_updated: "2026-03-27T19:04:37.121Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 14-02-PLAN.md
+last_updated: "2026-03-27T19:05:54.388Z"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -44,6 +44,7 @@ Plan: 3 of 3
 | Phase 13 P01 | 12 | 2 tasks | 12 files |
 | Phase 14 P01 | 352 | 2 tasks | 5 files |
 | Phase 14 P03 | 4 minutes | 2 tasks | 5 files |
+| Phase 14-graph-core-features P02 | 18 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,8 @@ Recent decisions affecting current work:
 - [Phase 14]: cooldownTicks(0) in handleEngineStop permanently freezes simulation after initial layout — prevents hover drift (GRPH-01)
 - [Phase 14]: Double-click detected via lastClickRef timestamp (400ms) in ForceGraph2D custom canvas model
 - [Phase 14]: activeNodes/activeLinks derived in GraphView from neighborhoodData prop — filtering co-located with rendering
+- [Phase 14-graph-core-features]: Cluster hulls drawn via onRenderFramePost (canvas layer) to avoid pointer event capture per Pitfall 3
+- [Phase 14-graph-core-features]: Confidence filter fades nodes to opacity 0.05 (not remove) — preserves graph topology while hiding noise
 
 ### Pending Todos
 
@@ -84,6 +87,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-27T19:04:37.113Z
-Stopped at: Completed 14-03-PLAN.md
+Last session: 2026-03-27T19:05:54.384Z
+Stopped at: Completed 14-02-PLAN.md
 Resume file: None
