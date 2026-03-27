@@ -99,7 +99,9 @@ Plans:
   2. Pressing play animates the graph growing from the earliest entity to the latest without visible frame drops or physics reheating
   3. Nodes that newly appear during playback get a brief entry pulse effect; the rest of the graph remains stable
   4. Stopping or scrubbing while playing immediately freezes the graph at that point in time
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 15-01-PLAN.md — rAF-driven timeline playback with useRef cutoff, entry pulse animation, no graphData reheat
 **UI hint**: yes
 
 ### Phase 16: Home Page Enhancements
@@ -144,6 +146,6 @@ Plans:
 | 12. Namespace Isolation | v3.0 | 2/2 | Complete | 2026-03-26 |
 | 13. Theme + Language Foundation | v4.0 | 1/1 | Complete    | 2026-03-27 |
 | 14. Graph Core Features | v4.0 | 3/3 | Complete    | 2026-03-27 |
-| 15. Timeline Animation | v4.0 | 0/? | Not started | - |
+| 15. Timeline Animation | v4.0 | 0/1 | Not started | - |
 | 16. Home Page Enhancements | v4.0 | 0/? | Not started | - |
 | 17. Approvals Overhaul | v4.0 | 0/? | Not started | - |
