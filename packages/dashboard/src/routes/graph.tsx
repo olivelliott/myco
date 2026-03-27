@@ -10,6 +10,9 @@ import { GraphLegend } from '../components/graph-legend'
 import { GraphAnalytics } from '../components/graph-analytics'
 import { TimelineSlider } from '../components/timeline-slider'
 import { type GraphModeState, type GraphInteractionMode, DEFAULT_MODE_STATE } from '../lib/graph-types'
+import { detectCommunities, buildClusterInfos } from '../lib/graph-clusters'
+import type { ClusterInfo } from '../lib/graph-clusters'
+import { getNodeColor } from '../components/graph-view'
 
 export const Route = createFileRoute('/graph')({ component: GraphPage })
 
@@ -64,6 +67,10 @@ function GraphPage() {
   const [legendOpen, setLegendOpen] = useState(false)
   const [analyticsOpen, setAnalyticsOpen] = useState(false)
 
+  // Cluster visualization and confidence filter
+  const [clustersEnabled, setClustersEnabled] = useState(false)
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0)
+
   // Compute date range for timeline
   const dateRange = useMemo(() => {
     if (!data?.nodes?.length) return { min: '', max: '' }
@@ -102,6 +109,19 @@ function GraphPage() {
     )
     return { nodes, links }
   }, [data, timelineEnabled, timelineDate])
+
+  // Compute Louvain community clusters when clusters toggle is enabled
+  const clusterInfos = useMemo<ClusterInfo[] | null>(() => {
+    if (!clustersEnabled || !filteredData?.nodes?.length) return null
+    const communityMap = detectCommunities(
+      filteredData.nodes,
+      filteredData.links.map((l) => ({
+        source: typeof l.source === 'string' ? l.source : (l.source as any).id,
+        target: typeof l.target === 'string' ? l.target : (l.target as any).id,
+      }))
+    )
+    return buildClusterInfos(communityMap, filteredData.nodes, getNodeColor)
+  }, [clustersEnabled, filteredData])
 
   // Path tracing computation
   const pathResult = useMemo(() => {
@@ -221,6 +241,8 @@ function GraphPage() {
           onNodeHover={handleNodeHover}
           highlightedPath={highlightedPath}
           neighborhoodData={neighborhoodData}
+          clusterInfos={clusterInfos}
+          confidenceThreshold={confidenceThreshold}
         />
       )}
 
@@ -263,6 +285,10 @@ function GraphPage() {
         onToggleLegend={() => setLegendOpen(!legendOpen)}
         analyticsOpen={analyticsOpen}
         onToggleAnalytics={() => setAnalyticsOpen(!analyticsOpen)}
+        confidenceThreshold={confidenceThreshold}
+        onConfidenceChange={setConfidenceThreshold}
+        clustersEnabled={clustersEnabled}
+        onToggleClusters={() => setClustersEnabled(!clustersEnabled)}
       />
 
       {legendOpen && <GraphLegend />}

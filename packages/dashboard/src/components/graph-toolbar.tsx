@@ -1,4 +1,4 @@
-import { Route, X, Clock, Info, BarChart3, MousePointer2, Focus, Search } from 'lucide-react'
+import { Route, X, Clock, Info, BarChart3, MousePointer2, Focus, Search, Hexagon } from 'lucide-react'
 import { type GraphInteractionMode } from '../lib/graph-types'
 
 interface GraphToolbarProps {
@@ -16,6 +16,10 @@ interface GraphToolbarProps {
   onToggleLegend: () => void
   analyticsOpen: boolean
   onToggleAnalytics: () => void
+  confidenceThreshold: number
+  onConfidenceChange: (value: number) => void
+  clustersEnabled: boolean
+  onToggleClusters: () => void
 }
 
 export function GraphToolbar({
@@ -33,6 +37,10 @@ export function GraphToolbar({
   onToggleLegend,
   analyticsOpen,
   onToggleAnalytics,
+  confidenceThreshold,
+  onConfidenceChange,
+  clustersEnabled,
+  onToggleClusters,
 }: GraphToolbarProps) {
   return (
     <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
@@ -92,6 +100,42 @@ export function GraphToolbar({
         label="Legend"
         onClick={onToggleLegend}
       />
+
+      <ToolbarButton
+        active={clustersEnabled}
+        icon={<Hexagon size={16} />}
+        label="Clusters"
+        onClick={onToggleClusters}
+      />
+
+      {/* Confidence threshold slider */}
+      <div
+        className="flex flex-col gap-1 px-3 py-2 rounded-md"
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+        }}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Confidence</span>
+          <span className="text-xs font-mono" style={{ color: 'var(--glow-teal)' }}>
+            {Math.round(confidenceThreshold * 100)}%
+          </span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={confidenceThreshold}
+          onChange={(e) => onConfidenceChange(parseFloat(e.target.value))}
+          className="w-full h-1 appearance-none rounded-full cursor-pointer"
+          style={{
+            background: `linear-gradient(to right, var(--glow-teal) ${confidenceThreshold * 100}%, var(--border-subtle) ${confidenceThreshold * 100}%)`,
+            accentColor: 'var(--glow-teal)',
+          }}
+        />
+      </div>
 
       {pathInfo && (
         <div

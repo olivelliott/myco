@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from './ui/select'
 import { computeGraphDataKey } from '../lib/graph-types'
+import { computeClusterHull } from '../lib/graph-clusters'
+import type { ClusterInfo } from '../lib/graph-clusters'
 
 export type GraphNode = {
   id: string
@@ -49,6 +51,8 @@ interface GraphViewProps {
   mini?: boolean
   highlightedPath?: Set<string> | null
   neighborhoodData?: { nodes: Array<GraphNode>; links: Array<GraphLink> } | null
+  clusterInfos?: ClusterInfo[] | null
+  confidenceThreshold?: number
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -81,7 +85,8 @@ export function getLinkNodeId(node: string | GraphNode): string {
 }
 
 export function GraphView({
-  nodes, links, onNodeClick, onNodeHover, mini = false, highlightedPath, neighborhoodData,
+  nodes, links, onNodeClick, onNodeHover, mini = false, highlightedPath,
+  neighborhoodData, clusterInfos, confidenceThreshold,
 }: GraphViewProps) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -98,15 +103,20 @@ export function GraphView({
   const decoratedNodes = useMemo(() => {
     return nodes
       .filter((n) => typeFilter === 'all' || n.type === typeFilter)
-      .map((n) => ({
-        ...n,
-        confidence: n.confidence ?? 1,
-        summary: n.summary ?? null,
-        created_at: n.created_at ?? '',
-        color: getNodeColor(n.type),
-        opacity: search && !n.name.toLowerCase().includes(search.toLowerCase()) ? 0.15 : 1,
-      }))
-  }, [nodes, search, typeFilter])
+      .map((n) => {
+        const conf = n.confidence ?? 1
+        const belowThreshold = confidenceThreshold != null && confidenceThreshold > 0 && conf < confidenceThreshold
+        const searchDimmed = search && !n.name.toLowerCase().includes(search.toLowerCase())
+        return {
+          ...n,
+          confidence: conf,
+          summary: n.summary ?? null,
+          created_at: n.created_at ?? '',
+          color: getNodeColor(n.type),
+          opacity: belowThreshold ? 0.05 : searchDimmed ? 0.15 : 1,
+        }
+      })
+  }, [nodes, search, typeFilter, confidenceThreshold])
 
   const filteredNodeIds = useMemo(
     () => new Set(decoratedNodes.map((n) => n.id)),
@@ -670,6 +680,50 @@ export function GraphView({
           const n = node as GraphNode
           n.fx = undefined
           n.fy = undefined
+        }}
+        // Draw cluster convex hulls after all nodes/links (Pitfall 3: canvas layer, not DOM overlay)
+        onRenderFramePost={(ctx: CanvasRenderingContext2D, globalScale: number) => {
+          if (!clusterInfos || clusterInfos.length === 0) return
+
+          // Build position map from current node positions
+          const posMap = new Map<string, { x: number; y: number }>()
+          for (const node of stableGraphData.nodes) {
+            const n = node as GraphNode
+            if (n.x !== undefined && n.y !== undefined) {
+              posMap.set(n.id, { x: n.x, y: n.y })
+            }
+          }
+
+          for (const cluster of clusterInfos) {
+            const hull = computeClusterHull(cluster.nodeIds, posMap, 25 / globalScale)
+            if (!hull || hull.length < 3) continue
+
+            // Draw filled hull — 8% opacity per CONTEXT.md
+            ctx.beginPath()
+            ctx.moveTo(hull[0][0], hull[0][1])
+            for (let i = 1; i < hull.length; i++) {
+              ctx.lineTo(hull[i][0], hull[i][1])
+            }
+            ctx.closePath()
+            ctx.fillStyle = hexToRgba(cluster.dominantColor, 0.08)
+            ctx.fill()
+
+            // Draw border — 15% opacity per CONTEXT.md
+            ctx.strokeStyle = hexToRgba(cluster.dominantColor, 0.15)
+            ctx.lineWidth = 1 / globalScale
+            ctx.setLineDash([])
+            ctx.stroke()
+
+            // Cluster label at centroid — low opacity
+            const cx = hull.reduce((s, p) => s + p[0], 0) / hull.length
+            const cy = hull.reduce((s, p) => s + p[1], 0) / hull.length
+            const fontSize = Math.max(12 / globalScale, 4)
+            ctx.font = `500 ${fontSize}px ui-sans-serif, system-ui, sans-serif`
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillStyle = hexToRgba(cluster.dominantColor, 0.25)
+            ctx.fillText(cluster.label, cx, cy)
+          }
         }}
         backgroundColor="#050510"
         width={undefined}
