@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Phase complete — ready for verification
-stopped_at: Completed 18-01-PLAN.md — schema migration framework + v5.0 columns
-last_updated: "2026-03-27T21:12:28.442Z"
+status: Ready to execute
+stopped_at: Completed 19-01-PLAN.md — dedup classification pipeline
+last_updated: "2026-03-27T21:44:41.432Z"
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 4
+  completed_plans: 2
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 18 — schema-foundation
+**Current focus:** Phase 19 — temporal-versioning-dedup-resolution
 
 ## Current Position
 
-Phase: 18 (schema-foundation) — EXECUTING
-Plan: 1 of 1
+Phase: 19 (temporal-versioning-dedup-resolution) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -42,6 +42,7 @@ Plan: 1 of 1
 
 *Updated after each plan completion*
 | Phase 18 P01 | 3 | 2 tasks | 6 files |
+| Phase 19-temporal-versioning-dedup-resolution P01 | 215 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -58,6 +59,9 @@ Recent decisions affecting current work:
 - [Phase 18]: columnExists() guards in migrations 002-005 handle v4.0 databases that already have those columns — avoids duplicate column errors without try/catch
 - [Phase 18]: Per-migration db.transaction() wrappers isolate failures; a partial failure rolls back only that migration, not prior work
 - [Phase 18]: NOT NULL columns with DB defaults typed as required number in TypeScript; nullable columns typed as optional string | null
+- [Phase 19-temporal-versioning-dedup-resolution]: Embedding fetched before classifyObservation — KNN near-dup check needs embedding upfront
+- [Phase 19-temporal-versioning-dedup-resolution]: UPDATE transaction wraps retire+FTS insert only — vec embedding insert outside transaction
+- [Phase 19-temporal-versioning-dedup-resolution]: valid_from = now matches created_at on new observations — same timestamp at insert time
 
 ### Pending Todos
 
@@ -71,6 +75,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T21:12:28.437Z
-Stopped at: Completed 18-01-PLAN.md — schema migration framework + v5.0 columns
+Last session: 2026-03-27T21:44:41.428Z
+Stopped at: Completed 19-01-PLAN.md — dedup classification pipeline
 Resume file: None
