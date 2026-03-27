@@ -81,9 +81,9 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
   2. A `schema_migrations` table exists in the database and contains one row per migration that has been applied, with a timestamp
   3. All v5.0 columns (`valid_from`, `valid_until`, `last_accessed_at`, `decay_exempt`, `strength`, `reinforcement_count`, `merged_into`) exist on their respective tables after startup
   4. TypeScript interfaces in `packages/core/src/types.ts` reflect the new columns — no `any` casts required to access them
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 18-01-PLAN.md — Migration framework + absorb existing try/catch ALTER TABLEs
+- [x] 18-01-PLAN.md — Migration framework + absorb existing try/catch ALTER TABLEs
 - [ ] 18-02-PLAN.md — v5.0 schema columns, TypeScript types, prepared statements
 
 ### Phase 19: Temporal Versioning + Dedup Resolution
@@ -164,7 +164,7 @@ Plans:
 | 15. Timeline Animation | v4.0 | 1/1 | Complete | 2026-03-27 |
 | 16. Home Page Enhancements | v4.0 | 2/2 | Complete | 2026-03-27 |
 | 17. Approvals Overhaul | v4.0 | 2/2 | Complete | 2026-03-27 |
-| 18. Schema Foundation | v5.0 | 0/2 | Not started | - |
+| 18. Schema Foundation | v5.0 | 1/2 | In Progress|  |
 | 19. Temporal Versioning + Dedup Resolution | v5.0 | 0/? | Not started | - |
 | 20. Relationship Strength Scoring | v5.0 | 0/? | Not started | - |
 | 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |

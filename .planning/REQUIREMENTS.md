@@ -9,8 +9,8 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 
 ### Schema & Infrastructure
 
-- [ ] **INFRA-01**: System uses a versioned schema migration framework instead of try/catch ALTER TABLE pattern
-- [ ] **INFRA-02**: Existing databases upgrade cleanly on startup with no data loss
+- [x] **INFRA-01**: System uses a versioned schema migration framework instead of try/catch ALTER TABLE pattern
+- [x] **INFRA-02**: Existing databases upgrade cleanly on startup with no data loss
 
 ### Temporal Versioning
 

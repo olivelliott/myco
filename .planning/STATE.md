@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Ready to plan
-stopped_at: v5.0 roadmap created — Phase 18 ready to plan
-last_updated: "2026-03-27"
+status: Ready to execute
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-03-27T20:35:39.452Z"
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 18 — Schema Foundation
+**Current focus:** Phase 18 — schema-foundation
 
 ## Current Position
 
-Phase: 18 (schema-foundation) — READY TO PLAN
-Plan: 0 of ?
+Phase: 18 (schema-foundation) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -41,6 +41,7 @@ Plan: 0 of ?
 | - | - | - | - |
 
 *Updated after each plan completion*
+| Phase 18 P01 | 1m | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -54,6 +55,8 @@ Recent decisions affecting current work:
 - [v5.0 research]: Relationship strength updated only on `remember` (not `recall`) to avoid write amplification
 - [v5.0 research]: `computeEffectiveConfidence` is a pure function at read time — no write-back to DB
 - [v5.0 research]: Phase 18 must land before any other v5.0 phase — migration framework prerequisite
+- [Phase 18]: Migration up() functions use try/catch on ALTER TABLE ADD COLUMN to handle existing databases with columns from the old pattern; schema_migrations INSERT happens after success so restarts skip them
+- [Phase 18]: runMigrations wraps each migration in db.transaction() so partial failures leave no partial state
 
 ### Pending Todos
 
@@ -67,6 +70,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27
-Stopped at: v5.0 roadmap written — ROADMAP.md and STATE.md created, REQUIREMENTS.md traceability updated
+Last session: 2026-03-27T20:35:39.448Z
+Stopped at: Completed 18-01-PLAN.md
 Resume file: None
