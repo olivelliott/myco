@@ -61,7 +61,8 @@ function GraphPage() {
 
   // Timeline
   const [timelineEnabled, setTimelineEnabled] = useState(false)
-  const [timelineDate, setTimelineDate] = useState<string>('')
+  // Shared ref: canvas painter reads this directly — no React re-renders during playback (Pitfall 2 fix)
+  const timelineCutoffRef = useRef<number>(Infinity)
 
   // Panels
   const [legendOpen, setLegendOpen] = useState(false)
@@ -71,67 +72,64 @@ function GraphPage() {
   const [clustersEnabled, setClustersEnabled] = useState(false)
   const [confidenceThreshold, setConfidenceThreshold] = useState(0)
 
-  // Compute date range for timeline
+  // Compute date range for timeline — ms timestamps
   const dateRange = useMemo(() => {
-    if (!data?.nodes?.length) return { min: '', max: '' }
+    if (!data?.nodes?.length) return { min: 0, max: 0, minStr: '', maxStr: '' }
     const dates = data.nodes
       .map((n) => n.created_at)
       .filter(Boolean)
       .sort()
+    const minStr = dates[0] || new Date().toISOString()
+    const maxStr = dates[dates.length - 1] || new Date().toISOString()
     return {
-      min: dates[0] || new Date().toISOString(),
-      max: dates[dates.length - 1] || new Date().toISOString(),
+      min: new Date(minStr).getTime(),
+      max: new Date(maxStr).getTime(),
+      minStr,
+      maxStr,
     }
   }, [data])
 
-  // Initialize timeline date to max
+  // When timeline toggles ON: set cutoff to min (start from earliest)
+  // When toggled OFF: set cutoff to Infinity (show everything)
   useEffect(() => {
-    if (timelineEnabled && !timelineDate && dateRange.max) {
-      setTimelineDate(dateRange.max)
+    if (timelineEnabled && dateRange.min) {
+      timelineCutoffRef.current = dateRange.min
+    } else {
+      timelineCutoffRef.current = Infinity
     }
-  }, [timelineEnabled, timelineDate, dateRange.max])
+  }, [timelineEnabled, dateRange.min])
 
-  // Filter data by timeline
-  const filteredData = useMemo(() => {
-    if (!data) return data
-    if (!timelineEnabled || !timelineDate) return data
+  // onScrub: slider calls this when manually scrubbed (already updated the ref)
+  const handleScrub = useCallback((ms: number) => {
+    timelineCutoffRef.current = ms
+  }, [])
 
-    const cutoff = new Date(timelineDate).getTime()
-    const nodes = data.nodes.filter(
-      (n) => !n.created_at || new Date(n.created_at).getTime() <= cutoff,
-    )
-    const nodeIds = new Set(nodes.map((n) => n.id))
-    const links = data.links.filter(
-      (l) =>
-        nodeIds.has(l.source as string) &&
-        nodeIds.has(l.target as string) &&
-        (!l.created_at || new Date(l.created_at).getTime() <= cutoff),
-    )
-    return { nodes, links }
-  }, [data, timelineEnabled, timelineDate])
+  // Always pass ALL data to GraphView — timeline visibility is purely visual via canvas painter
+  // This is the critical Pitfall 1 fix: graphData reference never changes during timeline playback
+  const displayData = data
 
   // Compute Louvain community clusters when clusters toggle is enabled
   const clusterInfos = useMemo<ClusterInfo[] | null>(() => {
-    if (!clustersEnabled || !filteredData?.nodes?.length) return null
+    if (!clustersEnabled || !data?.nodes?.length) return null
     const communityMap = detectCommunities(
-      filteredData.nodes,
-      filteredData.links.map((l) => ({
+      data.nodes,
+      data.links.map((l) => ({
         source: typeof l.source === 'string' ? l.source : (l.source as any).id,
         target: typeof l.target === 'string' ? l.target : (l.target as any).id,
       }))
     )
-    return buildClusterInfos(communityMap, filteredData.nodes, getNodeColor)
-  }, [clustersEnabled, filteredData])
+    return buildClusterInfos(communityMap, data.nodes, getNodeColor)
+  }, [clustersEnabled, data])
 
   // Path tracing computation
   const pathResult = useMemo(() => {
-    if (modeState.type !== 'path' || !modeState.source || !modeState.target || !filteredData) return null
-    const stringLinks = filteredData.links.map((l) => ({
+    if (modeState.type !== 'path' || !modeState.source || !modeState.target || !data) return null
+    const stringLinks = data.links.map((l) => ({
       source: typeof l.source === 'string' ? l.source : (l.source as any).id,
       target: typeof l.target === 'string' ? l.target : (l.target as any).id,
     }))
     return bfs(modeState.source, modeState.target, stringLinks)
-  }, [modeState, filteredData])
+  }, [modeState, data])
 
   const highlightedPath = useMemo(() => {
     if (!pathResult) return null
@@ -144,16 +142,16 @@ function GraphPage() {
 
   const neighborhoodData = useNeighborhood(
     neighborhoodCenterId,
-    filteredData?.nodes ?? [],
-    filteredData?.links ?? [],
+    data?.nodes ?? [],
+    data?.links ?? [],
     neighborhoodDepth as 1 | 2,
   )
 
   const pathInfo = useMemo(() => {
-    if (!pathResult || !filteredData) return null
-    const nodeMap = new Map(filteredData.nodes.map((n: { id: string; name: string }) => [n.id, n.name]))
+    if (!pathResult || !data) return null
+    const nodeMap = new Map(data.nodes.map((n: { id: string; name: string }) => [n.id, n.name]))
     return pathResult.map((id) => nodeMap.get(id) ?? id).join(' -> ')
-  }, [pathResult, filteredData])
+  }, [pathResult, data])
 
   const lastClickRef = useRef<{ id: string; time: number } | null>(null)
 
@@ -219,7 +217,7 @@ function GraphPage() {
       </div>
     )
 
-  if (!isLoading && (!filteredData?.nodes || filteredData.nodes.length === 0))
+  if (!isLoading && (!displayData?.nodes || displayData.nodes.length === 0))
     return (
       <div className="text-center py-12">
         <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -233,16 +231,18 @@ function GraphPage() {
 
   return (
     <div className="relative h-[calc(100vh-theme(spacing.12))]">
-      {filteredData && (
+      {displayData && (
         <GraphView
-          nodes={filteredData.nodes}
-          links={filteredData.links}
+          nodes={displayData.nodes}
+          links={displayData.links}
           onNodeClick={handleNodeClick}
           onNodeHover={handleNodeHover}
           highlightedPath={highlightedPath}
           neighborhoodData={neighborhoodData}
           clusterInfos={clusterInfos}
           confidenceThreshold={confidenceThreshold}
+          timelineCutoffRef={timelineEnabled ? timelineCutoffRef : undefined}
+          timelineActive={timelineEnabled}
         />
       )}
 
@@ -269,7 +269,7 @@ function GraphPage() {
         }}
         neighborhoodCenter={
           modeState.type === 'neighborhood'
-            ? (filteredData?.nodes.find((n) => n.id === modeState.centerId)?.name ?? null)
+            ? (displayData?.nodes.find((n) => n.id === modeState.centerId)?.name ?? null)
             : null
         }
         neighborhoodDepth={modeState.type === 'neighborhood' ? modeState.depth : 1}
@@ -293,21 +293,21 @@ function GraphPage() {
 
       {legendOpen && <GraphLegend />}
 
-      {analyticsOpen && filteredData && (
+      {analyticsOpen && displayData && (
         <GraphAnalytics
-          nodes={filteredData.nodes}
-          links={filteredData.links}
+          nodes={displayData.nodes}
+          links={displayData.links}
           hoveredNode={hoveredNode}
           onNodeFocus={handleNodeFocus}
         />
       )}
 
-      {timelineEnabled && dateRange.min && (
+      {timelineEnabled && dateRange.min > 0 && (
         <TimelineSlider
-          minDate={dateRange.min}
-          maxDate={dateRange.max}
-          currentDate={timelineDate || dateRange.max}
-          onDateChange={setTimelineDate}
+          minMs={dateRange.min}
+          maxMs={dateRange.max}
+          cutoffRef={timelineCutoffRef}
+          onScrub={handleScrub}
         />
       )}
 
