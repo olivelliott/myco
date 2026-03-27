@@ -124,13 +124,13 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     // ── Observation statements ─────────────────────────────────────────────
     insertObservation: db.prepare(
-      `INSERT INTO observations (id, entity_id, content, metadata, session_id, agent_id, source_type, confidence, created_at)
-       VALUES (?, ?, ?, '{}', ?, ?, ?, ?, ?)`
+      `INSERT INTO observations (id, entity_id, content, metadata, session_id, agent_id, source_type, confidence, created_at, valid_from)
+       VALUES (?, ?, ?, '{}', ?, ?, ?, ?, ?, ?)`
     ),
 
     insertObservationWithEmbeddingFlag: db.prepare(
-      `INSERT INTO observations (id, entity_id, content, metadata, session_id, agent_id, source_type, confidence, created_at, needs_embedding)
-       VALUES (?, ?, ?, '{}', ?, ?, ?, ?, ?, 1)`
+      `INSERT INTO observations (id, entity_id, content, metadata, session_id, agent_id, source_type, confidence, created_at, needs_embedding, valid_from)
+       VALUES (?, ?, ?, '{}', ?, ?, ?, ?, ?, 1, ?)`
     ),
 
     flagObservationNeedsEmbedding: db.prepare(

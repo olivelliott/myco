@@ -98,7 +98,7 @@ export function approvalsRoutes(db: Database.Database, stmts: MycoStatements): H
 
       // Insert observation with needs_embedding=1 (MCP server startup sweep handles embedding)
       const obsId = nanoid();
-      stmts.insertObservationWithEmbeddingFlag.run(obsId, entityId, observationText, 'api-server', 'api-server', 'consolidation', meta.fact.confidence, now);
+      stmts.insertObservationWithEmbeddingFlag.run(obsId, entityId, observationText, 'api-server', 'api-server', 'consolidation', meta.fact.confidence, now, now);
 
       // Insert FTS index entry
       stmts.insertFtsObservation.run(observationText, obsId);

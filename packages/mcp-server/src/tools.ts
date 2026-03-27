@@ -6,6 +6,7 @@ import type { SourceType } from '@myco/core';
 import type { MycoStatements } from '@myco/core';
 import { nanoid } from 'nanoid';
 import { embedText, embedBatch } from './embed-client.js';
+import { classifyObservation, retireObservation } from './dedup.js';
 import { runConsolidation } from './consolidator.js';
 import { discoverRelationships, createBackLinks, invalidateEntityCache } from './relationship-discovery.js';
 
@@ -110,25 +111,49 @@ export async function rememberEntity(
     invalidateEntityCache();
   }
 
-  // Always add the observation
   const obsId = nanoid();
-  stmts.insertObservation.run(
-    obsId, entityId, content,
-    prov.session_id, prov.agent_id, prov.source_type, prov.confidence, prov.created_at,
-  );
+  const now = new Date().toISOString();
 
-  // Insert into FTS5 index for full-text search fallback
-  stmts.insertFtsObservation.run(content, obsId);
-
-  // Attempt embedding via Ollama (SRCH-01 inline embedding)
+  // Get embedding BEFORE classification (needed for near-dup check)
   const embedding = await embedText(content);
+  const vec = embedding !== null ? new Float32Array(embedding) : null;
 
-  if (embedding !== null) {
-    const vec = new Float32Array(embedding);
-    stmts.insertVecEmbedding.run(obsId, 'observation', vec);
+  // Classify: ADD / UPDATE / NOOP
+  const classification = classifyObservation(db, entityId, content, vec, stmts);
+
+  if (classification.action === 'NOOP') {
+    // Duplicate — skip observation insert, but still update entity timestamp
+    if (existingEntity) {
+      stmts.updateEntityTimestampConfidence.run(now, prov.confidence, entityId);
+    }
+    // Relations are still processed below (they may be new)
+  } else if (classification.action === 'UPDATE') {
+    // Near-duplicate — atomically retire old and insert new
+    db.transaction(() => {
+      retireObservation(db, classification.retireId, now);
+      stmts.insertObservation.run(
+        obsId, entityId, content,
+        prov.session_id, prov.agent_id, prov.source_type, prov.confidence, now, now,
+      );
+      stmts.insertFtsObservation.run(content, obsId);
+    })();
+    if (vec !== null) {
+      stmts.insertVecEmbedding.run(obsId, 'observation', vec);
+    } else {
+      stmts.flagObservationNeedsEmbedding.run(obsId);
+    }
   } else {
-    // Ollama unavailable — flag for later re-embedding (SRCH-04)
-    stmts.flagObservationNeedsEmbedding.run(obsId);
+    // ADD — insert new observation
+    stmts.insertObservation.run(
+      obsId, entityId, content,
+      prov.session_id, prov.agent_id, prov.source_type, prov.confidence, now, now,
+    );
+    stmts.insertFtsObservation.run(content, obsId);
+    if (vec !== null) {
+      stmts.insertVecEmbedding.run(obsId, 'observation', vec);
+    } else {
+      stmts.flagObservationNeedsEmbedding.run(obsId);
+    }
   }
 
   // Handle optional relations
@@ -158,8 +183,7 @@ export async function rememberEntity(
   }
 
   // Auto-discover relationships from observation text and embedding
-  const embeddingVec = embedding !== null ? new Float32Array(embedding) : null;
-  await discoverRelationships(db, entityId, content, embeddingVec, stmts);
+  await discoverRelationships(db, entityId, content, vec, stmts);
 
   // If this is a new entity, create back-links from existing observations
   if (!existingEntity) {
@@ -170,9 +194,10 @@ export async function rememberEntity(
     content: [
       {
         type: 'text' as const,
-        text: `Stored entity "${entity_name}" (${entityId}) with observation.`,
+        text: `Stored entity "${entity_name}" (${entityId}) with observation (${classification.action}).`,
       },
     ],
+    action: classification.action,
   };
 }
 

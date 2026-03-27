@@ -119,7 +119,7 @@ describe('prepareStatements', () => {
     stmts.insertEntity.run(entityId, 'Rust', 'technology', 'test-session', 'test-agent', 'agent_session', 1.0, now, now, null);
 
     // Insert observation
-    stmts.insertObservation.run(obsId, entityId, 'Rust is memory safe', 'test-session', 'test-agent', 'agent_session', 1.0, now);
+    stmts.insertObservation.run(obsId, entityId, 'Rust is memory safe', 'test-session', 'test-agent', 'agent_session', 1.0, now, now);
 
     // Select observations by entity
     const rows = stmts.selectObservationsByEntityId.all(entityId) as Array<{ id: string; content: string }>;
@@ -165,7 +165,7 @@ describe('prepareStatements', () => {
     const obsId = 'test-obs-flag';
 
     stmts.insertEntity.run(entityId, 'FlagTest', 'concept', 'test-session', 'test-agent', 'agent_session', 1.0, now, now, null);
-    stmts.insertObservation.run(obsId, entityId, 'Test content', 'test-session', 'test-agent', 'agent_session', 1.0, now);
+    stmts.insertObservation.run(obsId, entityId, 'Test content', 'test-session', 'test-agent', 'agent_session', 1.0, now, now);
 
     // Flag for re-embedding
     stmts.flagObservationNeedsEmbedding.run(obsId);
@@ -211,7 +211,7 @@ describe('prepareStatements', () => {
     const obsId = 'obs-fts-1';
 
     stmts.insertEntity.run(entityId, 'FtsEntity', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
-    stmts.insertObservation.run(obsId, entityId, 'FtsEntity is useful', 'ses', 'ag', 'agent_session', 1.0, now);
+    stmts.insertObservation.run(obsId, entityId, 'FtsEntity is useful', 'ses', 'ag', 'agent_session', 1.0, now, now);
     stmts.insertFtsObservation.run('FtsEntity is useful', obsId);
 
     const rows = stmts.ftsSearchEntityMentions.all('"FtsEntity"') as Array<{ entity_id: string }>;
