@@ -12,20 +12,17 @@ Open source under Apache 2.0. Everything runs locally — SQLite, Ollama, no clo
 
 Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
 
-## Current Milestone: v5.0 Feature Parity & Differentiation
+## Current Milestone: v6.0 Proactive Knowledge & Onboarding
 
-**Goal:** Close competitive gaps and add differentiating features that make Myco the most capable local-first MCP memory server.
+**Goal:** Make Myco's knowledge graph proactively useful — easy to populate via guided onboarding, automatically surfaced at session start, and easy to correct when knowledge becomes wrong or outdated.
 
 **Target features:**
-- Import/export: JSON export of entire knowledge graph, import from Mem0/reference server formats
-- Temporal fact versioning: facts track when they changed, query "what was true at time X"
-- Auto-entity extraction: passive knowledge capture from conversations, not just explicit `remember`
-- Auto-dedup / conflict resolution: intelligent ADD/UPDATE/DELETE/NOOP when new memories conflict with existing
-- Incremental consolidation: consolidate on-the-fly as memories are added, nightly cycle for deeper analysis
-- Codebase-to-graph ingestion: `codify` tool that turns project structure/conventions into graph knowledge
-- REST API for non-MCP access: expose memory operations over HTTP for LangGraph, CrewAI, etc.
-- Memory importance decay: unreinforced facts fade over time, keeping the graph fresh
-- Relationship strength scoring: edges weighted by reinforcement frequency and recency
+- Project onboarding walkthrough (`myco init`): agent scans codebase, infers project knowledge/conventions/user preferences, presents summary for approval before committing to graph
+- Workflow rules as first-class entities: actionable instructions ("update docs before committing") stored and reliably surfaced, not just passive memories
+- Automatic session-start recall: Myco proactively surfaces relevant project context, user preferences, and workflow rules based on working directory
+- Smart context scoping: working directory maps to project entity, pulls the right knowledge subset
+- User preference accumulation: preferences inferred from any project attach to global user entity with project as evidence
+- Knowledge correction & evolution: "update this" / "I changed my mind" flow that finds, shows, and supersedes stale knowledge in place
 
 ## Current State
 
@@ -97,6 +94,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - **v2.0** (2026-03-22) — Rename to Myco, Apache 2.0 open source, tech debt cleanup
 - **v3.0** (2026-03-26) — Performance & architecture: config, prepared statements, query filters, error handling, namespace isolation
 - **v4.0** (2026-03-27) — Dashboard & graph experience: bioluminescent theme, graph core features, timeline, approvals refresh
+- **v5.0** (in progress, worktree) — Feature parity & differentiation: temporal versioning, dedup, decay, strength, REST write routes, auto-extraction
 
 ### Out of Scope
 
@@ -111,7 +109,8 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - v2.0 shipped 2026-03-22 — rename to Myco, open source packaging, tech debt cleanup
 - v3.0 shipped 2026-03-26 — 20 requirements validated across 4 phases (config, prepared statements, query filters, error handling, namespace isolation)
 - v4.0 shipped 2026-03-27 — dashboard & graph experience overhaul
-- v5.0 started 2026-03-27 — feature parity & differentiation (driven by competitive analysis vs Mem0, Zep, Cognee, mcp-memory-service)
+- v5.0 started 2026-03-27 — feature parity & differentiation (driven by competitive analysis vs Mem0, Zep, Cognee, mcp-memory-service) — running in separate worktree
+- v6.0 started 2026-03-27 — proactive knowledge & onboarding (make knowledge graph actively useful in every session)
 - 98 tests passing across 6 test files (core, mcp-server, gsd-hook, statements, embed-client, recall-filters)
 - Design direction: bioluminescent deep-sea aesthetic — dark void, rich glows, organic depth, mycorrhizal metaphor
 - Vercel AI SDK v4.3.19 used for consolidation (v6 incompatible with ollama-ai-provider)
@@ -170,4 +169,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after v5.0 milestone start*
+*Last updated: 2026-03-27 after v6.0 milestone start*

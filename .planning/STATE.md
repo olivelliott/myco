@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Feature Parity & Differentiation
-status: Ready to execute
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-03-27T20:52:09.205Z"
+milestone: v6.0
+milestone_name: Proactive Knowledge & Onboarding
+status: Defining requirements
+stopped_at: null
+last_updated: "2026-03-27T23:00:00.000Z"
 progress:
-  total_phases: 6
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 3
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -19,12 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 19 — temporal-versioning-dedup-resolution
+**Current focus:** Defining requirements for v6.0
 
 ## Current Position
 
-Phase: 19 (temporal-versioning-dedup-resolution) — EXECUTING
-Plan: 2 of 2
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-27 — Milestone v6.0 started
 
 ## Performance Metrics
 
