@@ -75,9 +75,10 @@ Recent decisions affecting current work:
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260327-f8o | Build brain forget MCP tool for removing entities, observations, or relationships | 2026-03-27 | 8ad8e06 | [260327-f8o-build-brain-forget-mcp-tool-for-removing](./quick/260327-f8o-build-brain-forget-mcp-tool-for-removing/) |
+| 260327-hr6 | Rename brain.db to myco.db and BRAIN_* env vars to MYCO_* across entire codebase | 2026-03-27 | 9752be5 | [260327-hr6-rename-brain-db-to-myco-db-and-brain-env](./quick/260327-hr6-rename-brain-db-to-myco-db-and-brain-env/) |
 
 ## Session Continuity
 
 Last session: 2026-03-27
-Stopped at: v4.0 roadmap created — ready to plan Phase 13
+Stopped at: Completed quick-260327-hr6 (brain-to-myco rename)
 Resume file: None
