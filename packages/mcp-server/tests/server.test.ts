@@ -5,7 +5,7 @@ import { rmSync, mkdirSync } from 'node:fs';
 import { openDatabase, prepareStatements } from '@myco/core';
 import type Database from 'better-sqlite3';
 import type { MycoStatements } from '@myco/core';
-import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending, forgetEntity } from '../src/tools.js';
+import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending, forgetEntity, mergeEntities } from '../src/tools.js';
 import * as embedClient from '../src/embed-client.js';
 
 const testDir = join(tmpdir(), 'myco-mcp-test-' + process.pid);
@@ -172,6 +172,10 @@ describe('MCP server tools', () => {
     });
 
     it('reuses existing entity when called again with same name+type', async () => {
+      // Disable Ollama embeddings so dedup falls back to exact string match.
+      // "First observation" != "Second observation" → both classified ADD.
+      const spy = vi.spyOn(embedClient, 'embedText').mockResolvedValue(null);
+
       await rememberEntity(db, {
         content: 'First observation',
         entity_name: 'TypeScript',
@@ -183,6 +187,8 @@ describe('MCP server tools', () => {
         entity_name: 'TypeScript',
         entity_type: 'technology',
       }, stmts);
+
+      spy.mockRestore();
 
       const entities = db.prepare('SELECT * FROM entities WHERE name = ?').all('TypeScript') as unknown[];
       const observations = db.prepare('SELECT * FROM observations WHERE entity_id = (SELECT id FROM entities WHERE name = ?)').all('TypeScript') as unknown[];
@@ -487,6 +493,10 @@ describe('MCP server tools', () => {
     });
 
     it('forgets single observation by ID, leaving entity intact', async () => {
+      // Disable Ollama embeddings so dedup falls back to exact string match.
+      // The two observations have different content → both classified ADD.
+      const spy = vi.spyOn(embedClient, 'embedText').mockResolvedValue(null);
+
       await rememberEntity(db, {
         content: 'First observation about SQLite',
         entity_name: 'SQLite',
@@ -498,6 +508,8 @@ describe('MCP server tools', () => {
         entity_name: 'SQLite',
         entity_type: 'technology',
       }, stmts);
+
+      spy.mockRestore();
 
       const entity = db.prepare('SELECT id FROM entities WHERE name = ?').get('SQLite') as { id: string };
       const observations = db.prepare('SELECT id FROM observations WHERE entity_id = ?').all(entity.id) as Array<{ id: string }>;
@@ -588,5 +600,315 @@ describe('MCP server tools', () => {
       const { registerTools } = await import('../src/tools.js');
       expect(typeof registerTools).toBe('function');
     });
+  });
+});
+
+// ── Helper: create a normalized unit vector for controlled test embeddings ──
+// Uses 768 dimensions (nomic-embed-text). Set one dimension to 1.0, rest 0.
+// Two orthogonal vectors have euclidean distance sqrt(2) (~1.414) — well above UPDATE_THRESHOLD.
+// Two near-identical vectors have euclidean distance near 0 — well below NOOP_THRESHOLD.
+function makeUnitVec(primaryDim: number): Float32Array {
+  const arr = new Float32Array(768);
+  arr[primaryDim] = 1.0;
+  return arr;
+}
+
+// A vector that is "close but not identical" to dim 0:
+// weights dim 0 at ~0.866, dim 1 at ~0.5 → euclidean dist to makeUnitVec(0) ≈ 0.518
+// which is in UPDATE range (0.40 < 0.518 < 0.84)
+function makeUpdateVec(): Float32Array {
+  const arr = new Float32Array(768);
+  arr[0] = Math.sqrt(3) / 2;  // ~0.866
+  arr[1] = 0.5;
+  return arr;
+}
+
+// A near-duplicate of dim 0 (tiny perturbation): euclidean dist ≈ 0.00005 < NOOP_THRESHOLD
+function makeNearDuplicateVec(): Float32Array {
+  const arr = new Float32Array(768);
+  const eps = 0.0001;
+  arr[0] = Math.sqrt(1 - eps * eps);
+  arr[1] = eps;
+  return arr;
+}
+
+describe('dedup classification in rememberEntity', () => {
+  let db: Database.Database;
+  let stmts: MycoStatements;
+
+  beforeEach(() => {
+    mkdirSync(testDir, { recursive: true });
+    db = openDatabase(join(testDir, `dedup-${Date.now()}.db`));
+    stmts = prepareStatements(db);
+  });
+
+  afterEach(() => {
+    db.close();
+    rmSync(testDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it('skips duplicate observation (NOOP) — observation count stays at 1', async () => {
+    // Both calls return near-identical vectors
+    const spy = vi.spyOn(embedClient, 'embedText')
+      .mockResolvedValueOnce(Array.from(makeUnitVec(0)))  // first remember: seeds embedding
+      .mockResolvedValueOnce(Array.from(makeNearDuplicateVec())); // classify: near-dup
+
+    // First call — inserts observation + embedding
+    await rememberEntity(db, {
+      content: 'TypeScript version is 5.8',
+      entity_name: 'TypeScript',
+      entity_type: 'technology',
+    }, stmts);
+
+    // Second call with same content — should be NOOP
+    const result = await rememberEntity(db, {
+      content: 'TypeScript version is 5.8',
+      entity_name: 'TypeScript',
+      entity_type: 'technology',
+    }, stmts);
+
+    spy.mockRestore();
+
+    // Response should indicate skip
+    expect(result.content[0].text).toMatch(/skipped|already exists/i);
+
+    // Only one observation row should exist
+    const entity = db.prepare('SELECT id FROM entities WHERE name = ?').get('TypeScript') as { id: string };
+    const count = db.prepare('SELECT COUNT(*) as n FROM observations WHERE entity_id = ?').get(entity.id) as { n: number };
+    expect(count.n).toBe(1);
+  });
+
+  it('retires old observation on UPDATE — both rows exist, old has valid_until', async () => {
+    // First remember: seeds dimension 0 vector
+    const spy = vi.spyOn(embedClient, 'embedText')
+      .mockResolvedValueOnce(Array.from(makeUnitVec(0)))  // first insert embedding
+      .mockResolvedValueOnce(Array.from(makeUpdateVec())) // classify second content: UPDATE range
+      .mockResolvedValueOnce(Array.from(makeUpdateVec())); // second insert embedding
+
+    await rememberEntity(db, {
+      content: 'TypeScript version is 5.8',
+      entity_name: 'TypeScript',
+      entity_type: 'technology',
+    }, stmts);
+
+    await rememberEntity(db, {
+      content: 'TypeScript version is 5.9',
+      entity_name: 'TypeScript',
+      entity_type: 'technology',
+    }, stmts);
+
+    spy.mockRestore();
+
+    const entity = db.prepare('SELECT id FROM entities WHERE name = ?').get('TypeScript') as { id: string };
+    const observations = db.prepare(
+      'SELECT id, content, valid_from, valid_until FROM observations WHERE entity_id = ? ORDER BY created_at',
+    ).all(entity.id) as Array<{ id: string; content: string; valid_from: string | null; valid_until: string | null }>;
+
+    // Both rows must exist (soft-retire, not delete)
+    expect(observations).toHaveLength(2);
+
+    const old = observations.find(o => o.content === 'TypeScript version is 5.8');
+    const updated = observations.find(o => o.content === 'TypeScript version is 5.9');
+
+    expect(old).toBeDefined();
+    expect(updated).toBeDefined();
+
+    // Old observation must be retired
+    expect(old!.valid_until).not.toBeNull();
+
+    // New observation must have valid_from set
+    expect(updated!.valid_from).not.toBeNull();
+
+    // New observation must NOT be retired
+    expect(updated!.valid_until).toBeNull();
+  });
+
+  it('adds new observation for completely different topic (ADD) — both observations current', async () => {
+    const spy = vi.spyOn(embedClient, 'embedText')
+      .mockResolvedValueOnce(Array.from(makeUnitVec(0)))   // first insert embedding
+      .mockResolvedValueOnce(Array.from(makeUnitVec(400))) // classify second: perpendicular → ADD
+      .mockResolvedValueOnce(Array.from(makeUnitVec(400))); // second insert embedding
+
+    await rememberEntity(db, {
+      content: 'TypeScript is a strongly typed language',
+      entity_name: 'TypeScript',
+      entity_type: 'technology',
+    }, stmts);
+
+    await rememberEntity(db, {
+      content: 'TypeScript has excellent IDE support',
+      entity_name: 'TypeScript',
+      entity_type: 'technology',
+    }, stmts);
+
+    spy.mockRestore();
+
+    const entity = db.prepare('SELECT id FROM entities WHERE name = ?').get('TypeScript') as { id: string };
+    const observations = db.prepare(
+      'SELECT id, content, valid_until FROM observations WHERE entity_id = ?',
+    ).all(entity.id) as Array<{ id: string; content: string; valid_until: string | null }>;
+
+    expect(observations).toHaveLength(2);
+
+    // Both observations must be current (neither retired)
+    for (const obs of observations) {
+      expect(obs.valid_until).toBeNull();
+    }
+  });
+});
+
+describe('temporal recall with as_of', () => {
+  let db: Database.Database;
+  let stmts: MycoStatements;
+
+  beforeEach(() => {
+    mkdirSync(testDir, { recursive: true });
+    db = openDatabase(join(testDir, `temporal-${Date.now()}.db`));
+    stmts = prepareStatements(db);
+  });
+
+  afterEach(() => {
+    db.close();
+    rmSync(testDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it('returns observations valid at past timestamp (as_of)', async () => {
+    // Force FTS path (no Ollama) for predictable FTS results
+    vi.spyOn(embedClient, 'embedText').mockResolvedValue(null);
+
+    const now = new Date().toISOString();
+    const entityId = 'ent-temporal-test';
+    stmts.insertEntity.run(entityId, 'TemporalEntity', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+
+    // T1: insert first observation (valid_from = T1, valid_until = T2)
+    const T1 = new Date(Date.now() - 10000).toISOString();
+    const T2 = new Date(Date.now() - 5000).toISOString();
+    const T3 = new Date().toISOString();
+
+    stmts.insertObservationTemporal.run('obs-v1', entityId, 'TypeScript version five point eight', 'ses', 'ag', 'agent_session', 1.0, T1, T1);
+    stmts.retireObservation.run(T2, 'obs-v1');
+
+    // T3: insert second observation (valid_from = T3, valid_until = NULL — current)
+    stmts.insertObservationTemporal.run('obs-v2', entityId, 'TypeScript version five point nine', 'ses', 'ag', 'agent_session', 1.0, T3, T3);
+
+    // Also insert FTS entries for both
+    stmts.insertFtsObservation.run('TypeScript version five point eight', 'obs-v1');
+    stmts.insertFtsObservation.run('TypeScript version five point nine', 'obs-v2');
+
+    // Query as_of a time between T1 and T2 — should see v1, not v2
+    const asOfTime = new Date(Date.now() - 7000).toISOString();
+    const result = await recallKnowledge(db, {
+      query: 'TypeScript version',
+      limit: 10,
+      as_of: asOfTime,
+    }, stmts);
+
+    const parsed = JSON.parse(result.content[0].text) as {
+      results: Array<{ observation: string }>;
+    };
+
+    const observations = parsed.results.map(r => r.observation);
+    expect(observations.some(o => o.includes('five point eight'))).toBe(true);
+    expect(observations.some(o => o.includes('five point nine'))).toBe(false);
+  });
+
+  it('excludes retired observations from default recall (no as_of)', async () => {
+    vi.spyOn(embedClient, 'embedText').mockResolvedValue(null);
+
+    const now = new Date().toISOString();
+    const entityId = 'ent-retired-test';
+    stmts.insertEntity.run(entityId, 'RetiredTestEntity', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+
+    const T1 = new Date(Date.now() - 5000).toISOString();
+    const T2 = new Date().toISOString();
+
+    // Insert old (retired) observation
+    stmts.insertObservationTemporal.run('obs-retired', entityId, 'deprecated fact zerozerozero', 'ses', 'ag', 'agent_session', 1.0, T1, T1);
+    stmts.retireObservation.run(T2, 'obs-retired');
+    stmts.insertFtsObservation.run('deprecated fact zerozerozero', 'obs-retired');
+
+    // Insert current observation
+    stmts.insertObservationTemporal.run('obs-current', entityId, 'current fact oneoneone', 'ses', 'ag', 'agent_session', 1.0, T2, T2);
+    stmts.insertFtsObservation.run('current fact oneoneone', 'obs-current');
+
+    // Default recall (no as_of) — must NOT return retired observation
+    const result = await recallKnowledge(db, { query: 'deprecated fact zerozerozero', limit: 10 }, stmts);
+    const parsed = JSON.parse(result.content[0].text) as {
+      results: Array<{ observation: string }>;
+    };
+
+    const observations = parsed.results.map(r => r.observation);
+    expect(observations.some(o => o.includes('deprecated'))).toBe(false);
+  });
+});
+
+describe('entity merge', () => {
+  let db: Database.Database;
+  let stmts: MycoStatements;
+
+  beforeEach(() => {
+    mkdirSync(testDir, { recursive: true });
+    db = openDatabase(join(testDir, `merge-${Date.now()}.db`));
+    stmts = prepareStatements(db);
+  });
+
+  afterEach(() => {
+    db.close();
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it('soft-merges source into target: sets merged_into, moves observations, source row survives', () => {
+    const now = new Date().toISOString();
+
+    // Create two entities
+    stmts.insertEntity.run('ent-source', 'TypeScript', 'technology', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+    stmts.insertEntity.run('ent-target', 'TS', 'technology', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+
+    // Add observations to source
+    stmts.insertObservationTemporal.run('obs-s1', 'ent-source', 'Source fact one', 'ses', 'ag', 'agent_session', 1.0, now, now);
+    stmts.insertObservationTemporal.run('obs-s2', 'ent-source', 'Source fact two', 'ses', 'ag', 'agent_session', 1.0, now, now);
+
+    // Add a relationship on source
+    stmts.insertRelationship.run('rel-1', 'ent-source', 'ent-target', 'related_to', 'ses', 'ag', 'agent_session', 1.0, now);
+
+    const result = mergeEntities(db, stmts, 'ent-source', 'ent-target');
+
+    // Source entity row must still exist (NOT deleted)
+    const sourceRow = db.prepare('SELECT id, merged_into FROM entities WHERE id = ?').get('ent-source') as {
+      id: string; merged_into: string | null;
+    } | undefined;
+    expect(sourceRow).toBeDefined();
+    expect(sourceRow!.merged_into).toBe('ent-target');
+
+    // Observations must be moved to target
+    const targetObs = db.prepare('SELECT id FROM observations WHERE entity_id = ?').all('ent-target') as Array<{ id: string }>;
+    const obsIds = targetObs.map(o => o.id);
+    expect(obsIds).toContain('obs-s1');
+    expect(obsIds).toContain('obs-s2');
+
+    // No observations remain on source
+    const sourceObs = db.prepare('SELECT COUNT(*) as n FROM observations WHERE entity_id = ?').get('ent-source') as { n: number };
+    expect(sourceObs.n).toBe(0);
+
+    // Return value reports correct counts
+    expect(result.observations_moved).toBe(2);
+    expect(result.relationships_moved).toBeGreaterThanOrEqual(1);
+  });
+
+  it('merged source entity is excluded from selectAllEntityNames', () => {
+    const now = new Date().toISOString();
+
+    stmts.insertEntity.run('ent-src2', 'OldName', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+    stmts.insertEntity.run('ent-tgt2', 'NewName', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+
+    mergeEntities(db, stmts, 'ent-src2', 'ent-tgt2');
+
+    const names = stmts.selectAllEntityNames.all() as Array<{ id: string; name: string }>;
+    const nameList = names.map(n => n.name);
+
+    expect(nameList).toContain('NewName');
+    expect(nameList).not.toContain('OldName');
   });
 });
