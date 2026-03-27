@@ -1,12 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useGraph } from '../hooks/use-graph'
-import { GraphView, getLinkNodeId } from '../components/graph-view'
-import type { GraphNode, GraphLink } from '../components/graph-view'
+import { GraphView } from '../components/graph-view'
+import type { GraphNode } from '../components/graph-view'
 import { EntityPanel } from '../components/entity-panel'
 import { GraphToolbar } from '../components/graph-toolbar'
 import { GraphLegend } from '../components/graph-legend'
+import { GraphAnalytics } from '../components/graph-analytics'
 import { TimelineSlider } from '../components/timeline-slider'
+import { type GraphModeState, type GraphInteractionMode, DEFAULT_MODE_STATE } from '../lib/graph-types'
 
 export const Route = createFileRoute('/graph')({ component: GraphPage })
 
@@ -48,18 +50,18 @@ function bfs(
 function GraphPage() {
   const { data, isLoading, error } = useGraph()
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null)
 
-  // Path tracing
-  const [pathMode, setPathMode] = useState(false)
-  const [pathSource, setPathSource] = useState<string | null>(null)
-  const [pathTarget, setPathTarget] = useState<string | null>(null)
+  // Graph interaction mode system (replaces pathMode + pathSource + pathTarget)
+  const [modeState, setModeState] = useState<GraphModeState>(DEFAULT_MODE_STATE)
 
   // Timeline
   const [timelineEnabled, setTimelineEnabled] = useState(false)
   const [timelineDate, setTimelineDate] = useState<string>('')
 
-  // Legend
+  // Panels
   const [legendOpen, setLegendOpen] = useState(false)
+  const [analyticsOpen, setAnalyticsOpen] = useState(false)
 
   // Compute date range for timeline
   const dateRange = useMemo(() => {
@@ -102,14 +104,13 @@ function GraphPage() {
 
   // Path tracing computation
   const pathResult = useMemo(() => {
-    if (!pathSource || !pathTarget || !filteredData) return null
-    // Build string-id links for BFS
+    if (modeState.type !== 'path' || !modeState.source || !modeState.target || !filteredData) return null
     const stringLinks = filteredData.links.map((l) => ({
       source: typeof l.source === 'string' ? l.source : (l.source as any).id,
       target: typeof l.target === 'string' ? l.target : (l.target as any).id,
     }))
-    return bfs(pathSource, pathTarget, stringLinks)
-  }, [pathSource, pathTarget, filteredData])
+    return bfs(modeState.source, modeState.target, stringLinks)
+  }, [modeState, filteredData])
 
   const highlightedPath = useMemo(() => {
     if (!pathResult) return null
@@ -118,41 +119,49 @@ function GraphPage() {
 
   const pathInfo = useMemo(() => {
     if (!pathResult || !filteredData) return null
-    const nodeMap = new Map(filteredData.nodes.map((n) => [n.id, n.name]))
-    return pathResult.map((id) => nodeMap.get(id) ?? id).join(' → ')
+    const nodeMap = new Map(filteredData.nodes.map((n: { id: string; name: string }) => [n.id, n.name]))
+    return pathResult.map((id) => nodeMap.get(id) ?? id).join(' -> ')
   }, [pathResult, filteredData])
 
   const handleNodeClick = useCallback(
     (node: GraphNode) => {
-      if (pathMode) {
-        if (!pathSource) {
-          setPathSource(node.id)
-        } else if (!pathTarget && node.id !== pathSource) {
-          setPathTarget(node.id)
+      if (modeState.type === 'path') {
+        if (!modeState.source) {
+          setModeState({ type: 'path', source: node.id, target: null })
+        } else if (!modeState.target && node.id !== modeState.source) {
+          setModeState({ type: 'path', source: modeState.source, target: node.id })
         } else {
-          // Reset
-          setPathSource(node.id)
-          setPathTarget(null)
+          setModeState({ type: 'path', source: node.id, target: null })
         }
+      } else if (modeState.type === 'neighborhood') {
+        // Will be implemented in Plan 03
+        setSelectedNodeId(node.id)
       } else {
         setSelectedNodeId(node.id)
       }
     },
-    [pathMode, pathSource, pathTarget],
+    [modeState],
   )
 
-  // Escape exits path mode
+  const handleNodeHover = useCallback((node: GraphNode | null) => {
+    setHoveredNode(node)
+  }, [])
+
+  // Focus a node from analytics panel (select it to open entity panel)
+  const handleNodeFocus = useCallback((nodeId: string) => {
+    setSelectedNodeId(nodeId)
+  }, [])
+
+  // Escape exits any non-explore mode
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && pathMode) {
-        setPathMode(false)
-        setPathSource(null)
-        setPathTarget(null)
+      if (e.key === 'Escape' && modeState.type !== 'explore') {
+        setModeState(DEFAULT_MODE_STATE)
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [pathMode])
+  }, [modeState.type])
 
   if (error)
     return (
@@ -185,31 +194,50 @@ function GraphPage() {
           nodes={filteredData.nodes}
           links={filteredData.links}
           onNodeClick={handleNodeClick}
+          onNodeHover={handleNodeHover}
           highlightedPath={highlightedPath}
         />
       )}
 
       <GraphToolbar
-        pathMode={pathMode}
-        onTogglePathMode={() => {
-          setPathMode(!pathMode)
-          if (pathMode) {
-            setPathSource(null)
-            setPathTarget(null)
+        activeMode={modeState.type}
+        onModeChange={(mode: GraphInteractionMode) => {
+          if (mode === modeState.type) {
+            // Clicking active mode chip returns to explore
+            setModeState(DEFAULT_MODE_STATE)
+          } else if (mode === 'path') {
+            setModeState({ type: 'path', source: null, target: null })
+          } else if (mode === 'explore') {
+            setModeState(DEFAULT_MODE_STATE)
+          } else if (mode === 'neighborhood') {
+            // Neighborhood entry is via double-click; toolbar click activates mode indicator
+            setModeState(DEFAULT_MODE_STATE)
+          } else if (mode === 'search') {
+            setModeState({ type: 'search', query: '' })
           }
         }}
         pathInfo={pathInfo}
         onClearPath={() => {
-          setPathSource(null)
-          setPathTarget(null)
+          setModeState({ type: 'path', source: null, target: null })
         }}
         timelineEnabled={timelineEnabled}
         onToggleTimeline={() => setTimelineEnabled(!timelineEnabled)}
         legendOpen={legendOpen}
         onToggleLegend={() => setLegendOpen(!legendOpen)}
+        analyticsOpen={analyticsOpen}
+        onToggleAnalytics={() => setAnalyticsOpen(!analyticsOpen)}
       />
 
       {legendOpen && <GraphLegend />}
+
+      {analyticsOpen && filteredData && (
+        <GraphAnalytics
+          nodes={filteredData.nodes}
+          links={filteredData.links}
+          hoveredNode={hoveredNode}
+          onNodeFocus={handleNodeFocus}
+        />
+      )}
 
       {timelineEnabled && dateRange.min && (
         <TimelineSlider

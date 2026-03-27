@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+import { computeGraphDataKey } from '../lib/graph-types'
 
 export type GraphNode = {
   id: string
@@ -128,6 +129,23 @@ export function GraphView({
     [links, filteredNodeIds],
   )
 
+  // Stable graphData: only changes when node/link ID set changes (Pitfall 1 fix)
+  const graphDataKey = useMemo(() => {
+    const nodeIds = decoratedNodes.map(n => n.id)
+    const linkPairs = filteredLinks.map(l => ({
+      source: typeof l.source === 'string' ? l.source : (l.source as any).id,
+      target: typeof l.target === 'string' ? l.target : (l.target as any).id,
+    }))
+    return computeGraphDataKey(nodeIds, linkPairs)
+  }, [decoratedNodes, filteredLinks])
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableGraphData = useMemo(() => ({
+    nodes: decoratedNodes as GraphNode[],
+    links: filteredLinks as GraphLink[],
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [graphDataKey])
+
   // Build neighbor set for hover illumination
   const neighborMap = useMemo(() => {
     const map = new Map<string, Set<string>>()
@@ -167,13 +185,17 @@ export function GraphView({
     [hoveredNodeId, highlightedPath],
   )
 
-  // Zoom to fit after engine stabilizes
+  // Zoom to fit after engine stabilizes, then freeze simulation (GRPH-01)
   const handleEngineStop = useCallback(() => {
     if (!hasZoomedRef.current && fgRef.current && !mini) {
       hasZoomedRef.current = true
       setTimeout(() => {
         fgRef.current?.zoomToFit(400, 80)
       }, 100)
+    }
+    // Freeze simulation after initial layout — prevents hover drift (GRPH-01)
+    if (fgRef.current) {
+      fgRef.current.cooldownTicks(0)
     }
   }, [mini])
 
@@ -278,10 +300,7 @@ export function GraphView({
 
       <ForceGraph2D
         ref={fgRef}
-        graphData={{
-          nodes: decoratedNodes as GraphNode[],
-          links: filteredLinks as GraphLink[],
-        }}
+        graphData={stableGraphData}
         nodeId="id"
         nodeVal="val"
         nodeLabel=""
@@ -315,12 +334,25 @@ export function GraphView({
           const n = node as GraphNode
           if (n.x === undefined || n.y === undefined) return
 
+          // LOD: skip expensive operations when zoomed out far (GRPH-08, Pitfall 5)
+          const isLOD = globalScale < 0.5
+          const highlighted = isHighlighted(n.id)
+          const alpha = highlighted ? (n.opacity ?? 1) : 0.06
+
+          if (isLOD) {
+            // LOD mode: solid circle only, no gradients, no labels, no specular
+            const baseSize = Math.sqrt(n.val) * 2.5 + 1.5
+            ctx.beginPath()
+            ctx.arc(n.x, n.y, baseSize, 0, 2 * Math.PI)
+            ctx.fillStyle = hexToRgba(n.color, 0.8 * alpha)
+            ctx.fill()
+            return // Skip all gradient/label/ring rendering
+          }
+
           const baseSize = Math.sqrt(n.val) * 2.5 + 1.5
           const isHovered = n.id === hoveredNodeId
           const isNeighbor = hoveredNodeId ? (neighborMap.get(hoveredNodeId)?.has(n.id) ?? false) : false
-          const highlighted = isHighlighted(n.id)
           const onPath = highlightedPath?.has(n.id)
-          const alpha = highlighted ? (n.opacity ?? 1) : 0.06
 
           // Static size boost for hovered node (no animation needed)
           const size = isHovered ? baseSize * 1.2 : baseSize
