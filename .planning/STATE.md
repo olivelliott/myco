@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.0
-milestone_name: Performance & Architecture Optimization
+milestone: v1.0
+milestone_name: milestone
 status: v3.0 milestone complete
-stopped_at: Completed 12-02-PLAN.md — API route project filtering
-last_updated: "2026-03-26T18:36:32.795Z"
+stopped_at: "Completed quick task 260327-f8o: forget MCP tool"
+last_updated: "2026-03-27T15:09:15.250Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -87,6 +87,7 @@ Recent decisions affecting current work:
 - [Phase 12]: dist/ rebuild required between schema change and test run — @myco/core dist was stale with old 10-param insertEntity SQL; dist/ is gitignored and must be rebuilt from source
 - [Phase 12]: STMT-02 exception pattern used for all three API routes project filtering — inline db.prepare() when project param set, prepared statements when omitted
 - [Phase 12]: Graph relationships filtered in JS by entity ID Set — no project column on relationships table, JS filter is correct and avoids complex SQL JOIN
+- [Phase quick]: sqlite-vec virtual tables throw on DELETE of nonexistent rows -- wrap in try-catch
 
 ### Pending Todos
 
@@ -98,6 +99,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-26T18:26:07.310Z
-Stopped at: Completed 12-02-PLAN.md — API route project filtering
+Last session: 2026-03-27T15:09:08.204Z
+Stopped at: Completed quick task 260327-f8o: forget MCP tool
 Resume file: None
