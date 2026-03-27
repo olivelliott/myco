@@ -1,6 +1,29 @@
 // Typed fetch wrappers for all API endpoints
 // Types are simplified client-side versions of core types
 
+export interface GrowthPoint {
+  day: string
+  entities: number
+  observations: number
+  relationships: number
+}
+
+export interface HealthMetrics {
+  embeddingCoverage: number
+  orphanedNodes: number
+  confidenceDistribution: Array<{ bucket: string; count: number }>
+  unconsolidatedEpisodes: number
+}
+
+export interface ActivityCard {
+  id: string
+  name: string
+  type: string
+  confidence: number
+  created_at: string
+  event: string
+}
+
 export interface DashboardStats {
   pending: number
   entities: number
@@ -13,6 +36,7 @@ export interface DashboardStats {
     event_type: string
     created_at: string
   }>
+  recentActivity: ActivityCard[]
   topConnected: Array<{
     id: string
     name: string
@@ -28,6 +52,7 @@ export interface DashboardStats {
     observationsLast7d: number
     relationshipsLast7d: number
   }
+  health: HealthMetrics
 }
 
 export interface ApprovalItem {
@@ -109,6 +134,10 @@ async function apiFetch<T>(url: string, opts?: RequestInit): Promise<T> {
 
 export function fetchDashboard(): Promise<DashboardStats> {
   return apiFetch<DashboardStats>('/api/dashboard')
+}
+
+export function fetchGrowthStats(): Promise<{ points: GrowthPoint[] }> {
+  return apiFetch<{ points: GrowthPoint[] }>('/api/stats/growth')
 }
 
 export function fetchApprovals(): Promise<{ items: ApprovalItem[] }> {

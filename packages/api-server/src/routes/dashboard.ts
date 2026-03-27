@@ -75,6 +75,14 @@ export function dashboardRoutes(db: Database.Database, stmts: MycoStatements): H
     const recentEpisodes = stmts.selectRecentEpisodes.all() as Pick<Episode, 'id' | 'session_id' | 'agent_id' | 'event_type' | 'created_at'>[];
     const topConnected = stmts.selectTopConnected.all() as Array<{ id: string; name: string; type: string; connection_count: number }>;
     const typeBreakdown = stmts.selectTypeBreakdown.all() as Array<{ type: string; count: number }>;
+    const recentActivity = stmts.selectRecentActivity.all() as Array<{ id: string; name: string; type: string; confidence: number; created_at: string; event: string }>;
+
+    // Health metrics
+    const embeddingRow = stmts.countEmbeddedObservations.get() as { total: number; embedded: number };
+    const embeddingCoverage = embeddingRow.total > 0 ? Math.round((embeddingRow.embedded / embeddingRow.total) * 100) : 100;
+    const orphanedNodes = (stmts.countOrphanedEntities.get() as { n: number }).n;
+    const confidenceDistribution = stmts.selectConfidenceDistribution.all() as Array<{ bucket: string; count: number }>;
+    const unconsolidatedEpisodes = (stmts.countUnconsolidatedEpisodes.get() as { n: number }).n;
 
     return c.json({
       pending: pendingRow.n,
@@ -82,6 +90,7 @@ export function dashboardRoutes(db: Database.Database, stmts: MycoStatements): H
       relationships: relationshipsCount,
       observations: observationsCount,
       recentEpisodes,
+      recentActivity,
       topConnected,
       typeBreakdown,
       growthStats: {
@@ -89,7 +98,24 @@ export function dashboardRoutes(db: Database.Database, stmts: MycoStatements): H
         observationsLast7d,
         relationshipsLast7d,
       },
+      health: {
+        embeddingCoverage,
+        orphanedNodes,
+        confidenceDistribution,
+        unconsolidatedEpisodes,
+      },
     });
+  });
+
+  app.get('/stats/growth', (c) => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const result = stmts.selectGrowthTimeSeries.all(thirtyDaysAgo, thirtyDaysAgo, thirtyDaysAgo) as Array<{
+      day: string;
+      entities: number;
+      observations: number;
+      relationships: number;
+    }>;
+    return c.json({ points: result });
   });
 
   return app;
