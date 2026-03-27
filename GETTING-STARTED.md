@@ -87,7 +87,7 @@ Once the MCP server is in your **global** Claude Code settings (`-s user` scope)
 | **swing-trader** | Remember trade patterns, backtest results, strategy decisions. Recall "what did I decide about RSI thresholds?" across sessions. |
 | **fathom / Local Sites** | Store client preferences, deployment quirks, "this site uses X plugin." Recall context when switching between sites. |
 | **myco itself** | Already wired — GSD hooks auto-log phase completions as episodes. |
-| **Any future project** | Same brain, same knowledge. Start a new project and it already knows your preferences. |
+| **Any future project** | Same knowledge web, same knowledge. Start a new project and it already knows your preferences. |
 
 ### Does It Interfere With My Workflow?
 
@@ -98,7 +98,7 @@ Once the MCP server is in your **global** Claude Code settings (`-s user` scope)
 - Send data anywhere (everything stays in `~/.local/share/myco/brain.db`)
 - Slow down your session (Ollama calls have 2s timeout with graceful fallback)
 
-Your existing workflows (GSD phases, trade journal, market analysis) continue exactly as-is. The brain just means Claude sessions can accumulate knowledge over time instead of starting from zero.
+Your existing workflows (GSD phases, trade journal, market analysis) continue exactly as-is. Myco just means Claude sessions can accumulate knowledge over time instead of starting from zero.
 
 ---
 
@@ -182,8 +182,8 @@ This only fires inside the `myco` project (project-scoped hook).
 
 | Feature | Description |
 |---------|-------------|
-| **Cross-project hooks** | Move the GSD brain hook to global scope so ALL projects auto-log episodes |
-| **Agent instructions via brain** | Agents query the brain at session start for "what do I know about this project?" |
+| **Cross-project hooks** | Move the GSD episode hook to global scope so ALL projects auto-log episodes |
+| **Agent instructions via myco** | Agents query myco at session start for "what do I know about this project?" |
 | **Smarter recall** | Contextual recall that factors in current project, recent topics, entity relationships |
 | **Dashboard PWA install** | Build + deploy as installable PWA (currently dev-only) |
 | **Backup/export** | Export knowledge graph as JSON/Markdown for portability |
@@ -201,7 +201,7 @@ This only fires inside the `myco` project (project-scoped hook).
 │  (swing-trader, fathom, myco, anything)          │
 │                                                 │
 │  Claude uses MCP tools:                         │
-│  remember / recall / query / log_episode        │
+│  remember / recall / query / forget / log_episode│
 └──────────────────┬──────────────────────────────┘
                    │ stdio (MCP protocol)
                    ▼

@@ -20,7 +20,7 @@ Complete testing guide — work through each tier in order.
 
 Start the MCP server: `npm run dev`
 
-Open a **separate Claude Code session** in any project directory. Verify `brain` (or `myco`) appears in your MCP server list.
+Open a **separate Claude Code session** in any project directory. Verify `myco` appears in your MCP server list.
 
 ### remember
 
@@ -400,7 +400,7 @@ Open a **separate Claude Code session** in any project directory. Verify `brain`
 
 Test each override individually (copy `.env.example` to `.env` and edit):
 
-- [ ] `MYCO_DB_PATH=/tmp/test-brain.db npm run dev` → uses custom DB path
+- [ ] `MYCO_DB_PATH=/tmp/test-myco.db npm run dev` → uses custom DB path
 - [ ] `OLLAMA_HOST=http://localhost:11435 npm run dev` → connects to different Ollama port
 - [ ] `BRAIN_CONSOLIDATION_MODEL=mistral npm run dev` → uses different LLM for consolidation
 - [ ] `MYCO_API_PORT=4000 npm run api` → API server starts on port 4000

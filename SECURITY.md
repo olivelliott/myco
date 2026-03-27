@@ -24,7 +24,7 @@ Include:
 
 Myco runs entirely on your local machine. The primary security concerns are:
 
-- **Database access**: `brain.db` contains your knowledge graph data
+- **Database access**: `myco.db` contains your knowledge graph data
 - **MCP server**: Runs over stdio, not exposed to the network by default
 - **API server**: Binds to `localhost:3001` — not exposed externally unless you configure it
 - **Ollama integration**: Communicates with your local Ollama instance only
