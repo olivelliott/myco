@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import type React from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { Input } from './ui/input'
 import {
@@ -20,6 +21,8 @@ export type GraphNode = {
   confidence: number
   summary: string | null
   created_at: string
+  /** Pre-computed created_at as ms timestamp — avoids per-frame Date parsing in canvas painters */
+  created_at_ms: number
   color: string
   opacity: number
   x?: number
@@ -53,6 +56,10 @@ interface GraphViewProps {
   neighborhoodData?: { nodes: Array<GraphNode>; links: Array<GraphLink> } | null
   clusterInfos?: ClusterInfo[] | null
   confidenceThreshold?: number
+  /** Shared ref: current cutoff timestamp in ms. Infinity = show all nodes. Canvas painter reads this directly. */
+  timelineCutoffRef?: React.MutableRefObject<number>
+  /** True when timeline mode is active — enables continuous canvas repaint rAF loop */
+  timelineActive?: boolean
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -87,6 +94,7 @@ export function getLinkNodeId(node: string | GraphNode): string {
 export function GraphView({
   nodes, links, onNodeClick, onNodeHover, mini = false, highlightedPath,
   neighborhoodData, clusterInfos, confidenceThreshold,
+  timelineCutoffRef, timelineActive = false,
 }: GraphViewProps) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -94,6 +102,11 @@ export function GraphView({
   const fgRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hasZoomedRef = useRef(false)
+
+  // Timeline entry pulse tracking: maps node ID -> real-time ms when it first became visible
+  const entryTimesRef = useRef<Map<string, number>>(new Map())
+  // Track previous cutoff to detect backward scrub (clears entry times)
+  const prevCutoffRef = useRef<number>(Infinity)
 
   const uniqueTypes = useMemo(
     () => [...new Set(nodes.map((n) => n.type))].sort(),
@@ -107,11 +120,14 @@ export function GraphView({
         const conf = n.confidence ?? 1
         const belowThreshold = confidenceThreshold != null && confidenceThreshold > 0 && conf < confidenceThreshold
         const searchDimmed = search && !n.name.toLowerCase().includes(search.toLowerCase())
+        // Pre-compute created_at_ms once to avoid per-frame Date parsing (Pitfall 5)
+        const created_at_ms = n.created_at ? new Date(n.created_at).getTime() : 0
         return {
           ...n,
           confidence: conf,
           summary: n.summary ?? null,
           created_at: n.created_at ?? '',
+          created_at_ms,
           color: getNodeColor(n.type),
           opacity: belowThreshold ? 0.05 : searchDimmed ? 0.15 : 1,
         }
@@ -285,6 +301,19 @@ export function GraphView({
     return () => clearInterval(interval)
   }, [search, mini])
 
+  // Timeline active: run a rAF loop calling fgRef.refresh() so canvas repaints at 60fps
+  // even when the force simulation is frozen (cooldownTicks(0))
+  useEffect(() => {
+    if (!timelineActive || mini) return
+    let rafId: number
+    const loop = () => {
+      fgRef.current?.refresh()
+      rafId = requestAnimationFrame(loop)
+    }
+    rafId = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(rafId)
+  }, [timelineActive, mini])
+
   // Stats
   const stats = useMemo(() => ({
     nodes: decoratedNodes.length,
@@ -390,6 +419,25 @@ export function GraphView({
         ) => {
           const n = node as GraphNode
           if (n.x === undefined || n.y === undefined) return
+
+          // Timeline cutoff: hide nodes that are "in the future" relative to cutoff
+          const cutoffMs = timelineCutoffRef?.current ?? Infinity
+          const nodeMs = n.created_at_ms ?? 0
+          if (nodeMs > cutoffMs) return // skip — node not yet visible at this cutoff
+
+          // Entry pulse: track when a node first becomes visible during playback
+          if (timelineCutoffRef) {
+            // Detect backward scrub: if cutoff jumped backward, clear all entry times
+            if (cutoffMs < prevCutoffRef.current) {
+              entryTimesRef.current.clear()
+            }
+            prevCutoffRef.current = cutoffMs
+
+            // Record first appearance
+            if (!entryTimesRef.current.has(n.id)) {
+              entryTimesRef.current.set(n.id, Date.now())
+            }
+          }
 
           // LOD: skip expensive operations when zoomed out far (GRPH-08, Pitfall 5)
           const isLOD = globalScale < 0.5
@@ -499,6 +547,24 @@ export function GraphView({
             ctx.stroke()
           }
 
+          // Entry pulse ring: expanding ring animation for ~800ms when a node first appears
+          if (timelineCutoffRef && !isLOD) {
+            const entryTime = entryTimesRef.current.get(n.id)
+            if (entryTime !== undefined) {
+              const elapsed = Date.now() - entryTime
+              if (elapsed < 800) {
+                const progress = elapsed / 800
+                const pulseRadius = size * (1 + progress * 2)
+                const pulseAlpha = 0.6 * (1 - progress)
+                ctx.beginPath()
+                ctx.arc(n.x, n.y, pulseRadius, 0, 2 * Math.PI)
+                ctx.strokeStyle = hexToRgba(n.color, pulseAlpha)
+                ctx.lineWidth = 1.5 / globalScale
+                ctx.stroke()
+              }
+            }
+          }
+
           // Pin indicator (amber dot at top-right if node is pinned)
           if (n.fx !== undefined && n.fx !== null) {
             ctx.beginPath()
@@ -589,6 +655,15 @@ export function GraphView({
             target: GraphNode
           }
           if (!l.source.x || !l.target.x) return
+
+          // Timeline cutoff: hide links where either endpoint or the link itself is in the future
+          const cutoffMs = timelineCutoffRef?.current ?? Infinity
+          if (cutoffMs !== Infinity) {
+            const linkMs = l.created_at ? new Date(l.created_at).getTime() : 0
+            const srcMs = (l.source as GraphNode).created_at_ms ?? 0
+            const tgtMs = (l.target as GraphNode).created_at_ms ?? 0
+            if (linkMs > cutoffMs || srcMs > cutoffMs || tgtMs > cutoffMs) return
+          }
 
           const srcId = getLinkNodeId(l.source)
           const tgtId = getLinkNodeId(l.target)
@@ -685,11 +760,16 @@ export function GraphView({
         onRenderFramePost={(ctx: CanvasRenderingContext2D, globalScale: number) => {
           if (!clusterInfos || clusterInfos.length === 0) return
 
-          // Build position map from current node positions
+          // Timeline cutoff: only include nodes visible at current cutoff in hull computation
+          const cutoffMs = timelineCutoffRef?.current ?? Infinity
+
+          // Build position map from current node positions (only visible nodes)
           const posMap = new Map<string, { x: number; y: number }>()
           for (const node of stableGraphData.nodes) {
             const n = node as GraphNode
             if (n.x !== undefined && n.y !== undefined) {
+              // Skip nodes hidden by timeline cutoff
+              if (cutoffMs !== Infinity && (n.created_at_ms ?? 0) > cutoffMs) continue
               posMap.set(n.id, { x: n.x, y: n.y })
             }
           }
