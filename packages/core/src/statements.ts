@@ -22,6 +22,12 @@ export interface MycoStatements {
   selectObservationsByEntityId: Statement;
   updateObservationEntityId: Statement;
 
+  // ── Dedup / temporal statements (Phase 19) ──────────────────────────────
+  selectObservationsByEntityForDedup: Statement;
+  retireObservation: Statement;
+  insertObservationTemporal: Statement;
+  insertObservationTemporalWithEmbeddingFlag: Statement;
+
   // ── Relationship statements ──────────────────────────────────────────────
   insertRelationship: Statement;
   selectRelationshipExists: Statement;
@@ -152,6 +158,28 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     updateObservationEntityId: db.prepare(
       `UPDATE observations SET entity_id = ? WHERE entity_id = ?`
+    ),
+
+    // ── Dedup / temporal statements (Phase 19) ─────────────────────────────
+    selectObservationsByEntityForDedup: db.prepare(
+      `SELECT id, content, confidence, valid_from, valid_until
+       FROM observations
+       WHERE entity_id = ? AND valid_until IS NULL
+       ORDER BY created_at DESC`
+    ),
+
+    retireObservation: db.prepare(
+      `UPDATE observations SET valid_until = ? WHERE id = ?`
+    ),
+
+    insertObservationTemporal: db.prepare(
+      `INSERT INTO observations (id, entity_id, content, metadata, session_id, agent_id, source_type, confidence, created_at, valid_from)
+       VALUES (?, ?, ?, '{}', ?, ?, ?, ?, ?, ?)`
+    ),
+
+    insertObservationTemporalWithEmbeddingFlag: db.prepare(
+      `INSERT INTO observations (id, entity_id, content, metadata, session_id, agent_id, source_type, confidence, created_at, valid_from, needs_embedding)
+       VALUES (?, ?, ?, '{}', ?, ?, ?, ?, ?, ?, 1)`
     ),
 
     // ── Relationship statements ────────────────────────────────────────────

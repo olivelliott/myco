@@ -17,4 +17,6 @@ export type {
   ProvenanceRecord,
   ExtractedFact,
   ConsolidationSummary,
+  DedupClassification,
+  ClassificationResult,
 } from './types.js';

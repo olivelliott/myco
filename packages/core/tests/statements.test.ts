@@ -5,6 +5,7 @@ import { rmSync, mkdirSync } from 'node:fs';
 import { openDatabase } from '../src/db.js';
 import { prepareStatements } from '../src/statements.js';
 import type { MycoStatements } from '../src/statements.js';
+import type { DedupClassification, ClassificationResult } from '../src/types.js';
 import type Database from 'better-sqlite3';
 
 const testDir = join(tmpdir(), 'myco-core-stmt-test-' + process.pid);
@@ -230,5 +231,122 @@ describe('prepareStatements', () => {
     const names = rows.map(r => r.name);
     expect(names).toContain('Alpha');
     expect(names).toContain('Beta');
+  });
+
+  // ── Dedup / temporal statement tests (Phase 19) ──────────────────────────────
+
+  it('has selectObservationsByEntityForDedup statement', () => {
+    const stmts = prepareStatements(db);
+    expect(stmts).toHaveProperty('selectObservationsByEntityForDedup');
+  });
+
+  it('has retireObservation statement', () => {
+    const stmts = prepareStatements(db);
+    expect(stmts).toHaveProperty('retireObservation');
+  });
+
+  it('has insertObservationTemporal statement', () => {
+    const stmts = prepareStatements(db);
+    expect(stmts).toHaveProperty('insertObservationTemporal');
+  });
+
+  it('has insertObservationTemporalWithEmbeddingFlag statement', () => {
+    const stmts = prepareStatements(db);
+    expect(stmts).toHaveProperty('insertObservationTemporalWithEmbeddingFlag');
+  });
+
+  it('selectObservationsByEntityForDedup returns only current observations (valid_until IS NULL)', () => {
+    const stmts = prepareStatements(db);
+    const now = new Date().toISOString();
+    const entityId = 'ent-dedup-1';
+
+    stmts.insertEntity.run(entityId, 'DedupEntity', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+
+    // Insert a current observation (no valid_until)
+    stmts.insertObservationTemporal.run('obs-current', entityId, 'Current fact', 'ses', 'ag', 'agent_session', 1.0, now, now);
+
+    // Insert a retired observation (has valid_until)
+    const retiredId = 'obs-retired';
+    stmts.insertObservationTemporal.run(retiredId, entityId, 'Old fact', 'ses', 'ag', 'agent_session', 1.0, now, now);
+    stmts.retireObservation.run(now, retiredId);
+
+    const rows = stmts.selectObservationsByEntityForDedup.all(entityId) as Array<{
+      id: string; content: string; confidence: number; valid_from: string | null; valid_until: string | null;
+    }>;
+
+    // Should only return current (non-retired)
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe('obs-current');
+    expect(rows[0].valid_until).toBeNull();
+  });
+
+  it('retireObservation sets valid_until on the target observation', () => {
+    const stmts = prepareStatements(db);
+    const now = new Date().toISOString();
+    const entityId = 'ent-retire-1';
+    const obsId = 'obs-to-retire';
+
+    stmts.insertEntity.run(entityId, 'RetireEntity', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+    stmts.insertObservationTemporal.run(obsId, entityId, 'To be retired', 'ses', 'ag', 'agent_session', 1.0, now, now);
+
+    // Verify valid_until is null before retirement
+    const before = db.prepare('SELECT valid_until FROM observations WHERE id = ?').get(obsId) as { valid_until: string | null };
+    expect(before.valid_until).toBeNull();
+
+    const retiredAt = new Date().toISOString();
+    stmts.retireObservation.run(retiredAt, obsId);
+
+    const after = db.prepare('SELECT valid_until FROM observations WHERE id = ?').get(obsId) as { valid_until: string };
+    expect(after.valid_until).toBe(retiredAt);
+  });
+
+  it('insertObservationTemporal inserts observation with valid_from set', () => {
+    const stmts = prepareStatements(db);
+    const now = new Date().toISOString();
+    const entityId = 'ent-temporal-1';
+    const obsId = 'obs-temporal-1';
+
+    stmts.insertEntity.run(entityId, 'TemporalEntity', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+    stmts.insertObservationTemporal.run(obsId, entityId, 'Temporal fact', 'ses', 'ag', 'agent_session', 0.9, now, now);
+
+    const row = db.prepare('SELECT * FROM observations WHERE id = ?').get(obsId) as {
+      id: string; content: string; valid_from: string | null; needs_embedding: number | null;
+    };
+    expect(row).toBeDefined();
+    expect(row.content).toBe('Temporal fact');
+    expect(row.valid_from).toBe(now);
+    expect(row.needs_embedding).toBeFalsy();
+  });
+
+  it('insertObservationTemporalWithEmbeddingFlag inserts with needs_embedding = 1', () => {
+    const stmts = prepareStatements(db);
+    const now = new Date().toISOString();
+    const entityId = 'ent-temporal-2';
+    const obsId = 'obs-temporal-2';
+
+    stmts.insertEntity.run(entityId, 'TemporalEntity2', 'concept', 'ses', 'ag', 'agent_session', 1.0, now, now, null);
+    stmts.insertObservationTemporalWithEmbeddingFlag.run(obsId, entityId, 'Temporal fact pending embed', 'ses', 'ag', 'agent_session', 0.9, now, now);
+
+    const row = db.prepare('SELECT * FROM observations WHERE id = ?').get(obsId) as {
+      id: string; valid_from: string | null; needs_embedding: number;
+    };
+    expect(row).toBeDefined();
+    expect(row.valid_from).toBe(now);
+    expect(row.needs_embedding).toBe(1);
+  });
+
+  it('DedupClassification and ClassificationResult types are importable', () => {
+    // This test validates the types exist at import time (TypeScript compile check)
+    // Runtime: just verify the import itself didn't fail
+    const classification: DedupClassification = 'ADD';
+    expect(['ADD', 'UPDATE', 'NOOP']).toContain(classification);
+
+    const result: ClassificationResult = {
+      classification: 'UPDATE',
+      superseded_observation_id: 'obs-123',
+      reason: 'Supersedes existing',
+    };
+    expect(result.classification).toBe('UPDATE');
+    expect(result.superseded_observation_id).toBe('obs-123');
   });
 });

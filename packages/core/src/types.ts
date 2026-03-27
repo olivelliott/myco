@@ -98,3 +98,19 @@ export interface ConsolidationSummary {
   totalQueued: number;
   errors: number;
 }
+
+// ── Dedup / temporal versioning types (Phase 19) ──────────────────────────────
+
+/**
+ * Classification result for an incoming observation against existing facts.
+ * - ADD: Observation is new — no semantic overlap with existing observations
+ * - UPDATE: Observation supersedes an existing observation (conflicting/updated fact)
+ * - NOOP: Observation is a near-duplicate — ignore to avoid noise
+ */
+export type DedupClassification = 'ADD' | 'UPDATE' | 'NOOP';
+
+export interface ClassificationResult {
+  classification: DedupClassification;
+  superseded_observation_id?: string; // Set when UPDATE — the observation to retire
+  reason: string;                     // Human-readable explanation
+}
