@@ -83,9 +83,9 @@ Plans:
   5. Dragging the confidence threshold slider immediately filters nodes below the chosen value out of the visible graph
   6. Typing in the search box highlights matching nodes, moves the camera to center on the best match, and dims non-matching nodes
   7. Graphs with 500+ nodes skip per-node gradient and label rendering when zoomed out, keeping interaction smooth
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 Plans:
-- [ ] 14-01-PLAN.md — Foundation: packages, GraphInteractionMode types, graphData stability fix, sim freeze, LOD rendering, mode toolbar
+- [x] 14-01-PLAN.md — Foundation: packages, GraphInteractionMode types, graphData stability fix, sim freeze, LOD rendering, mode toolbar
 - [ ] 14-02-PLAN.md — Cluster visualization with Louvain detection and convex hull rendering, confidence threshold slider
 - [ ] 14-03-PLAN.md — Neighborhood explorer (1-2 hop subgraph isolation) and search auto-zoom with pulse animation
 **UI hint**: yes
@@ -143,7 +143,7 @@ Plans:
 | 11. Query Filters + Error Handling | v3.0 | 2/2 | Complete | 2026-03-25 |
 | 12. Namespace Isolation | v3.0 | 2/2 | Complete | 2026-03-26 |
 | 13. Theme + Language Foundation | v4.0 | 1/1 | Complete    | 2026-03-27 |
-| 14. Graph Core Features | v4.0 | 0/3 | Not started | - |
+| 14. Graph Core Features | v4.0 | 1/3 | In Progress|  |
 | 15. Timeline Animation | v4.0 | 0/? | Not started | - |
 | 16. Home Page Enhancements | v4.0 | 0/? | Not started | - |
 | 17. Approvals Overhaul | v4.0 | 0/? | Not started | - |

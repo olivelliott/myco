@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Dashboard & Graph Experience
-status: Ready to plan
-stopped_at: Completed 13-01-PLAN.md
-last_updated: "2026-03-27T18:20:28.841Z"
+status: Ready to execute
+stopped_at: Completed 14-01-PLAN.md
+last_updated: "2026-03-27T18:58:12.636Z"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 4
+  completed_plans: 2
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 13 — theme-language-foundation
+**Current focus:** Phase 14 — graph-core-features
 
 ## Current Position
 
-Phase: 14
-Plan: Not started
+Phase: 14 (graph-core-features) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -42,6 +42,7 @@ Plan: Not started
 
 *Updated after each plan completion*
 | Phase 13 P01 | 12 | 2 tasks | 12 files |
+| Phase 14 P01 | 352 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -58,6 +59,9 @@ Recent decisions affecting current work:
 - [Phase 15]: Particle state stored in `useRef`, never React state — prevents render feedback loop
 - [Phase 17]: `ApprovalCard` selectable props already defined in TypeScript interface — APRV-02 is mostly route-level wiring
 - [Phase 13]: App components use inline style pattern, UI primitives use Tailwind arbitrary value syntax for CSS variable theming
+- [Phase 14]: computeGraphDataKey memoizes graphData by sorted node/link ID sets — only structural changes reheat simulation (Pitfall 1 fix)
+- [Phase 14]: GraphModeState discriminated union replaces pathMode boolean — single source of truth for explore/path/neighborhood/search modes
+- [Phase 14]: cooldownTicks(0) in handleEngineStop permanently freezes simulation after initial layout — prevents hover drift (GRPH-01)
 
 ### Pending Todos
 
@@ -77,6 +81,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-27T18:17:26.241Z
-Stopped at: Completed 13-01-PLAN.md
+Last session: 2026-03-27T18:58:12.632Z
+Stopped at: Completed 14-01-PLAN.md
 Resume file: None
