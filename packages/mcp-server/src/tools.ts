@@ -8,6 +8,7 @@ import { nanoid } from 'nanoid';
 import { embedText, embedBatch } from './embed-client.js';
 import { runConsolidation } from './consolidator.js';
 import { discoverRelationships, createBackLinks, invalidateEntityCache } from './relationship-discovery.js';
+import { classifyObservation, retireObservation } from './dedup-resolver.js';
 
 // The session ID is created once per server process lifetime.
 const SESSION_ID = generateSessionId();
@@ -93,6 +94,8 @@ export async function rememberEntity(
     project,
   } = params;
 
+  // Generate now BEFORE opening any transactions (SQLite CURRENT_TIMESTAMP instability)
+  const now = new Date().toISOString();
   const prov = buildProvenance(SESSION_ID, agent_id, source_type, confidence);
 
   // Upsert entity: find existing by name+type or create new
@@ -110,11 +113,34 @@ export async function rememberEntity(
     invalidateEntityCache();
   }
 
-  // Always add the observation
+  // Dedup classification — gate observation write
+  const classification = await classifyObservation(db, stmts, entityId, content);
+
+  if (classification.classification === 'NOOP') {
+    // Near-duplicate — skip write entirely
+    // Still update entity timestamp to reflect the reinforcement
+    stmts.updateEntityTimestampConfidence.run(now, confidence, entityId);
+    return {
+      content: [{
+        type: 'text' as const,
+        text: `Observation already exists for "${entity_name}" — skipped (${classification.reason}).`,
+      }],
+    };
+  }
+
+  if (classification.classification === 'UPDATE' && classification.superseded_observation_id) {
+    // Retire the old observation (set valid_until) before inserting the new one
+    retireObservation(stmts, classification.superseded_observation_id, now);
+  }
+
+  const action = classification.classification === 'UPDATE' ? ' (updated — superseded previous version)' : '';
+
+  // Insert temporal observation (valid_from = application-generated timestamp)
   const obsId = nanoid();
-  stmts.insertObservation.run(
+  stmts.insertObservationTemporal.run(
     obsId, entityId, content,
     prov.session_id, prov.agent_id, prov.source_type, prov.confidence, prov.created_at,
+    now,  // valid_from — application-generated timestamp
   );
 
   // Insert into FTS5 index for full-text search fallback
@@ -170,7 +196,7 @@ export async function rememberEntity(
     content: [
       {
         type: 'text' as const,
-        text: `Stored entity "${entity_name}" (${entityId}) with observation.`,
+        text: `Stored entity "${entity_name}" (${entityId}) with observation${action}.`,
       },
     ],
   };
@@ -184,10 +210,11 @@ export async function recallKnowledge(
     entity_type?: string;
     min_confidence?: number;
     project?: string;
+    as_of?: string;
   },
   stmts: MycoStatements,
 ): Promise<RecallResult> {
-  const { query, limit, entity_type, min_confidence, project } = params;
+  const { query, limit, entity_type, min_confidence, project, as_of } = params;
 
   // Build filter conditions (STMT-02 exception pattern — dynamic WHERE)
   const conditions: string[] = [];
@@ -206,39 +233,44 @@ export async function recallKnowledge(
     filterParams.push(project);
   }
 
+  // Temporal filter: as_of returns observations valid at that point in time.
+  // Without as_of, exclude retired observations (valid_until IS NULL = currently active).
+  if (as_of !== undefined) {
+    conditions.push('o.valid_from IS NOT NULL AND o.valid_from <= ?');
+    filterParams.push(as_of);
+    conditions.push('(o.valid_until IS NULL OR o.valid_until > ?)');
+    filterParams.push(as_of);
+  } else {
+    // Always exclude retired observations from default recall
+    conditions.push('(o.valid_until IS NULL)');
+  }
+
   // Try semantic search first
   const queryEmbedding = await embedText(query);
 
   if (queryEmbedding !== null) {
     const queryVec = new Float32Array(queryEmbedding);
 
-    let rows: RecallRow[];
-
-    if (conditions.length === 0) {
-      // No filters — use prepared statement (fast path)
-      rows = stmts.knnSearchObservations.all(queryVec, limit) as RecallRow[];
-    } else {
-      // Filters present — dynamic WHERE (STMT-02 exception)
-      const whereClause = `AND ${conditions.join(' AND ')}`;
-      rows = db.prepare(`
-        WITH knn AS (
-          SELECT item_id, distance
-          FROM vec_embeddings
-          WHERE embedding MATCH ?
-            AND k = ?
-            AND item_type = 'observation'
-        )
-        SELECT o.id AS observation_id, o.content, o.confidence,
-               e.name AS entity_name, e.type AS entity_type,
-               knn.distance AS relevance_score
-        FROM knn
-        JOIN observations o ON o.id = knn.item_id
-        JOIN entities e ON e.id = o.entity_id
-        WHERE 1=1 ${whereClause}
-        ORDER BY knn.distance
-        LIMIT ?
-      `).all(queryVec, limit * 3, ...filterParams, limit) as RecallRow[];
-    }
+    // Temporal conditions force the dynamic WHERE branch (always has at least one condition now)
+    const whereClause = `AND ${conditions.join(' AND ')}`;
+    const rows = db.prepare(`
+      WITH knn AS (
+        SELECT item_id, distance
+        FROM vec_embeddings
+        WHERE embedding MATCH ?
+          AND k = ?
+          AND item_type = 'observation'
+      )
+      SELECT o.id AS observation_id, o.content, o.confidence,
+             e.name AS entity_name, e.type AS entity_type,
+             knn.distance AS relevance_score
+      FROM knn
+      JOIN observations o ON o.id = knn.item_id
+      JOIN entities e ON e.id = o.entity_id
+      WHERE 1=1 ${whereClause}
+      ORDER BY knn.distance
+      LIMIT ?
+    `).all(queryVec, limit * 3, ...filterParams, limit) as RecallRow[];
 
     return {
       content: [{
@@ -264,27 +296,20 @@ export async function recallKnowledge(
   // FTS5 fallback — Ollama unavailable for query embedding
   const ftsQuery = '"' + query.replace(/"/g, '""') + '"';
 
-  let rows: RecallRow[];
-
-  if (conditions.length === 0) {
-    // No filters — use prepared statement (fast path)
-    rows = stmts.ftsSearchObservations.all(ftsQuery, limit) as RecallRow[];
-  } else {
-    // Filters present — dynamic WHERE (STMT-02 exception)
-    const whereClause = conditions.map(c => `AND ${c}`).join('\n        ');
-    rows = db.prepare(`
-      SELECT o.id AS observation_id, o.content, o.confidence,
-             e.name AS entity_name, e.type AS entity_type,
-             fts.rank AS relevance_score
-      FROM fts_observations fts
-      JOIN observations o ON o.id = fts.observation_id
-      JOIN entities e ON e.id = o.entity_id
-      WHERE fts_observations MATCH ?
-        ${whereClause}
-      ORDER BY fts.rank
-      LIMIT ?
-    `).all(ftsQuery, ...filterParams, limit) as RecallRow[];
-  }
+  // Temporal conditions force the dynamic WHERE branch (always has at least one condition now)
+  const whereClause = conditions.map(c => `AND ${c}`).join('\n        ');
+  const rows = db.prepare(`
+    SELECT o.id AS observation_id, o.content, o.confidence,
+           e.name AS entity_name, e.type AS entity_type,
+           fts.rank AS relevance_score
+    FROM fts_observations fts
+    JOIN observations o ON o.id = fts.observation_id
+    JOIN entities e ON e.id = o.entity_id
+    WHERE fts_observations MATCH ?
+      ${whereClause}
+    ORDER BY fts.rank
+    LIMIT ?
+  `).all(ftsQuery, ...filterParams, limit) as RecallRow[];
 
   return {
     content: [{
@@ -546,6 +571,45 @@ export function forgetEntity(
   };
 }
 
+/**
+ * Merge sourceEntityId into targetEntityId via soft-delete.
+ *
+ * Moves all observations and relationships from source to target, then sets
+ * merged_into on the source entity. The source entity row is NOT deleted —
+ * this makes merges reversible and preserves graph history.
+ *
+ * Wrapped in a transaction for atomicity.
+ */
+export function mergeEntities(
+  db: Database.Database,
+  stmts: MycoStatements,
+  sourceEntityId: string,
+  targetEntityId: string,
+): { observations_moved: number; relationships_moved: number } {
+  return db.transaction(() => {
+    // Count before moving
+    const obsRows = stmts.selectAllObservationIdsByEntityId.all(sourceEntityId) as Array<{ id: string }>;
+    const relRows = stmts.selectRelationshipsByEntityIdBoth.all(sourceEntityId, sourceEntityId) as Array<{ id: string }>;
+
+    // Move observations from source to target
+    stmts.updateObservationEntityId.run(targetEntityId, sourceEntityId);
+
+    // Move relationships
+    stmts.updateRelationshipFromId.run(targetEntityId, sourceEntityId);
+    stmts.updateRelationshipToId.run(targetEntityId, sourceEntityId);
+
+    // Soft-delete source entity (set merged_into, do NOT delete)
+    stmts.setEntityMergedInto.run(targetEntityId, sourceEntityId);
+
+    invalidateEntityCache();
+
+    return {
+      observations_moved: obsRows.length,
+      relationships_moved: relRows.length,
+    };
+  })();
+}
+
 export function registerTools(server: McpServer, db: Database.Database, stmts: MycoStatements): void {
   server.registerTool(
     'remember',
@@ -619,11 +683,12 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
         entity_type: z.string().optional().describe('Filter by entity type (e.g. "technology", "person")'),
         min_confidence: z.number().min(0).max(1).optional().describe('Minimum confidence score 0.0-1.0'),
         project: z.string().optional().describe('Filter by project namespace'),
+        as_of: z.string().optional().describe('ISO 8601 timestamp — return observations valid at this point in time'),
       },
     },
-    async ({ query, limit, entity_type, min_confidence, project }) => {
+    async ({ query, limit, entity_type, min_confidence, project, as_of }) => {
       try {
-        return await recallKnowledge(db, { query, limit, entity_type, min_confidence, project }, stmts);
+        return await recallKnowledge(db, { query, limit, entity_type, min_confidence, project, as_of }, stmts);
       } catch (err) {
         console.error('[recall] tool error:', err);
         return {

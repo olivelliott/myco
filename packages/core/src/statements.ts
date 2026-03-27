@@ -28,6 +28,10 @@ export interface MycoStatements {
   insertObservationTemporal: Statement;
   insertObservationTemporalWithEmbeddingFlag: Statement;
 
+  // ── Entity merge statements (Phase 19) ──────────────────────────────────
+  setEntityMergedInto: Statement;
+  selectEntitiesByName: Statement;
+
   // ── Relationship statements ──────────────────────────────────────────────
   insertRelationship: Statement;
   selectRelationshipExists: Statement;
@@ -180,6 +184,17 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     insertObservationTemporalWithEmbeddingFlag: db.prepare(
       `INSERT INTO observations (id, entity_id, content, metadata, session_id, agent_id, source_type, confidence, created_at, valid_from, needs_embedding)
        VALUES (?, ?, ?, '{}', ?, ?, ?, ?, ?, ?, 1)`
+    ),
+
+    // ── Entity merge statements (Phase 19) ──────────────────────────────────
+    setEntityMergedInto: db.prepare(
+      `UPDATE entities SET merged_into = ? WHERE id = ?`
+    ),
+
+    // Note: intentionally does NOT filter merged_into IS NULL — used for merge candidate detection,
+    // where we want to find even already-merged entities to prevent double-merge.
+    selectEntitiesByName: db.prepare(
+      `SELECT id, name, type FROM entities WHERE name = ? COLLATE NOCASE AND merged_into IS NULL`
     ),
 
     // ── Relationship statements ────────────────────────────────────────────
