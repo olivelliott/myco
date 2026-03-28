@@ -63,30 +63,30 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCOPE-01 | TBD | Pending |
-| SCOPE-02 | TBD | Pending |
-| RECALL-01 | TBD | Pending |
-| RECALL-02 | TBD | Pending |
-| RECALL-03 | TBD | Pending |
-| RECALL-04 | TBD | Pending |
-| RULE-01 | TBD | Pending |
-| RULE-02 | TBD | Pending |
-| RULE-03 | TBD | Pending |
-| ONBOARD-01 | TBD | Pending |
-| ONBOARD-02 | TBD | Pending |
-| ONBOARD-03 | TBD | Pending |
-| ONBOARD-04 | TBD | Pending |
-| CORRECT-01 | TBD | Pending |
-| CORRECT-02 | TBD | Pending |
-| PREF-01 | TBD | Pending |
-| PREF-02 | TBD | Pending |
-| PREF-03 | TBD | Pending |
+| SCOPE-01 | Phase 24 | Pending |
+| SCOPE-02 | Phase 25 | Pending |
+| RECALL-01 | Phase 25 | Pending |
+| RECALL-02 | Phase 25 | Pending |
+| RECALL-03 | Phase 25 | Pending |
+| RECALL-04 | Phase 25 | Pending |
+| RULE-01 | Phase 27 | Pending |
+| RULE-02 | Phase 27 | Pending |
+| RULE-03 | Phase 27 | Pending |
+| ONBOARD-01 | Phase 26 | Pending |
+| ONBOARD-02 | Phase 26 | Pending |
+| ONBOARD-03 | Phase 26 | Pending |
+| ONBOARD-04 | Phase 26 | Pending |
+| CORRECT-01 | Phase 27 | Pending |
+| CORRECT-02 | Phase 27 | Pending |
+| PREF-01 | Phase 28 | Pending |
+| PREF-02 | Phase 28 | Pending |
+| PREF-03 | Phase 28 | Pending |
 
 **Coverage:**
 - v6.0 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initial definition*
+*Last updated: 2026-03-27 after roadmap creation*

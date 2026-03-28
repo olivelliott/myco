@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Feature Parity & Differentiation
-status: Defining requirements
-stopped_at: Completed 19-02-PLAN.md — dedup integration, temporal recall, entity merge
-last_updated: "2026-03-27T21:46:48.538Z"
-last_activity: 2026-03-27 — Milestone v6.0 started
+milestone: v6.0
+milestone_name: Proactive Knowledge & Onboarding
+status: Ready to plan
+stopped_at: Roadmap created — v6.0 phases 24-28 defined
+last_updated: "2026-03-27"
+last_activity: 2026-03-27 — v6.0 roadmap written, 18 requirements mapped to 5 phases
 progress:
-  total_phases: 6
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -20,20 +20,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Defining requirements for v6.0
+**Current focus:** Phase 24 — Context Scoping Schema (v6.0 first phase)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 24 of 28 (Context Scoping Schema)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-03-27 — Milestone v6.0 started
+Status: Ready to plan
+Last activity: 2026-03-27 — v6.0 roadmap written, 18 requirements mapped to 5 phases
+
+Progress: [░░░░░░░░░░] 0% (v6.0)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0 (v5.0)
+- Total plans completed: 0 (v6.0)
 - Average duration: —
 - Total execution time: —
 
@@ -44,9 +46,6 @@ Last activity: 2026-03-27 — Milestone v6.0 started
 | - | - | - | - |
 
 *Updated after each plan completion*
-| Phase 18 P01 | 1m | 1 tasks | 4 files |
-| Phase 18 P02 | 2m | 2 tasks | 3 files |
-| Phase 19 P01 | 303s | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -55,20 +54,13 @@ Last activity: 2026-03-27 — Milestone v6.0 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v5.0 research]: Vercel AI SDK locked at v4.3.19 — do NOT upgrade in v5.0 (ollama-ai-provider incompatibility)
-- [v5.0 research]: All auto-extracted entities unconditionally route to approval queue — no auto-approve threshold applies
-- [v5.0 research]: Relationship strength updated only on `remember` (not `recall`) to avoid write amplification
-- [v5.0 research]: `computeEffectiveConfidence` is a pure function at read time — no write-back to DB
-- [v5.0 research]: Phase 18 must land before any other v5.0 phase — migration framework prerequisite
-- [Phase 18]: Migration up() functions use try/catch on ALTER TABLE ADD COLUMN to handle existing databases with columns from the old pattern; schema_migrations INSERT happens after success so restarts skip them
-- [Phase 18]: runMigrations wraps each migration in db.transaction() so partial failures leave no partial state
-- [Phase 18]: Each ALTER TABLE in its own try/catch — SQLite stops at first error in multi-statement exec, so individual wrapping lets subsequent columns land on existing databases
-- [Phase 18]: New v5.0 interface fields are optional (?) to avoid breaking existing consumers — feature phases 19-21 will populate them as they land
-- [Phase 18]: Merged entities excluded at query layer (merged_into IS NULL) rather than a deleted flag — preserves graph history while hiding merged nodes from active consumers
-- [Phase 19]: sqlite-vec returns Euclidean distance between normalized vectors — dedup thresholds corrected to NOOP<0.40 UPDATE<0.84 (equivalent to cosine 0.08 and 0.35)
-- [Phase 19]: retireObservation is a sync function — better-sqlite3 UPDATE is synchronous, no async needed
-- [Phase 19]: Ollama-down fallback: exact string match for NOOP, ADD otherwise — avoids data loss at cost of rare duplicate
-- [Phase 19]: Pre-dedup tests that store multiple distinct observations need embedText mocked to null — live Ollama classifies similar content as NOOP, preventing second insert
+- [v6.0 research]: SessionStart hook with `additionalContext` is the only correct injection mechanism — MCP Resources require explicit user invocation, not automatic
+- [v6.0 research]: Hook binary must open SQLite in read-only mode, FTS5-only, complete under 500ms — never call Ollama from hook
+- [v6.0 research]: Token cap is 1,500 tokens enforced at query layer (priority ordering), not end-truncation
+- [v6.0 research]: Preferences start project-scoped, promote to global user entity only after 2+ project corroboration or explicit confirmation
+- [v6.0 research]: `myco init` scans README, CLAUDE.md, package manifests only — no source files (anchoring bias research)
+- [v6.0 research]: One new npm dependency: `ignore@5.3.x` for gitignore-aware file filtering during `myco init`
+- [v6.0 research]: Novelty filter tracking needs design decision — `injection_log` table vs deferred consolidation update
 
 ### Pending Todos
 
@@ -76,12 +68,13 @@ None.
 
 ### Blockers/Concerns
 
-- [Phase 19]: SQLite `CURRENT_TIMESTAMP` instability — all `valid_from` values must be generated in application code before transactions open (audit every `insertObservation` call site)
-- [Phase 19]: Wrong entity merges are hard to undo — merge candidates require BOTH Levenshtein ≤ 2 AND cosine similarity > 0.92; all merge proposals must route through approval queue
-- [Phase 23]: Consolidation lock design (`consolidation_lock` table row structure, expiry logic, atomic check-and-lock SQL) must be fully specified before implementation begins
+- [Phase 25]: Token cap enforcement strategy — SQLite has no native "stop at N tokens"; must be enforced at app layer with priority-ordered queries; design needed in planning
+- [Phase 25]: Novelty filter write strategy — hook is read-only, but tracking `last_injected_at` requires a write; decide between `injection_log` table (separate write) or deferred update
+- [Phase 26]: Batch approval UX pattern — distinct from existing per-item queue; needs design decision (new dashboard route vs terminal-interactive flow)
+- [Phase 26]: `myco init` idempotency — re-run must not duplicate entities; dedup classifier handles single observations but batch flow may need separate "already seen" check
 
 ## Session Continuity
 
-Last session: 2026-03-27T21:46:42.489Z
-Stopped at: Completed 19-02-PLAN.md — dedup integration, temporal recall, entity merge
+Last session: 2026-03-27
+Stopped at: Roadmap created — v6.0 phases 24-28 written to ROADMAP.md
 Resume file: None
