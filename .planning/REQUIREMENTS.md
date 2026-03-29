@@ -27,15 +27,15 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 
 ### Incremental Consolidation
 
-- [ ] **CONSOL-01**: Episodes are consolidated on-the-fly after `log_episode`, not just at the nightly 2am cycle
-- [ ] **CONSOL-02**: A consolidation lock prevents race conditions between incremental and nightly consolidation
-- [ ] **CONSOL-03**: Nightly cycle performs deeper analysis (relationship inference, contradiction detection) beyond incremental
+- [x] **CONSOL-01**: Episodes are consolidated on-the-fly after `log_episode`, not just at the nightly 2am cycle
+- [x] **CONSOL-02**: A consolidation lock prevents race conditions between incremental and nightly consolidation
+- [x] **CONSOL-03**: Nightly cycle performs deeper analysis (relationship inference, contradiction detection) beyond incremental
 
 ### Auto-Entity Extraction
 
-- [ ] **EXTRACT-01**: The system passively extracts entities and relationships from conversation context via LLM
-- [ ] **EXTRACT-02**: Extraction runs asynchronously (fire-and-forget) and never blocks the MCP tool response
-- [ ] **EXTRACT-03**: All auto-extracted items route through the approval queue before becoming permanent knowledge
+- [x] **EXTRACT-01**: The system passively extracts entities and relationships from conversation context via LLM
+- [x] **EXTRACT-02**: Extraction runs asynchronously (fire-and-forget) and never blocks the MCP tool response
+- [x] **EXTRACT-03**: All auto-extracted items route through the approval queue before becoming permanent knowledge
 
 ### Import/Export
 

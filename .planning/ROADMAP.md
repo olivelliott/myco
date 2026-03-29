@@ -68,7 +68,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 - [x] **Phase 20: Relationship Strength Scoring** - Relationship edges gain strength scores reinforced on every re-assertion; edge thickness reflects strength in the dashboard (completed 2026-03-27)
 - [x] **Phase 21: Memory Importance Decay** - Unreinforced facts fade via lazy decay at read time; recall ranking factors in effective confidence (completed 2026-03-27)
 - [x] **Phase 22: Core Refactor + REST Write Routes + Import/Export** - Business logic moves to packages/core; Hono server gains write endpoints, OpenAPI docs, API key auth, and export/import tools (completed 2026-03-29)
-- [ ] **Phase 23: Auto-Extraction + Incremental Consolidation** - Episodes trigger passive entity extraction and micro-consolidation on log_episode without blocking MCP responses
+- [x] **Phase 23: Auto-Extraction + Incremental Consolidation** - Episodes trigger passive entity extraction and micro-consolidation on log_episode without blocking MCP responses (completed 2026-03-29)
 
 ## Phase Details
 
@@ -156,7 +156,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 23-01-PLAN.md — Lock infrastructure, SourceType extension, micro-consolidation pipeline
-- [ ] 23-02-PLAN.md — Fire-and-forget logEpisode integration + nightly lock wrapping
+- [x] 23-02-PLAN.md — Fire-and-forget logEpisode integration + nightly lock wrapping
 
 ## Progress
 
@@ -184,4 +184,4 @@ Plans:
 | 20. Relationship Strength Scoring | v5.0 | 1/1 | Complete    | 2026-03-27 |
 | 21. Memory Importance Decay | v5.0 | 2/2 | Complete    | 2026-03-27 |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 3/3 | Complete    | 2026-03-29 |
-| 23. Auto-Extraction + Incremental Consolidation | v5.0 | 1/2 | In Progress|  |
+| 23. Auto-Extraction + Incremental Consolidation | v5.0 | 2/2 | Complete   | 2026-03-29 |

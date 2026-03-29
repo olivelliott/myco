@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Ready to execute
-stopped_at: Completed 23-01-PLAN.md — lock infrastructure and micro-consolidation pipeline
-last_updated: "2026-03-29T15:19:46.063Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 23-02-PLAN.md — wire callback system and lock-wrap nightly
+last_updated: "2026-03-29T15:23:51.417Z"
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -52,6 +52,7 @@ Plan: 2 of 2
 | Phase 22-core-refactor-rest-write-routes-import-export P02 | 525609 | 1 tasks | 5 files |
 | Phase 22-core-refactor-rest-write-routes-import-export P03 | 4 | 2 tasks | 6 files |
 | Phase 23-auto-extraction-incremental-consolidation P01 | 98 | 2 tasks | 3 files |
+| Phase 23-auto-extraction-incremental-consolidation P02 | 144 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,9 @@ Recent decisions affecting current work:
 - [Phase 23]: All auto-extracted facts unconditionally route to approval queue — no auto-approve threshold applies (micro-consolidation is capture-only)
 - [Phase 23]: acquireLock uses INSERT OR IGNORE singleton-row mutex with 5-min stale expiry recovery; releaseLock always runs in finally block
 - [Phase 23]: runMicroConsolidation: no rememberEntity, detectContradiction, or findMergeCandidates — those are nightly-only (CONSOL-03)
+- [Phase 23]: setImmediate used in logEpisode (not setTimeout/nextTick) — fires after current I/O cycle, never blocks MCP response
+- [Phase 23]: registerEpisodeCallback: dependency inversion — core exports slot, mcp-server fills it at startup — avoids circular import between packages
+- [Phase 23]: Nightly cron skips with warning if micro holds lock (no retry) — next 2am run catches remaining episodes
 
 ### Pending Todos
 
@@ -108,6 +112,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T15:19:46.059Z
-Stopped at: Completed 23-01-PLAN.md — lock infrastructure and micro-consolidation pipeline
+Last session: 2026-03-29T15:23:51.413Z
+Stopped at: Completed 23-02-PLAN.md — wire callback system and lock-wrap nightly
 Resume file: None
