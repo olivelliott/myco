@@ -1,7 +1,7 @@
 import { Cron } from 'croner';
 import type Database from 'better-sqlite3';
 import type { MycoStatements } from '@myco/core';
-import { runConsolidation } from './consolidator.js';
+import { runConsolidation, acquireLock, releaseLock } from './consolidator.js';
 
 /**
  * Schedule the nightly consolidation run at 2am EST.
@@ -18,11 +18,20 @@ export function scheduleDailyConsolidation(db: Database.Database, stmts: MycoSta
     },
   }, async () => {
     console.error('[consolidation] nightly run starting');
+
+    const acquired = acquireLock(db, 'nightly');
+    if (!acquired) {
+      console.error('[consolidation] nightly run skipped — lock held by another process');
+      return;
+    }
+
     try {
       const summary = await runConsolidation(db, stmts);
       console.error(`[consolidation] nightly run complete: ${JSON.stringify(summary)}`);
     } catch (err: unknown) {
       console.error('[consolidation] nightly run failed:', err instanceof Error ? err.message : String(err));
+    } finally {
+      releaseLock(db);
     }
   });
 }

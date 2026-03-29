@@ -3,9 +3,10 @@ import { loadConfig } from '@myco/core';
 loadConfig();
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { openDatabase, prepareStatements } from '@myco/core';
+import { openDatabase, prepareStatements, registerEpisodeCallback } from '@myco/core';
 import { registerTools, reEmbedPending } from './tools.js';
 import { scheduleDailyConsolidation } from './scheduler.js';
+import { runMicroConsolidation } from './consolidator.js';
 
 const db = openDatabase();
 const stmts = prepareStatements(db);
@@ -26,6 +27,10 @@ const server = new McpServer({
 });
 
 registerTools(server, db, stmts);
+
+// EXTRACT-02 + CONSOL-01: Wire micro-consolidation to fire on every log_episode
+registerEpisodeCallback((episodeId) => runMicroConsolidation(db, stmts, episodeId));
+console.error('[micro-consolidation] episode callback registered');
 
 // Schedule nightly consolidation at 2am EST — does not block startup
 const consolidationCron = scheduleDailyConsolidation(db, stmts);
