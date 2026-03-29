@@ -60,7 +60,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 
 </details>
 
-### 🚧 v5.0 Feature Parity & Differentiation (In Progress)
+### v5.0 Feature Parity & Differentiation (In Progress)
 
 **Milestone Goal:** Close competitive gaps against Mem0, Zep, and mcp-memory-service and add differentiating features — temporal fact versioning, conflict-aware dedup, memory decay, relationship strength, REST API with OpenAPI docs, import/export, and incremental consolidation with passive auto-extraction.
 
@@ -71,7 +71,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 - [ ] **Phase 22: Core Refactor + REST Write Routes + Import/Export** - Business logic moves to packages/core; Hono server gains write endpoints, OpenAPI docs, API key auth, and export/import tools
 - [ ] **Phase 23: Auto-Extraction + Incremental Consolidation** - Episodes trigger passive entity extraction and micro-consolidation on log_episode without blocking MCP responses
 
-### 🚧 v6.0 Proactive Knowledge & Onboarding (In Progress)
+### v6.0 Proactive Knowledge & Onboarding (In Progress)
 
 **Milestone Goal:** Make Myco's knowledge graph proactively useful — easy to populate via guided onboarding, automatically surfaced at session start, and easy to correct when knowledge becomes wrong or outdated.
 
@@ -220,8 +220,8 @@ Plans:
   4. After calling `update_knowledge`, the retired observation is no longer returned by `recall` queries but is still present in the database with its `valid_until` timestamp set
 **Plans:** 2 plans
 Plans:
-- [ ] 26-01-PLAN.md — Onboarding scanner module + CLI init subcommand with terminal approval
-- [ ] 26-02-PLAN.md — init_project MCP tool + onboarding tests
+- [ ] 27-01-PLAN.md — remember_rule + update_knowledge MCP tools
+- [ ] 27-02-PLAN.md — Integration tests for both tools + session-start verification
 
 ### Phase 28: User Preferences
 **Goal**: User preferences accumulate globally across projects with source attribution, so the agent always knows the user's preferences regardless of which project initiated the session
@@ -267,5 +267,5 @@ Plans:
 | 24. Context Scoping Schema | v6.0 | 1/1 | Complete | 2026-03-29 |
 | 25. Session-Start Recall | v6.0 | 1/1 | Complete    | 2026-03-29 |
 | 26. Project Onboarding | v6.0 | 2/2 | Complete    | 2026-03-29 |
-| 27. Workflow Rules and Knowledge Correction | v6.0 | 0/? | Not started | - |
+| 27. Workflow Rules and Knowledge Correction | v6.0 | 0/2 | Not started | - |
 | 28. User Preferences | v6.0 | 0/? | Not started | - |
