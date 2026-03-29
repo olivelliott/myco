@@ -59,7 +59,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 
 </details>
 
-### 🚧 v5.0 Feature Parity & Differentiation (In Progress)
+### v5.0 Feature Parity & Differentiation (In Progress)
 
 **Milestone Goal:** Close competitive gaps against Mem0, Zep, and mcp-memory-service and add differentiating features — temporal fact versioning, conflict-aware dedup, memory decay, relationship strength, REST API with OpenAPI docs, import/export, and incremental consolidation with passive auto-extraction.
 
@@ -153,9 +153,10 @@ Plans:
   3. Calling `log_episode` 10 times in rapid succession results in exactly one consolidation run, not 10 — the consolidation lock prevents duplicate processing
   4. After the nightly cron fires, the consolidation log shows relationship inference and contradiction detection steps that do not appear in the incremental micro-consolidation output
   5. When both an incremental trigger and the nightly cron attempt to consolidate simultaneously, one waits for the lock and runs after — no episodes are processed twice
-**Plans**: 1 plan
+**Plans**: 2 plans
 Plans:
-- [ ] 23-XX-PLAN.md — [To be planned]
+- [ ] 23-01-PLAN.md — Lock infrastructure, SourceType extension, micro-consolidation pipeline
+- [ ] 23-02-PLAN.md — Fire-and-forget logEpisode integration + nightly lock wrapping
 
 ## Progress
 
@@ -182,5 +183,5 @@ Plans:
 | 19. Temporal Versioning + Dedup Resolution | v5.0 | 3/3 | Complete    | 2026-03-27 |
 | 20. Relationship Strength Scoring | v5.0 | 1/1 | Complete    | 2026-03-27 |
 | 21. Memory Importance Decay | v5.0 | 2/2 | Complete    | 2026-03-27 |
-| 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 3/3 | Complete   | 2026-03-29 |
-| 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |
+| 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 3/3 | Complete    | 2026-03-29 |
+| 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/2 | Not started | - |
