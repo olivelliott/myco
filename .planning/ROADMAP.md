@@ -267,5 +267,5 @@ Plans:
 | 24. Context Scoping Schema | v6.0 | 1/1 | Complete | 2026-03-29 |
 | 25. Session-Start Recall | v6.0 | 1/1 | Complete    | 2026-03-29 |
 | 26. Project Onboarding | v6.0 | 2/2 | Complete    | 2026-03-29 |
-| 27. Workflow Rules and Knowledge Correction | v6.0 | 2/2 | Complete   | 2026-03-29 |
+| 27. Workflow Rules and Knowledge Correction | v6.0 | 2/2 | Complete    | 2026-03-29 |
 | 28. User Preferences | v6.0 | 0/? | Not started | - |

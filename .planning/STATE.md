@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Feature Parity & Differentiation
-status: Phase complete — ready for verification
+milestone: v6.0
+milestone_name: Proactive Knowledge & Onboarding
+status: Milestone complete
 stopped_at: Completed 27-02-PLAN.md — integration tests for remember_rule and update_knowledge
-last_updated: "2026-03-29T15:43:47.944Z"
+last_updated: "2026-03-29T15:47:12.077Z"
 progress:
   total_phases: 10
   completed_phases: 9
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 
 ## Current Position
 
-Phase: 27 (Workflow Rules and Knowledge Correction) — EXECUTING
-Plan: 2 of 2
+Phase: 27
+Plan: Not started
 
 ## Performance Metrics
 
