@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: Proactive Knowledge & Onboarding
-status: Milestone complete
-stopped_at: Completed 25-01-PLAN.md — session-start hook with knowledge injection, 31 tests
-last_updated: "2026-03-29T14:56:18.050Z"
+milestone: v5.0
+milestone_name: Feature Parity & Differentiation
+status: Phase complete — ready for verification
+stopped_at: Completed 26-02-PLAN.md — init_project MCP tool + onboarding tests
+last_updated: "2026-03-29T15:19:57.673Z"
 progress:
-  total_phases: 8
-  completed_phases: 7
-  total_plans: 13
-  completed_plans: 12
+  total_phases: 9
+  completed_phases: 8
+  total_plans: 15
+  completed_plans: 14
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 25 — Session-Start Recall
+**Current focus:** Phase 26 — Project Onboarding
 
 ## Current Position
 
-Phase: 25
-Plan: Not started
+Phase: 26 (Project Onboarding) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -43,6 +43,8 @@ Plan: Not started
 *Updated after each plan completion*
 | Phase 24 P01 | 2 | 2 tasks | 6 files |
 | Phase 25-session-start-recall P01 | 250s | 1 tasks | 3 files |
+| Phase 26-project-onboarding P01 | 325 | 2 tasks | 2 files |
+| Phase 26-project-onboarding P02 | 300 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -62,6 +64,10 @@ Recent decisions affecting current work:
 - [Phase 24]: selectProjectForPath uses named $path parameter with slash-boundary LIKE (directory_path || '/%') to prevent false prefix matches like /a/bx matching /a/b
 - [Phase 25-session-start-recall]: hooks/package.json with type:commonjs required to fix ESM/CJS conflict from root monorepo type:module
 - [Phase 25-session-start-recall]: Session-start hook opens DB readonly:true, uses file-based hash cache at ~/.local/share/myco/last-injection-hash for novelty tracking (no DB write)
+- [Phase 26-project-onboarding]: source_type 'onboarding' not in SourceType union — use 'agent_session' for myco init writes as closest semantic match for human-guided initial population
+- [Phase 26-project-onboarding]: myco init scanner reads README/CLAUDE.md truncated to 2000 chars, .eslintrc* (first found), package.json, tsconfig.json, git config — no source files per anchoring bias research
+- [Phase 26-project-onboarding]: init_project omits relations from MCP response to keep agent output clean — agent passes relations when calling remember()
+- [Phase 26-project-onboarding]: Top-level await import for onboarding-scanner in tests ensures vi.mock('ai') is applied before scanner module loads
 
 ### Pending Todos
 
@@ -76,6 +82,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T14:52:27.699Z
-Stopped at: Completed 25-01-PLAN.md — session-start hook with knowledge injection, 31 tests
+Last session: 2026-03-29T15:19:57.669Z
+Stopped at: Completed 26-02-PLAN.md — init_project MCP tool + onboarding tests
 Resume file: None

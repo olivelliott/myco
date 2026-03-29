@@ -77,7 +77,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 
 - [x] **Phase 24: Context Scoping Schema** - project_paths table and walk-up path resolution enable working directory to map to a project entity (completed 2026-03-29)
 - [x] **Phase 25: Session-Start Recall** - myco-recall-hook binary injects scoped knowledge at every Claude Code session start before the agent makes a decision (completed 2026-03-29)
-- [ ] **Phase 26: Project Onboarding** - myco init scans the codebase and populates the knowledge graph through a batch approval flow
+- [x] **Phase 26: Project Onboarding** - myco init scans the codebase and populates the knowledge graph through a batch approval flow (completed 2026-03-29)
 - [ ] **Phase 27: Workflow Rules and Knowledge Correction** - First-class rule entities and an update_knowledge tool keep the injected context actionable and trustworthy
 - [ ] **Phase 28: User Preferences** - Preferences accumulate globally across projects and surface reliably in session-start injection
 
@@ -204,10 +204,10 @@ Plans:
   2. Accepting the batch summary commits all approved entities to the graph and registers the project path in `project_paths` in one operation — the project is then immediately available for session-start recall
   3. Running `myco init` a second time on the same project does not create duplicate entities — the dedup classifier handles re-runs correctly
   4. An agent can trigger the same onboarding scan from within a Claude Code session via the `init_project` MCP tool and receive the same batch summary result as the CLI command
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 26-01-PLAN.md — Onboarding scanner module + CLI init subcommand with terminal approval
-- [ ] 26-02-PLAN.md — init_project MCP tool + onboarding tests
+- [x] 26-01-PLAN.md — Onboarding scanner module + CLI init subcommand with terminal approval
+- [x] 26-02-PLAN.md — init_project MCP tool + onboarding tests
 
 ### Phase 27: Workflow Rules and Knowledge Correction
 **Goal**: Agents can store actionable procedural instructions as first-class rule entities that are always surfaced at session start, and any stale or incorrect knowledge can be found and superseded in a single operation
@@ -266,6 +266,6 @@ Plans:
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |
 | 24. Context Scoping Schema | v6.0 | 1/1 | Complete | 2026-03-29 |
 | 25. Session-Start Recall | v6.0 | 1/1 | Complete    | 2026-03-29 |
-| 26. Project Onboarding | v6.0 | 0/? | Not started | - |
+| 26. Project Onboarding | v6.0 | 2/2 | Complete   | 2026-03-29 |
 | 27. Workflow Rules and Knowledge Correction | v6.0 | 0/? | Not started | - |
 | 28. User Preferences | v6.0 | 0/? | Not started | - |

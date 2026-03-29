@@ -27,10 +27,10 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 
 ### Project Onboarding
 
-- [ ] **ONBOARD-01**: `myco init` CLI command scans project files (package.json, tsconfig, git config, README, CLAUDE.md) and infers non-obvious conventions via LLM
-- [ ] **ONBOARD-02**: Scan results are presented as a batch summary for human approval before committing to the knowledge graph
-- [ ] **ONBOARD-03**: The onboarding scan registers the project path in `project_paths` for automatic context scoping
-- [ ] **ONBOARD-04**: `init_project` MCP tool provides the same onboarding capability from within a Claude Code session
+- [x] **ONBOARD-01**: `myco init` CLI command scans project files (package.json, tsconfig, git config, README, CLAUDE.md) and infers non-obvious conventions via LLM
+- [x] **ONBOARD-02**: Scan results are presented as a batch summary for human approval before committing to the knowledge graph
+- [x] **ONBOARD-03**: The onboarding scan registers the project path in `project_paths` for automatic context scoping
+- [x] **ONBOARD-04**: `init_project` MCP tool provides the same onboarding capability from within a Claude Code session
 
 ### Knowledge Correction
 
@@ -72,10 +72,10 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 | RULE-01 | Phase 27 | Pending |
 | RULE-02 | Phase 27 | Pending |
 | RULE-03 | Phase 27 | Pending |
-| ONBOARD-01 | Phase 26 | Pending |
-| ONBOARD-02 | Phase 26 | Pending |
-| ONBOARD-03 | Phase 26 | Pending |
-| ONBOARD-04 | Phase 26 | Pending |
+| ONBOARD-01 | Phase 26 | Complete |
+| ONBOARD-02 | Phase 26 | Complete |
+| ONBOARD-03 | Phase 26 | Complete |
+| ONBOARD-04 | Phase 26 | Complete |
 | CORRECT-01 | Phase 27 | Pending |
 | CORRECT-02 | Phase 27 | Pending |
 | PREF-01 | Phase 28 | Pending |
