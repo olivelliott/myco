@@ -179,6 +179,18 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: '010_consolidation_lock',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS consolidation_lock (
+          id         TEXT PRIMARY KEY DEFAULT 'singleton',
+          locked_at  TEXT NOT NULL,
+          locked_by  TEXT NOT NULL DEFAULT 'unknown'
+        )
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

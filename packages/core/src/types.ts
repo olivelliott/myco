@@ -1,4 +1,4 @@
-export type SourceType = 'agent_session' | 'consolidation' | 'human_edit' | 'gsd_hook' | 'auto_discovery';
+export type SourceType = 'agent_session' | 'consolidation' | 'human_edit' | 'gsd_hook' | 'auto_discovery' | 'auto_extracted';
 
 export interface Entity {
   id: string;
