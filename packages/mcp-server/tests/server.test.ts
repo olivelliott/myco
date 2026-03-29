@@ -6,7 +6,20 @@ import { openDatabase, prepareStatements } from '@myco/core';
 import type Database from 'better-sqlite3';
 import type { MycoStatements } from '@myco/core';
 import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending, forgetEntity } from '@myco/core';
-import * as embedClient from '@myco/core/embed-client';
+// embedText mock support: we can't spy on the bundled core chunk,
+// so we mock at the ollama npm level for the FTS fallback test
+let ollamaShouldFail = false;
+vi.mock('ollama', () => ({
+  Ollama: vi.fn().mockImplementation(() => ({
+    embed: vi.fn().mockImplementation(async () => {
+      if (ollamaShouldFail) throw new Error('mock: Ollama unavailable');
+      // Delegate to real Ollama when not failing
+      const { Ollama: RealOllama } = vi.importActual<typeof import('ollama')>('ollama');
+      const real = new RealOllama();
+      return real.embed.apply(real, arguments as any);
+    }),
+  })),
+}));
 
 const testDir = join(tmpdir(), 'myco-mcp-test-' + process.pid);
 
@@ -234,8 +247,8 @@ describe('MCP server tools', () => {
 
   describe('recallKnowledge', () => {
     it('returns FTS5 results with method "fts" when Ollama is unavailable', async () => {
-      // Force FTS5 path by mocking embedText to return null (Ollama unavailable)
-      const spy = vi.spyOn(embedClient, 'embedText').mockResolvedValue(null);
+      // Force FTS5 path by making the Ollama mock throw
+      ollamaShouldFail = true;
 
       await rememberEntity(db, {
         content: 'TypeScript supports generics and interfaces',
@@ -244,7 +257,7 @@ describe('MCP server tools', () => {
       }, stmts);
 
       const result = await recallKnowledge(db, { query: 'TypeScript', limit: 10 }, stmts);
-      spy.mockRestore();
+      ollamaShouldFail = false;
       const parsed = JSON.parse(result.content[0].text) as {
         results: Array<{ entity_name: string; observation: string; confidence: number; relevance_score: number }>;
         metadata: { method: string; count: number; query: string };
