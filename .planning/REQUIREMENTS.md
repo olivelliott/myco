@@ -23,7 +23,7 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 
 - [x] **RULE-01**: Workflow rules are stored as `entity_type='workflow_rule'` entities with structured observation format
 - [x] **RULE-02**: A `remember_rule` MCP tool captures actionable instructions with optional trigger context
-- [ ] **RULE-03**: All workflow rules for the current project + global scope are always included in session-start injection, not similarity-ranked
+- [x] **RULE-03**: All workflow rules for the current project + global scope are always included in session-start injection, not similarity-ranked
 
 ### Project Onboarding
 
@@ -71,7 +71,7 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 | RECALL-04 | Phase 25 | Complete |
 | RULE-01 | Phase 27 | Complete |
 | RULE-02 | Phase 27 | Complete |
-| RULE-03 | Phase 27 | Pending |
+| RULE-03 | Phase 27 | Complete |
 | ONBOARD-01 | Phase 26 | Complete |
 | ONBOARD-02 | Phase 26 | Complete |
 | ONBOARD-03 | Phase 26 | Complete |
