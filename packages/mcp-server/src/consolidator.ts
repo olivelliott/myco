@@ -160,6 +160,117 @@ Extract all meaningful facts. Be precise with evidence quotes — they must be v
   }
 }
 
+// ─── Consolidation lock ───────────────────────────────────────────────────────
+
+const LOCK_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Attempts to acquire the singleton consolidation lock.
+ * Removes stale locks (held longer than LOCK_EXPIRY_MS) before attempting.
+ * Returns true if the lock was acquired, false if already held.
+ */
+export function acquireLock(db: Database.Database, lockedBy: 'micro' | 'nightly'): boolean {
+  const now = new Date().toISOString();
+  const expiryThreshold = new Date(Date.now() - LOCK_EXPIRY_MS).toISOString();
+
+  // Remove stale lock (crash recovery)
+  db.prepare(`DELETE FROM consolidation_lock WHERE locked_at < ?`).run(expiryThreshold);
+
+  // Try to claim — fails silently if row exists (not expired)
+  const result = db.prepare(
+    `INSERT OR IGNORE INTO consolidation_lock (id, locked_at, locked_by) VALUES ('singleton', ?, ?)`
+  ).run(now, lockedBy);
+
+  return result.changes === 1;
+}
+
+/**
+ * Releases the singleton consolidation lock.
+ */
+export function releaseLock(db: Database.Database): void {
+  db.prepare(`DELETE FROM consolidation_lock WHERE id = 'singleton'`).run();
+}
+
+// ─── Micro-consolidation pipeline ────────────────────────────────────────────
+
+/**
+ * Processes a single episode through the fact extraction pipeline.
+ * All extracted facts are unconditionally routed to the approval queue
+ * with reason 'auto_extracted' — no auto-approve threshold applies here.
+ *
+ * Acquires and releases the consolidation lock via try/finally.
+ * Backs off silently if the lock is already held.
+ *
+ * CRITICAL: Does NOT call rememberEntity, detectContradiction, or
+ * findMergeCandidates — those are nightly-only operations (CONSOL-03).
+ */
+export async function runMicroConsolidation(
+  db: Database.Database,
+  stmts: MycoStatements,
+  episodeId: string,
+): Promise<void> {
+  const acquired = acquireLock(db, 'micro');
+  if (!acquired) {
+    console.error('[micro-consolidation] lock held — backing off');
+    return;
+  }
+
+  try {
+    // Fetch the single episode
+    const episode = db.prepare(`SELECT * FROM episodes WHERE id = ?`).get(episodeId) as Episode | undefined;
+    if (!episode) {
+      console.error(`[micro-consolidation] episode ${episodeId} not found`);
+      return;
+    }
+
+    // Extract facts via LLM (reuses existing extractFacts)
+    const episodeText = JSON.stringify({
+      id: episode.id,
+      event_type: episode.event_type,
+      payload: episode.payload,
+      created_at: episode.created_at,
+    });
+
+    const facts = await extractFacts([episodeText]);
+
+    // Route ALL extracted facts to approval queue — no auto-approve (per locked decision)
+    const now = new Date().toISOString();
+    for (const fact of facts) {
+      const metadata = JSON.stringify({
+        fact: {
+          entity_name: fact.entity_name,
+          entity_type: fact.entity_type,
+          observation: fact.observation,
+          confidence: fact.confidence,
+          evidence_quote: fact.evidence_quote,
+          related_entities: fact.related_entities,
+        },
+        source_episode_ids: [episodeId],
+        source_type: 'auto_extracted',
+      });
+
+      stmts.insertApprovalQueueItem.run(
+        nanoid(),
+        'proposed_fact',
+        nanoid(),
+        'pending',
+        'auto_extracted',     // reason column — for filtering
+        metadata,
+        now,
+      );
+    }
+
+    // Mark episode as consolidated
+    db.prepare(`UPDATE episodes SET consolidated_at = ? WHERE id = ?`).run(now, episodeId);
+
+    console.error(`[micro-consolidation] processed episode ${episodeId}: ${facts.length} facts queued`);
+  } catch (err) {
+    console.error('[micro-consolidation] error:', err instanceof Error ? err.message : err);
+  } finally {
+    releaseLock(db);
+  }
+}
+
 // ─── Main consolidation loop ──────────────────────────────────────────────────
 
 /**
