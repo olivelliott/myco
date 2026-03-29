@@ -90,3 +90,12 @@ export interface ConsolidationSummary {
   totalQueued: number;
   errors: number;
 }
+
+// -- Context scoping types (Phase 24) ----------------------------------------
+
+export interface ProjectPath {
+  id: string;
+  project_name: string;
+  directory_path: string;  // Absolute filesystem path, no trailing slash
+  created_at: string;      // ISO 8601 UTC
+}

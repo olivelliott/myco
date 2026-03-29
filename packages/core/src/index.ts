@@ -15,4 +15,5 @@ export type {
   ProvenanceRecord,
   ExtractedFact,
   ConsolidationSummary,
+  ProjectPath,
 } from './types.js';
