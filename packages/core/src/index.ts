@@ -23,3 +23,6 @@ export type { ClassificationResult } from './dedup.js';
 export { discoverRelationships, createBackLinks, invalidateEntityCache } from './relationship-discovery.js';
 export { rememberEntity, recallKnowledge, queryEntities, forgetEntity, logEpisode, reEmbedPending } from './memory-ops.js';
 export type { RememberParams, RememberResult, RecallResult, ForgetResult, LogEpisodeResult } from './memory-ops.js';
+export { exportGraph, importGraph } from './import-export.js';
+export type { GraphExport, ImportResult } from './import-export.js';
+export { normalizeMem0, normalizeAnthropicJSONL } from './format-adapters.js';
