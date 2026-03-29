@@ -68,6 +68,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 
 - [x] Namespace/project isolation via project column on entities — *v3.0 Phase 12*
 - [x] Working directory to project entity mapping via project_paths table with walk-up resolution — *v6.0 Phase 24*
+- [x] Automatic session-start recall injecting workflow rules, project facts, and user preferences via SessionStart hook — *v6.0 Phase 25*
 
 ### Active
 
@@ -170,4 +171,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-29 after Phase 24 completion*
+*Last updated: 2026-03-29 after Phase 25 completion*

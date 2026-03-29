@@ -1,7 +1,7 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Feature Parity & Differentiation
+milestone: v6.0
+milestone_name: Proactive Knowledge & Onboarding
 status: Milestone complete
 stopped_at: Completed 25-01-PLAN.md — session-start hook with knowledge injection, 31 tests
 last_updated: "2026-03-29T14:56:18.050Z"
