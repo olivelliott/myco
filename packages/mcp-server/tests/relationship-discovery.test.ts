@@ -5,8 +5,7 @@ import { rmSync, mkdirSync } from 'node:fs';
 import { openDatabase, prepareStatements } from '@myco/core';
 import type Database from 'better-sqlite3';
 import type { MycoStatements } from '@myco/core';
-import { discoverRelationships, createBackLinks } from '../src/relationship-discovery.js';
-import { rememberEntity } from '../src/tools.js';
+import { discoverRelationships, createBackLinks, rememberEntity } from '@myco/core';
 
 const testDir = join(tmpdir(), 'myco-reldiscovery-test-' + process.pid);
 

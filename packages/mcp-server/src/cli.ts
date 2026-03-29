@@ -8,9 +8,8 @@
 
 import { loadConfig } from '@myco/core';
 loadConfig();
-import { openDatabase, prepareStatements } from '@myco/core';
+import { openDatabase, prepareStatements, rememberEntity } from '@myco/core';
 import { runConsolidation } from './consolidator.js';
-import { rememberEntity } from './tools.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

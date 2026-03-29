@@ -6,8 +6,7 @@ import type Database from 'better-sqlite3';
 import { nanoid } from 'nanoid';
 import type { ConsolidationSummary, ExtractedFact, Episode } from '@myco/core';
 import type { MycoStatements } from '@myco/core';
-import { rememberEntity } from './tools.js';
-import { embedText } from './embed-client.js';
+import { rememberEntity, embedText } from '@myco/core';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

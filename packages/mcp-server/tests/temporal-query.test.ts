@@ -5,7 +5,7 @@ import { rmSync, mkdirSync } from 'node:fs';
 import { openDatabase, prepareStatements } from '@myco/core';
 import type Database from 'better-sqlite3';
 import type { MycoStatements } from '@myco/core';
-import { queryEntities } from '../src/tools.js';
+import { queryEntities } from '@myco/core';
 
 // Unique per-process test dir to avoid collisions in parallel test runs
 const testDir = join(tmpdir(), 'myco-temporal-test-' + process.pid);

@@ -16,6 +16,9 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./embed-client": {
+      "import": "./dist/embed-client.js"
     }
   },
   "files": [

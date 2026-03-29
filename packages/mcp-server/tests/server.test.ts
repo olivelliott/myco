@@ -5,8 +5,8 @@ import { rmSync, mkdirSync } from 'node:fs';
 import { openDatabase, prepareStatements } from '@myco/core';
 import type Database from 'better-sqlite3';
 import type { MycoStatements } from '@myco/core';
-import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending, forgetEntity } from '../src/tools.js';
-import * as embedClient from '../src/embed-client.js';
+import { rememberEntity, recallKnowledge, queryEntities, logEpisode, reEmbedPending, forgetEntity } from '@myco/core';
+import * as embedClient from '@myco/core/embed-client';
 
 const testDir = join(tmpdir(), 'myco-mcp-test-' + process.pid);
 

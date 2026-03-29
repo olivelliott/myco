@@ -5,7 +5,7 @@ import { rmSync, mkdirSync } from 'node:fs';
 import { openDatabase, prepareStatements } from '@myco/core';
 import type Database from 'better-sqlite3';
 import type { MycoStatements } from '@myco/core';
-import { classifyObservation, retireObservation, NEAR_DUP_DISTANCE_THRESHOLD } from '../src/dedup.js';
+import { classifyObservation, retireObservation, NEAR_DUP_DISTANCE_THRESHOLD } from '@myco/core';
 
 const testDir = join(tmpdir(), 'myco-dedup-test-' + process.pid);
 

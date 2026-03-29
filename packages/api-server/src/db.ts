@@ -9,7 +9,7 @@ export function getDb(): Database.Database {
   if (!_db) {
     _db = openDatabase();
   }
-  return _db;
+  return _db as Database.Database;
 }
 
 export function getStatements(): MycoStatements {
