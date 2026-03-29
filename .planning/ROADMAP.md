@@ -76,7 +76,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 **Milestone Goal:** Make Myco's knowledge graph proactively useful — easy to populate via guided onboarding, automatically surfaced at session start, and easy to correct when knowledge becomes wrong or outdated.
 
 - [x] **Phase 24: Context Scoping Schema** - project_paths table and walk-up path resolution enable working directory to map to a project entity (completed 2026-03-29)
-- [ ] **Phase 25: Session-Start Recall** - myco-recall-hook binary injects scoped knowledge at every Claude Code session start before the agent makes a decision
+- [x] **Phase 25: Session-Start Recall** - myco-recall-hook binary injects scoped knowledge at every Claude Code session start before the agent makes a decision (completed 2026-03-29)
 - [ ] **Phase 26: Project Onboarding** - myco init scans the codebase and populates the knowledge graph through a batch approval flow
 - [ ] **Phase 27: Workflow Rules and Knowledge Correction** - First-class rule entities and an update_knowledge tool keep the injected context actionable and trustworthy
 - [ ] **Phase 28: User Preferences** - Preferences accumulate globally across projects and surface reliably in session-start injection
@@ -191,9 +191,9 @@ Plans:
   3. Starting the same session three times with no graph changes between sessions shows "No changes since last session" on the third start rather than re-injecting identical content
   4. The hook completes and writes its output in under 500ms measured end-to-end — it uses FTS5 queries only, opens a read-only database connection, and never calls Ollama
   5. Starting a session in a directory with no registered project still works — the hook injects global-scope knowledge and degrades gracefully with a note that no project context was found
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 25-01-PLAN.md — Upgrade session-start hook with DB-backed knowledge injection, token budgeting, novelty filtering
+- [x] 25-01-PLAN.md — Upgrade session-start hook with DB-backed knowledge injection, token budgeting, novelty filtering
 
 ### Phase 26: Project Onboarding
 **Goal**: A developer can scan any codebase with `myco init` and commit a reviewed batch of inferred project knowledge to the graph in a single workflow, populating what session-start recall will surface in every future session
@@ -256,7 +256,7 @@ Plans:
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |
 | 24. Context Scoping Schema | v6.0 | 1/1 | Complete | 2026-03-29 |
-| 25. Session-Start Recall | v6.0 | 0/1 | Not started | - |
+| 25. Session-Start Recall | v6.0 | 1/1 | Complete   | 2026-03-29 |
 | 26. Project Onboarding | v6.0 | 0/? | Not started | - |
 | 27. Workflow Rules and Knowledge Correction | v6.0 | 0/? | Not started | - |
 | 28. User Preferences | v6.0 | 0/? | Not started | - |

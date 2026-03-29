@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: Proactive Knowledge & Onboarding
-status: Executing
-stopped_at: Completed 24-01-PLAN.md — project_paths table, walk-up resolution, ProjectPath type
-last_updated: "2026-03-29T14:34:52.837Z"
+milestone: v5.0
+milestone_name: Feature Parity & Differentiation
+status: Phase complete — ready for verification
+stopped_at: Completed 25-01-PLAN.md — session-start hook with knowledge injection, 31 tests
+last_updated: "2026-03-29T14:52:27.703Z"
 progress:
-  total_phases: 7
-  completed_phases: 6
-  total_plans: 12
-  completed_plans: 11
+  total_phases: 8
+  completed_phases: 7
+  total_plans: 13
+  completed_plans: 12
 ---
 
 # Project State
@@ -23,10 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 
 ## Current Position
 
-Phase: 25 (session-start-recall) — READY
-Plan: Not started
-Status: Executing
-Last activity: 2026-03-29 — Phase 24 complete, starting Phase 25
+Phase: 25 (Session-Start Recall) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -44,6 +42,7 @@ Last activity: 2026-03-29 — Phase 24 complete, starting Phase 25
 
 *Updated after each plan completion*
 | Phase 24 P01 | 2 | 2 tasks | 6 files |
+| Phase 25-session-start-recall P01 | 250s | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -61,6 +60,8 @@ Recent decisions affecting current work:
 - [v6.0 research]: Novelty filter tracking needs design decision — `injection_log` table vs deferred consolidation update
 - [Phase 24]: Migration framework (migrations.ts + schema_migrations table) added alongside existing try/catch ALTER TABLE pattern — new tables use migration tracking, legacy column additions keep try/catch
 - [Phase 24]: selectProjectForPath uses named $path parameter with slash-boundary LIKE (directory_path || '/%') to prevent false prefix matches like /a/bx matching /a/b
+- [Phase 25-session-start-recall]: hooks/package.json with type:commonjs required to fix ESM/CJS conflict from root monorepo type:module
+- [Phase 25-session-start-recall]: Session-start hook opens DB readonly:true, uses file-based hash cache at ~/.local/share/myco/last-injection-hash for novelty tracking (no DB write)
 
 ### Pending Todos
 
@@ -75,6 +76,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T14:30:08.880Z
-Stopped at: Completed 24-01-PLAN.md — project_paths table, walk-up resolution, ProjectPath type
+Last session: 2026-03-29T14:52:27.699Z
+Stopped at: Completed 25-01-PLAN.md — session-start hook with knowledge injection, 31 tests
 Resume file: None

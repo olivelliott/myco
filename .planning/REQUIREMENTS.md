@@ -10,14 +10,14 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 ### Context Scoping
 
 - [x] **SCOPE-01**: Working directory automatically maps to a project entity via `project_paths` table with walk-up directory resolution
-- [ ] **SCOPE-02**: Starting a Claude Code session in a project directory scopes all recall to that project without explicit `project` parameter
+- [x] **SCOPE-02**: Starting a Claude Code session in a project directory scopes all recall to that project without explicit `project` parameter
 
 ### Session-Start Recall
 
-- [ ] **RECALL-01**: A SessionStart hook automatically injects relevant knowledge into every Claude Code session via `additionalContext`
-- [ ] **RECALL-02**: Injected context is capped at 1,500 tokens with priority ordering (rules first, then top-K facts)
-- [ ] **RECALL-03**: The hook tracks what was injected and skips unchanged knowledge across consecutive sessions
-- [ ] **RECALL-04**: The hook uses FTS5-only queries (no Ollama) and completes in under 500ms with a read-only DB connection
+- [x] **RECALL-01**: A SessionStart hook automatically injects relevant knowledge into every Claude Code session via `additionalContext`
+- [x] **RECALL-02**: Injected context is capped at 1,500 tokens with priority ordering (rules first, then top-K facts)
+- [x] **RECALL-03**: The hook tracks what was injected and skips unchanged knowledge across consecutive sessions
+- [x] **RECALL-04**: The hook uses FTS5-only queries (no Ollama) and completes in under 500ms with a read-only DB connection
 
 ### Workflow Rules
 
@@ -64,11 +64,11 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SCOPE-01 | Phase 24 | Complete |
-| SCOPE-02 | Phase 25 | Pending |
-| RECALL-01 | Phase 25 | Pending |
-| RECALL-02 | Phase 25 | Pending |
-| RECALL-03 | Phase 25 | Pending |
-| RECALL-04 | Phase 25 | Pending |
+| SCOPE-02 | Phase 25 | Complete |
+| RECALL-01 | Phase 25 | Complete |
+| RECALL-02 | Phase 25 | Complete |
+| RECALL-03 | Phase 25 | Complete |
+| RECALL-04 | Phase 25 | Complete |
 | RULE-01 | Phase 27 | Pending |
 | RULE-02 | Phase 27 | Pending |
 | RULE-03 | Phase 27 | Pending |
