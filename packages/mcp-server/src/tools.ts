@@ -1356,6 +1356,13 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
 
         const result = await scanProject(targetPath);
 
+        // Register project path immediately so session-start recall can resolve it
+        const existing = stmts.selectProjectForPath.get({ $path: targetPath }) as { project_name: string } | undefined;
+        if (!existing) {
+          const { nanoid } = await import('nanoid');
+          stmts.insertProjectPath.run(nanoid(), result.project_name, targetPath, new Date().toISOString());
+        }
+
         return {
           content: [{
             type: 'text' as const,
@@ -1370,8 +1377,9 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
                 observation: e.observation,
                 confidence: e.confidence,
                 category: e.category,
+                relations: e.relations,
               })),
-              instructions: 'Present these proposed entities to the user. For each entity the user approves, call the remember() tool with: entity_name, entity_type, content=observation, confidence, project=project_name. After all approved entities are stored, the project knowledge will be available in future sessions.',
+              instructions: 'Present these proposed entities to the user. For each entity the user approves, call the remember() tool with: entity_name, entity_type, content=observation, confidence, project=project_name, relations (if present). After all approved entities are stored, the project knowledge will be available in future sessions.',
             }),
           }],
         };

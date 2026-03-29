@@ -174,7 +174,7 @@ function queryUserPreferences(db) {
     const stmt = db.prepare(`
       SELECT e.name,
              GROUP_CONCAT(o.content, '\n') as observations,
-             o.metadata as obs_metadata
+             e.metadata as obs_metadata
       FROM entities e
       LEFT JOIN observations o ON o.entity_id = e.id AND o.valid_until IS NULL
       WHERE e.type = 'user_preference'

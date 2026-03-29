@@ -45,6 +45,7 @@ function createTestDb() {
       project TEXT,
       confidence REAL NOT NULL DEFAULT 0.8,
       merged_into TEXT,
+      metadata TEXT NOT NULL DEFAULT '{}',
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -53,6 +54,7 @@ function createTestDb() {
       entity_id TEXT NOT NULL,
       content TEXT NOT NULL,
       confidence REAL NOT NULL DEFAULT 0.8,
+      metadata TEXT NOT NULL DEFAULT '{}',
       valid_until TEXT,
       FOREIGN KEY (entity_id) REFERENCES entities(id)
     );
