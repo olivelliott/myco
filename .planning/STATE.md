@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
 status: Ready to execute
-stopped_at: Completed 22-01-PLAN.md — extract business logic to @myco/core, thin wrapper MCP tools
-last_updated: "2026-03-29T14:46:45.048Z"
+stopped_at: Completed 22-02-PLAN.md — REST write routes, auth middleware, OpenAPI/Swagger UI
+last_updated: "2026-03-29T14:52:53.531Z"
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 22 (core-refactor-rest-write-routes-import-export) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -49,6 +49,7 @@ Plan: 2 of 3
 | Phase 21-memory-importance-decay P01 | 2 | 2 tasks | 3 files |
 | Phase 21-memory-importance-decay P02 | 3 | 2 tasks | 2 files |
 | Phase 22-core-refactor-rest-write-routes-import-export P01 | 15 | 2 tasks | 14 files |
+| Phase 22-core-refactor-rest-write-routes-import-export P02 | 525609 | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Recent decisions affecting current work:
 - [Phase 21]: Empty result guard (scoredRows.length > 0) prevents SQL syntax error on empty IN () clause in lazy write
 - [Phase 22-01]: @myco/core/embed-client subpath export required for vi.spyOn testability — memory-ops.js imports embed-client.js directly (same ESM module instance), not through barrel
 - [Phase 22-01]: MCP tools.ts thin wrapper pattern: only registerTools + Zod schemas remain; all business logic imported from @myco/core
+- [Phase Phase 22-02]: registerMemoryRoutes() registers on main OpenAPIHono instance (not sub-app) so routes appear in app.doc() spec
+- [Phase Phase 22-02]: apiKeyAuth disabled (passthrough) when MYCO_API_KEY unset — zero-config local dev, opt-in security
+- [Phase Phase 22-02]: @hono/zod-openapi handler returns cast to any — avoids fighting TypedResponse generics when JSON parsed from MCP envelope
 
 ### Pending Todos
 
@@ -97,6 +101,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T14:46:45.043Z
-Stopped at: Completed 22-01-PLAN.md — extract business logic to @myco/core, thin wrapper MCP tools
+Last session: 2026-03-29T14:52:53.526Z
+Stopped at: Completed 22-02-PLAN.md — REST write routes, auth middleware, OpenAPI/Swagger UI
 Resume file: None
