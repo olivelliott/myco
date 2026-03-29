@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type Database from 'better-sqlite3';
+import { createHash } from 'node:crypto';
 import { generateSessionId, buildProvenance } from '@myco/core';
 import type { SourceType } from '@myco/core';
 import type { MycoStatements } from '@myco/core';
@@ -611,6 +612,45 @@ export function mergeEntities(
   })();
 }
 
+/**
+ * Store a workflow rule as a first-class `workflow_rule` entity.
+ * Rules are decay-exempt, always confidence=1.0, and surfaced at every session start.
+ *
+ * This is a thin wrapper over `rememberEntity()` with fixed type/confidence,
+ * followed by a direct SQL update to mark the entity decay_exempt.
+ */
+export async function rememberRule(
+  db: Database.Database,
+  params: { instruction: string; project?: string; triggers?: string[]; agent_id?: string },
+  stmts: MycoStatements,
+): Promise<RememberResult> {
+  const { instruction, project, triggers, agent_id } = params;
+
+  // Auto-generate a stable, collision-resistant entity name from the instruction text
+  const hash = createHash('sha256').update(instruction).digest('hex').slice(0, 8);
+  const entity_name = `rule:${hash}`;
+
+  // If triggers provided, append them to the observation content
+  const content = triggers && triggers.length > 0
+    ? `${instruction}\n[triggers: ${triggers.join(', ')}]`
+    : instruction;
+
+  const result = await rememberEntity(db, {
+    content,
+    entity_name,
+    entity_type: 'workflow_rule',
+    confidence: 1.0,
+    source_type: 'agent_session',
+    agent_id,
+    project,
+  }, stmts);
+
+  // Set decay_exempt after rememberEntity — rememberEntity does not expose decay_exempt parameter
+  db.prepare('UPDATE entities SET decay_exempt = 1 WHERE name = ? AND type = ?').run(entity_name, 'workflow_rule');
+
+  return result;
+}
+
 export function registerTools(server: McpServer, db: Database.Database, stmts: MycoStatements): void {
   server.registerTool(
     'remember',
@@ -1029,6 +1069,28 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
               message: err instanceof Error ? err.message : String(err),
             }),
           }],
+        };
+      }
+    },
+  );
+
+  server.registerTool(
+    'remember_rule',
+    {
+      description: 'Store a workflow rule — an actionable instruction that will be surfaced at the start of every session. Rules are never similarity-ranked out.',
+      inputSchema: {
+        instruction: z.string().describe('The rule or instruction to remember (e.g. "always run tests before pushing")'),
+        project: z.string().optional().describe('Project to scope this rule to (omit for global rule)'),
+        triggers: z.array(z.string()).optional().describe('Optional trigger contexts when this rule applies (e.g. ["git commit", "git push"])'),
+      },
+    },
+    async ({ instruction, project, triggers }) => {
+      try {
+        return await rememberRule(db, { instruction, project, triggers }, stmts);
+      } catch (err) {
+        console.error('[remember_rule] tool error:', err);
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'An unexpected error occurred', code: 'INTERNAL_ERROR' }) }],
         };
       }
     },
