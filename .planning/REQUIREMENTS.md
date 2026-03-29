@@ -39,8 +39,8 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 
 ### User Preferences
 
-- [ ] **PREF-01**: User preferences are stored on a global user entity (`project=NULL`) with the source project as evidence
-- [ ] **PREF-02**: Preferences start project-scoped and promote to global only after corroboration from 2+ projects or explicit user confirmation
+- [x] **PREF-01**: User preferences are stored on a global user entity (`project=NULL`) with the source project as evidence
+- [x] **PREF-02**: Preferences start project-scoped and promote to global only after corroboration from 2+ projects or explicit user confirmation
 - [ ] **PREF-03**: User preferences are included in session-start recall alongside workflow rules and project facts
 
 ## Future Requirements
@@ -78,8 +78,8 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 | ONBOARD-04 | Phase 26 | Complete |
 | CORRECT-01 | Phase 27 | Complete |
 | CORRECT-02 | Phase 27 | Complete |
-| PREF-01 | Phase 28 | Pending |
-| PREF-02 | Phase 28 | Pending |
+| PREF-01 | Phase 28 | Complete |
+| PREF-02 | Phase 28 | Complete |
 | PREF-03 | Phase 28 | Pending |
 
 **Coverage:**

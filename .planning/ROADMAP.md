@@ -231,7 +231,7 @@ Plans:
   1. A preference inferred in project A is stored on a global user entity (`project=NULL`) with the source project recorded as evidence — it surfaces in sessions started from project B
   2. A preference first recorded in a single project is marked as project-scoped until it is corroborated by a second distinct project or explicitly confirmed by the user — at that point it promotes to the global user entity
   3. Session-start injection includes the user's global preferences alongside workflow rules and project facts, with each preference showing its source project attribution
-**Plans:** 2 plans
+**Plans:** 0/2 plans executed
 Plans:
 - [ ] 28-01-PLAN.md — Preference promotion logic + prepared statements + integration tests
 - [ ] 28-02-PLAN.md — Session-start source attribution formatting + end-to-end tests
@@ -267,4 +267,4 @@ Plans:
 | 25. Session-Start Recall | v6.0 | 1/1 | Complete    | 2026-03-29 |
 | 26. Project Onboarding | v6.0 | 2/2 | Complete    | 2026-03-29 |
 | 27. Workflow Rules and Knowledge Correction | v6.0 | 2/2 | Complete    | 2026-03-29 |
-| 28. User Preferences | v6.0 | 0/2 | Not started | - |
+| 28. User Preferences | v6.0 | 0/2 | Planned    |  |

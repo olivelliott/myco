@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: Proactive Knowledge & Onboarding
-status: Milestone complete
-stopped_at: Completed 27-02-PLAN.md — integration tests for remember_rule and update_knowledge
-last_updated: "2026-03-29T15:47:12.077Z"
+milestone: v5.0
+milestone_name: Feature Parity & Differentiation
+status: Ready to execute
+stopped_at: Completed 28-01-PLAN.md — preference promotion logic with promotePreference
+last_updated: "2026-03-29T16:20:24.321Z"
 progress:
-  total_phases: 10
+  total_phases: 11
   completed_phases: 9
-  total_plans: 17
+  total_plans: 19
   completed_plans: 16
 ---
 
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 27 — Workflow Rules and Knowledge Correction
+**Current focus:** Phase 28 — User Preferences
 
 ## Current Position
 
-Phase: 27
-Plan: Not started
+Phase: 28 (User Preferences) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Plan: Not started
 | Phase 26-project-onboarding P02 | 300 | 2 tasks | 2 files |
 | Phase 27-workflow-rules-and-knowledge-correction P01 | 480 | 2 tasks | 1 files |
 | Phase 27-workflow-rules-and-knowledge-correction P02 | 480 | 2 tasks | 3 files |
+| Phase 28-user-preferences P01 | 344 | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 27]: updateKnowledge Phase 2 uses db.transaction() for retire+insert+FTS atomicity; embedding attempted post-transaction due to async constraint
 - [Phase 27]: decay_exempt column must live on entities table (not just observations) — added migration 10
 - [Phase 27]: updateKnowledge confirm phase must pass 'unknown' agent_id (NOT NULL constraint on observations)
+- [Phase 28-user-preferences]: promotePreference triggers when allProjects.size >= 2 (entity.project + source_projects + incomingProject) — handles the case where selectEntityByNameType is project-agnostic so multiple projects share one entity row
+- [Phase 28-user-preferences]: merged_into nullable FK on entities table added via try/catch migration (consistent with existing schema.ts migration pattern)
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T15:43:47.935Z
-Stopped at: Completed 27-02-PLAN.md — integration tests for remember_rule and update_knowledge
+Last session: 2026-03-29T16:20:24.316Z
+Stopped at: Completed 28-01-PLAN.md — preference promotion logic with promotePreference
 Resume file: None
