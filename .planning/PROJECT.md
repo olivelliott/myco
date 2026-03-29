@@ -72,6 +72,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] Project onboarding via `myco init` CLI and `init_project` MCP tool with LLM inference and batch approval — *v6.0 Phase 26*
 - [x] Workflow rules as first-class `workflow_rule` entities with `remember_rule` tool, always surfaced at session start — *v6.0 Phase 27*
 - [x] Knowledge correction via `update_knowledge` tool with search-confirm-retire atomic flow — *v6.0 Phase 27*
+- [x] User preferences accumulate globally across projects with source attribution and 2-project corroboration promotion — *v6.0 Phase 28*
 
 ### Active
 
@@ -174,4 +175,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-29 after Phase 25 completion*
+*Last updated: 2026-03-29 after Phase 28 completion (v6.0 milestone complete)*
