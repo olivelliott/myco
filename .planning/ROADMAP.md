@@ -218,9 +218,9 @@ Plans:
   2. All workflow rules for the current project and global scope appear at the top of the session-start injection on the next session — they are never similarity-ranked out
   3. Calling `update_knowledge` with a natural language description of the change finds the matching active observation, presents it for confirmation, and on confirmation soft-retires it (setting `valid_until`) then inserts the replacement in a single atomic operation
   4. After calling `update_knowledge`, the retired observation is no longer returned by `recall` queries but is still present in the database with its `valid_until` timestamp set
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 27-01-PLAN.md — remember_rule + update_knowledge MCP tools
+- [x] 27-01-PLAN.md — remember_rule + update_knowledge MCP tools
 - [ ] 27-02-PLAN.md — Integration tests for both tools + session-start verification
 
 ### Phase 28: User Preferences
@@ -267,5 +267,5 @@ Plans:
 | 24. Context Scoping Schema | v6.0 | 1/1 | Complete | 2026-03-29 |
 | 25. Session-Start Recall | v6.0 | 1/1 | Complete    | 2026-03-29 |
 | 26. Project Onboarding | v6.0 | 2/2 | Complete    | 2026-03-29 |
-| 27. Workflow Rules and Knowledge Correction | v6.0 | 0/2 | Not started | - |
+| 27. Workflow Rules and Knowledge Correction | v6.0 | 1/2 | In Progress|  |
 | 28. User Preferences | v6.0 | 0/? | Not started | - |

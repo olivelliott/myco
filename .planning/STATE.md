@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: Proactive Knowledge & Onboarding
-status: Milestone complete
-stopped_at: Completed 26-02-PLAN.md — init_project MCP tool + onboarding tests
-last_updated: "2026-03-29T15:25:08.645Z"
+milestone: v5.0
+milestone_name: Feature Parity & Differentiation
+status: Ready to execute
+stopped_at: Completed 27-01-PLAN.md — remember_rule and update_knowledge MCP tools
+last_updated: "2026-03-29T15:38:23.336Z"
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 8
-  total_plans: 15
-  completed_plans: 14
+  total_plans: 17
+  completed_plans: 15
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 26 — Project Onboarding
+**Current focus:** Phase 27 — Workflow Rules and Knowledge Correction
 
 ## Current Position
 
-Phase: 26
-Plan: Not started
+Phase: 27 (Workflow Rules and Knowledge Correction) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -45,6 +45,7 @@ Plan: Not started
 | Phase 25-session-start-recall P01 | 250s | 1 tasks | 3 files |
 | Phase 26-project-onboarding P01 | 325 | 2 tasks | 2 files |
 | Phase 26-project-onboarding P02 | 300 | 2 tasks | 2 files |
+| Phase 27-workflow-rules-and-knowledge-correction P01 | 480 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Recent decisions affecting current work:
 - [Phase 26-project-onboarding]: myco init scanner reads README/CLAUDE.md truncated to 2000 chars, .eslintrc* (first found), package.json, tsconfig.json, git config — no source files per anchoring bias research
 - [Phase 26-project-onboarding]: init_project omits relations from MCP response to keep agent output clean — agent passes relations when calling remember()
 - [Phase 26-project-onboarding]: Top-level await import for onboarding-scanner in tests ensures vi.mock('ai') is applied before scanner module loads
+- [Phase 27]: Entity name for workflow rules uses rule:{sha256-8} — stable, collision-resistant, auto-generated from instruction text
+- [Phase 27]: updateKnowledge Phase 2 uses db.transaction() for retire+insert+FTS atomicity; embedding attempted post-transaction due to async constraint
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T15:19:57.669Z
-Stopped at: Completed 26-02-PLAN.md — init_project MCP tool + onboarding tests
+Last session: 2026-03-29T15:38:23.332Z
+Stopped at: Completed 27-01-PLAN.md — remember_rule and update_knowledge MCP tools
 Resume file: None

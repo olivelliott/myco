@@ -21,8 +21,8 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 
 ### Workflow Rules
 
-- [ ] **RULE-01**: Workflow rules are stored as `entity_type='workflow_rule'` entities with structured observation format
-- [ ] **RULE-02**: A `remember_rule` MCP tool captures actionable instructions with optional trigger context
+- [x] **RULE-01**: Workflow rules are stored as `entity_type='workflow_rule'` entities with structured observation format
+- [x] **RULE-02**: A `remember_rule` MCP tool captures actionable instructions with optional trigger context
 - [ ] **RULE-03**: All workflow rules for the current project + global scope are always included in session-start injection, not similarity-ranked
 
 ### Project Onboarding
@@ -34,8 +34,8 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 
 ### Knowledge Correction
 
-- [ ] **CORRECT-01**: An `update_knowledge` MCP tool finds stale observations by natural language query and presents them for confirmation
-- [ ] **CORRECT-02**: Confirmed corrections supersede the old observation (via `valid_until`) and insert the replacement in a single operation
+- [x] **CORRECT-01**: An `update_knowledge` MCP tool finds stale observations by natural language query and presents them for confirmation
+- [x] **CORRECT-02**: Confirmed corrections supersede the old observation (via `valid_until`) and insert the replacement in a single operation
 
 ### User Preferences
 
@@ -69,15 +69,15 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 | RECALL-02 | Phase 25 | Complete |
 | RECALL-03 | Phase 25 | Complete |
 | RECALL-04 | Phase 25 | Complete |
-| RULE-01 | Phase 27 | Pending |
-| RULE-02 | Phase 27 | Pending |
+| RULE-01 | Phase 27 | Complete |
+| RULE-02 | Phase 27 | Complete |
 | RULE-03 | Phase 27 | Pending |
 | ONBOARD-01 | Phase 26 | Complete |
 | ONBOARD-02 | Phase 26 | Complete |
 | ONBOARD-03 | Phase 26 | Complete |
 | ONBOARD-04 | Phase 26 | Complete |
-| CORRECT-01 | Phase 27 | Pending |
-| CORRECT-02 | Phase 27 | Pending |
+| CORRECT-01 | Phase 27 | Complete |
+| CORRECT-02 | Phase 27 | Complete |
 | PREF-01 | Phase 28 | Pending |
 | PREF-02 | Phase 28 | Pending |
 | PREF-03 | Phase 28 | Pending |
