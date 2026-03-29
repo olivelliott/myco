@@ -351,7 +351,7 @@ export function promotePreference(
       // Move loser's observations to winner
       stmts.updateObservationEntityId2.run(winner!.id, loser.id);
       // Mark loser as merged
-      stmts.setEntityMergedInto.run(winner!.id, now, loser.id);
+      stmts.setEntityMergedInto.run(winner!.id, loser.id);
     }
   })();
 
