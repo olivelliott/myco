@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: Proactive Knowledge & Onboarding
-status: Milestone complete
+milestone: v5.0
+milestone_name: Feature Parity & Differentiation
+status: v6.0 milestone complete
 stopped_at: Completed 28-02-PLAN.md — source attribution in session-start preference injection
-last_updated: "2026-03-29T16:37:20.335Z"
+last_updated: "2026-03-29T17:12:11.127Z"
 progress:
   total_phases: 11
-  completed_phases: 10
-  total_plans: 19
-  completed_plans: 18
+  completed_phases: 7
+  total_plans: 12
+  completed_plans: 12
 ---
 
 # Project State

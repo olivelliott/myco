@@ -1,5 +1,20 @@
 # Milestones
 
+## v6.0 Proactive Knowledge & Onboarding (Shipped: 2026-03-29)
+
+**Phases completed:** 5 phases, 8 plans across 47 commits
+
+**Key accomplishments:**
+
+- `project_paths` table with walk-up directory resolution maps any working directory to a registered project entity (migration 9)
+- SessionStart hook upgraded from static reminder to real knowledge injection — queries DB for workflow rules, project facts, and user preferences with priority-ordered 1,500-token cap, SHA-256 novelty filtering, and 500ms hard timeout
+- `myco init` CLI + `init_project` MCP tool scan project files (package.json, tsconfig, README, CLAUDE.md, git config), infer conventions via LLM, and present batch summary for cherry-pick approval
+- `remember_rule` MCP tool stores actionable workflow instructions as `workflow_rule` entities with `decay_exempt=1` — always surfaced at session start, never similarity-ranked out
+- `update_knowledge` MCP tool finds stale observations by semantic/FTS search, presents candidates, and atomically retires old + inserts replacement
+- User preferences accumulate globally across projects with `promotePreference()` triggering on 2+ project corroboration, source attribution shown in session-start injection
+
+---
+
 ## v3.0 Performance & Architecture Optimization (Shipped: 2026-03-26)
 
 **Phases completed:** 4 phases, 8 plans, 13 tasks

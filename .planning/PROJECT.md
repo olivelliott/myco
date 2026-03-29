@@ -12,25 +12,17 @@ Open source under Apache 2.0. Everything runs locally — SQLite, Ollama, no clo
 
 Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
 
-## Current Milestone: v6.0 Proactive Knowledge & Onboarding
+## Current Milestone: Planning next
 
-**Goal:** Make Myco's knowledge graph proactively useful — easy to populate via guided onboarding, automatically surfaced at session start, and easy to correct when knowledge becomes wrong or outdated.
-
-**Target features:**
-- Project onboarding walkthrough (`myco init`): agent scans codebase, infers project knowledge/conventions/user preferences, presents summary for approval before committing to graph
-- Workflow rules as first-class entities: actionable instructions ("update docs before committing") stored and reliably surfaced, not just passive memories
-- Automatic session-start recall: Myco proactively surfaces relevant project context, user preferences, and workflow rules based on working directory
-- Smart context scoping: working directory maps to project entity, pulls the right knowledge subset
-- User preference accumulation: preferences inferred from any project attach to global user entity with project as evidence
-- Knowledge correction & evolution: "update this" / "I changed my mind" flow that finds, shows, and supersedes stale knowledge in place
+v6.0 shipped. No active milestone — run `/gsd:new-milestone` to start the next one.
 
 ## Current State
 
-**Shipped:** v3.0 — 2026-03-26
-**Codebase:** ~5,000 LOC TypeScript across 4 packages
+**Shipped:** v6.0 — 2026-03-29
+**Codebase:** ~6,500 LOC TypeScript + JavaScript across 4 packages + hooks
 **Tech Stack:** Node.js 22, TypeScript 5.9, better-sqlite3, sqlite-vec, Ollama, Hono, React 19, Vite 8, Tailwind v4, shadcn/ui
 **License:** Apache 2.0
-**98 tests** passing across 6 test files
+**207 tests** passing across 12 test files
 
 ### Architecture
 - `packages/core` — shared DB, schema, types, provenance, prepared statement factory
@@ -101,6 +93,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - **v3.0** (2026-03-26) — Performance & architecture: config, prepared statements, query filters, error handling, namespace isolation
 - **v4.0** (2026-03-27) — Dashboard & graph experience: bioluminescent theme, graph core features, timeline, approvals refresh
 - **v5.0** (in progress, worktree) — Feature parity & differentiation: temporal versioning, dedup, decay, strength, REST write routes, auto-extraction
+- **v6.0** (2026-03-29) — Proactive knowledge & onboarding: session-start recall, myco init, workflow rules, knowledge correction, user preferences
 
 ### Out of Scope
 
@@ -116,8 +109,8 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - v3.0 shipped 2026-03-26 — 20 requirements validated across 4 phases (config, prepared statements, query filters, error handling, namespace isolation)
 - v4.0 shipped 2026-03-27 — dashboard & graph experience overhaul
 - v5.0 started 2026-03-27 — feature parity & differentiation (driven by competitive analysis vs Mem0, Zep, Cognee, mcp-memory-service) — running in separate worktree
-- v6.0 started 2026-03-27 — proactive knowledge & onboarding (make knowledge graph actively useful in every session)
-- 98 tests passing across 6 test files (core, mcp-server, gsd-hook, statements, embed-client, recall-filters)
+- v6.0 shipped 2026-03-29 — proactive knowledge & onboarding: session-start recall, myco init, workflow rules, knowledge correction, user preferences
+- 207 tests passing (176 vitest + 31 hook tests) across 12 test files
 - Design direction: bioluminescent deep-sea aesthetic — dark void, rich glows, organic depth, mycorrhizal metaphor
 - Vercel AI SDK v4.3.19 used for consolidation (v6 incompatible with ollama-ai-provider)
 - MCP SDK uses `registerTool()` with Zod v4
@@ -175,4 +168,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-29 after Phase 28 completion (v6.0 milestone complete)*
+*Last updated: 2026-03-29 after v6.0 milestone*
