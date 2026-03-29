@@ -122,6 +122,21 @@ const migrations: Migration[] = [
       db.exec(`CREATE INDEX IF NOT EXISTS idx_entities_merged_into ON entities(merged_into) WHERE merged_into IS NOT NULL`);
     },
   },
+  {
+    id: 9,
+    name: 'create_project_paths',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS project_paths (
+          id             TEXT PRIMARY KEY,
+          project_name   TEXT NOT NULL,
+          directory_path TEXT NOT NULL UNIQUE,
+          created_at     TEXT NOT NULL
+        )
+      `);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_project_paths_directory ON project_paths(directory_path)`);
+    },
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

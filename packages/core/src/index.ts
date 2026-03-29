@@ -19,4 +19,5 @@ export type {
   ConsolidationSummary,
   DedupClassification,
   ClassificationResult,
+  ProjectPath,
 } from './types.js';

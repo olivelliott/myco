@@ -114,3 +114,12 @@ export interface ClassificationResult {
   superseded_observation_id?: string; // Set when UPDATE — the observation to retire
   reason: string;                     // Human-readable explanation
 }
+
+// -- Context scoping types (Phase 24) ----------------------------------------
+
+export interface ProjectPath {
+  id: string;
+  project_name: string;
+  directory_path: string;  // Absolute filesystem path, no trailing slash
+  created_at: string;      // ISO 8601 UTC
+}

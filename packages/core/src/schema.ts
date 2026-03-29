@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { runMigrations } from './migrations.js';
 
 export function applySchema(db: Database.Database): void {
   db.exec(`

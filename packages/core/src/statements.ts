@@ -96,6 +96,12 @@ export interface MycoStatements {
   selectGraphNodes: Statement;
   selectGraphRelationships: Statement;
   selectEpisodesPaginated: Statement;
+
+  // -- Context scoping statements (Phase 24) ----------------------------------
+  insertProjectPath: Statement;
+  deleteProjectPath: Statement;
+  selectProjectForPath: Statement;
+  selectAllProjectPaths: Statement;
 }
 
 /**
@@ -507,6 +513,30 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     selectEpisodesPaginated: db.prepare(
       `SELECT id, session_id, agent_id, event_type, payload, created_at FROM episodes ORDER BY created_at DESC LIMIT ?`
+    ),
+
+    // -- Context scoping statements (Phase 24) --------------------------------
+    insertProjectPath: db.prepare(
+      `INSERT INTO project_paths (id, project_name, directory_path, created_at)
+       VALUES (?, ?, ?, ?)`
+    ),
+
+    deleteProjectPath: db.prepare(
+      `DELETE FROM project_paths WHERE directory_path = ?`
+    ),
+
+    selectProjectForPath: db.prepare(
+      `SELECT id, project_name, directory_path, created_at
+       FROM project_paths
+       WHERE ($path = directory_path OR $path LIKE directory_path || '/%')
+       ORDER BY LENGTH(directory_path) DESC
+       LIMIT 1`
+    ),
+
+    selectAllProjectPaths: db.prepare(
+      `SELECT id, project_name, directory_path, created_at
+       FROM project_paths
+       ORDER BY directory_path`
     ),
   };
 }
