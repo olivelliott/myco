@@ -67,6 +67,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] Error handling hardening and API input validation (Zod, structured errors) — *v3.0 Phase 11*
 
 - [x] Namespace/project isolation via project column on entities — *v3.0 Phase 12*
+- [x] Working directory to project entity mapping via project_paths table with walk-up resolution — *v6.0 Phase 24*
 
 ### Active
 
@@ -169,4 +170,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after v6.0 milestone start*
+*Last updated: 2026-03-29 after Phase 24 completion*
