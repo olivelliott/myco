@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Ready to execute
-stopped_at: Completed 22-02-PLAN.md — REST write routes, auth middleware, OpenAPI/Swagger UI
-last_updated: "2026-03-29T14:52:53.531Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 22-03-PLAN.md — import/export core functions, format adapters, MCP tools, HTTP endpoints
+last_updated: "2026-03-29T14:58:50.274Z"
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -50,6 +50,7 @@ Plan: 3 of 3
 | Phase 21-memory-importance-decay P02 | 3 | 2 tasks | 2 files |
 | Phase 22-core-refactor-rest-write-routes-import-export P01 | 15 | 2 tasks | 14 files |
 | Phase 22-core-refactor-rest-write-routes-import-export P02 | 525609 | 1 tasks | 5 files |
+| Phase 22-core-refactor-rest-write-routes-import-export P03 | 4 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase Phase 22-02]: registerMemoryRoutes() registers on main OpenAPIHono instance (not sub-app) so routes appear in app.doc() spec
 - [Phase Phase 22-02]: apiKeyAuth disabled (passthrough) when MYCO_API_KEY unset — zero-config local dev, opt-in security
 - [Phase Phase 22-02]: @hono/zod-openapi handler returns cast to any — avoids fighting TypedResponse generics when JSON parsed from MCP envelope
+- [Phase 22-03]: importGraph preserves original valid_from timestamps — critical for as_of temporal queries on imported data
+- [Phase 22-03]: Anthropic JSONL adapter uses two-pass parsing — entities first to build name map, then relations resolved against it
 
 ### Pending Todos
 
@@ -101,6 +104,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T14:52:53.526Z
-Stopped at: Completed 22-02-PLAN.md — REST write routes, auth middleware, OpenAPI/Swagger UI
+Last session: 2026-03-29T14:58:50.270Z
+Stopped at: Completed 22-03-PLAN.md — import/export core functions, format adapters, MCP tools, HTTP endpoints
 Resume file: None

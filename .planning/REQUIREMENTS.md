@@ -39,10 +39,10 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 
 ### Import/Export
 
-- [ ] **IO-01**: User can export the entire knowledge graph as a JSON file via MCP tool
-- [ ] **IO-02**: User can import knowledge from a JSON file via MCP tool
-- [ ] **IO-03**: Export → import round-trip is idempotent (no data loss or duplication)
-- [ ] **IO-04**: Import supports adapters for common formats (Mem0, MCP reference server JSONL)
+- [x] **IO-01**: User can export the entire knowledge graph as a JSON file via MCP tool
+- [x] **IO-02**: User can import knowledge from a JSON file via MCP tool
+- [x] **IO-03**: Export → import round-trip is idempotent (no data loss or duplication)
+- [x] **IO-04**: Import supports adapters for common formats (Mem0, MCP reference server JSONL)
 
 ### REST API
 
