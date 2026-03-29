@@ -233,9 +233,8 @@ Plans:
   3. Session-start injection includes the user's global preferences alongside workflow rules and project facts, with each preference showing its source project attribution
 **Plans:** 2 plans
 Plans:
-- [ ] 26-01-PLAN.md — Onboarding scanner module + CLI init subcommand with terminal approval
-- [ ] 26-02-PLAN.md — init_project MCP tool + onboarding tests
-**UI hint**: yes
+- [ ] 28-01-PLAN.md — Preference promotion logic + prepared statements + integration tests
+- [ ] 28-02-PLAN.md — Session-start source attribution formatting + end-to-end tests
 
 ## Progress
 
@@ -268,4 +267,4 @@ Plans:
 | 25. Session-Start Recall | v6.0 | 1/1 | Complete    | 2026-03-29 |
 | 26. Project Onboarding | v6.0 | 2/2 | Complete    | 2026-03-29 |
 | 27. Workflow Rules and Knowledge Correction | v6.0 | 2/2 | Complete    | 2026-03-29 |
-| 28. User Preferences | v6.0 | 0/? | Not started | - |
+| 28. User Preferences | v6.0 | 0/2 | Not started | - |
