@@ -81,7 +81,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
   2. A `schema_migrations` table exists in the database and contains one row per migration that has been applied, with a timestamp
   3. All v5.0 columns (`valid_from`, `valid_until`, `last_accessed_at`, `decay_exempt`, `strength`, `reinforcement_count`, `merged_into`) exist on their respective tables after startup
   4. TypeScript interfaces in `packages/core/src/types.ts` reflect the new columns — no `any` casts required to access them
-**Plans**: 1 plan
+**Plans**: 3 plans
 Plans:
 - [x] 18-01-PLAN.md — Migration framework + v5.0 schema columns + TypeScript types
 
@@ -109,7 +109,7 @@ Plans:
   1. Calling `remember` with the same entity relationship multiple times increases the relationship's `strength` score and `reinforcement_count` — a single `remember` does not reset the count to 1
   2. The upsert is idempotent — calling `remember` for a relationship that already exists updates strength rather than creating a duplicate relationship row
   3. The dashboard knowledge graph renders edges with varying line thickness proportional to relationship strength — a newly created relationship is visually thinner than a reinforced one
-**Plans**: 1 plan
+**Plans**: 3 plans
 Plans:
 - [x] 20-01-PLAN.md — Upsert SQL, API strength passthrough, dashboard edge width + tooltip
 **UI hint**: yes
@@ -137,9 +137,11 @@ Plans:
   3. An agent with a valid `MYCO_API_KEY` configured can authenticate write requests; requests without the key are rejected with 401 when auth is enabled
   4. Calling the `export_graph` MCP tool or `GET /api/export` produces a JSON file that, when imported with `import_graph` or `POST /api/import`, restores the exact same set of entities, observations, and relationships with no data loss or duplication
   5. The import tool accepts a Mem0-format JSON or the Anthropic reference server JSONL format and successfully loads its entries into the Myco knowledge graph
-**Plans**: 1 plan
+**Plans**: 3 plans
 Plans:
-- [ ] 22-XX-PLAN.md — [To be planned]
+- [ ] 22-01-PLAN.md — Extract business logic to @myco/core memory-ops
+- [ ] 22-02-PLAN.md — REST write routes with OpenAPI docs + auth middleware
+- [ ] 22-03-PLAN.md — Import/export functions, format adapters, MCP tools + HTTP endpoints
 
 ### Phase 23: Auto-Extraction + Incremental Consolidation
 **Goal**: Every `log_episode` call passively captures entities and relationships from the conversation context via LLM extraction without blocking the response, and high-confidence episodes trigger a micro-consolidation immediately rather than waiting for the nightly 2am cycle
@@ -179,6 +181,6 @@ Plans:
 | 18. Schema Foundation | v5.0 | 1/1 | Complete    | 2026-03-27 |
 | 19. Temporal Versioning + Dedup Resolution | v5.0 | 3/3 | Complete    | 2026-03-27 |
 | 20. Relationship Strength Scoring | v5.0 | 1/1 | Complete    | 2026-03-27 |
-| 21. Memory Importance Decay | v5.0 | 2/2 | Complete   | 2026-03-27 |
-| 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
+| 21. Memory Importance Decay | v5.0 | 2/2 | Complete    | 2026-03-27 |
+| 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/3 | Not started | - |
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |
