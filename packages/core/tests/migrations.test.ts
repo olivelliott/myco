@@ -35,7 +35,7 @@ describe('runMigrations()', () => {
     const db = openRawDb(dbPath);
     runMigrations(db);
     const count = db.prepare('SELECT COUNT(*) as cnt FROM schema_migrations').get() as { cnt: number };
-    expect(count.cnt).toBe(9);
+    expect(count.cnt).toBe(10);
     db.close();
   });
 
@@ -78,7 +78,7 @@ describe('runMigrations()', () => {
     runMigrations(db);
     runMigrations(db);
     const count = db.prepare('SELECT COUNT(*) as cnt FROM schema_migrations').get() as { cnt: number };
-    expect(count.cnt).toBe(9);
+    expect(count.cnt).toBe(10);
     db.close();
   });
 
@@ -172,7 +172,7 @@ describe('runMigrations()', () => {
 
     // Should have 9 rows recorded
     const count = db.prepare('SELECT COUNT(*) as cnt FROM schema_migrations').get() as { cnt: number };
-    expect(count.cnt).toBe(9);
+    expect(count.cnt).toBe(10);
 
     db.close();
   });

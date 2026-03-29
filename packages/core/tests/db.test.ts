@@ -250,7 +250,7 @@ describe('openDatabase()', () => {
     const result = db
       .prepare(`SELECT COUNT(*) as cnt FROM schema_migrations`)
       .get() as { cnt: number };
-    expect(result.cnt).toBe(9);
+    expect(result.cnt).toBe(10);
     db.close();
   });
 
