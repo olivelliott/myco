@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Phase complete — ready for verification
-stopped_at: Completed 22-03-PLAN.md — import/export core functions, format adapters, MCP tools, HTTP endpoints
-last_updated: "2026-03-29T14:58:50.274Z"
+status: Ready to execute
+stopped_at: Completed 23-01-PLAN.md — lock infrastructure and micro-consolidation pipeline
+last_updated: "2026-03-29T15:19:46.063Z"
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 12
+  completed_plans: 11
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 22 — core-refactor-rest-write-routes-import-export
+**Current focus:** Phase 23 — auto-extraction-incremental-consolidation
 
 ## Current Position
 
-Phase: 22 (core-refactor-rest-write-routes-import-export) — EXECUTING
-Plan: 3 of 3
+Phase: 23 (auto-extraction-incremental-consolidation) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Plan: 3 of 3
 | Phase 22-core-refactor-rest-write-routes-import-export P01 | 15 | 2 tasks | 14 files |
 | Phase 22-core-refactor-rest-write-routes-import-export P02 | 525609 | 1 tasks | 5 files |
 | Phase 22-core-refactor-rest-write-routes-import-export P03 | 4 | 2 tasks | 6 files |
+| Phase 23-auto-extraction-incremental-consolidation P01 | 98 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,9 @@ Recent decisions affecting current work:
 - [Phase Phase 22-02]: @hono/zod-openapi handler returns cast to any — avoids fighting TypedResponse generics when JSON parsed from MCP envelope
 - [Phase 22-03]: importGraph preserves original valid_from timestamps — critical for as_of temporal queries on imported data
 - [Phase 22-03]: Anthropic JSONL adapter uses two-pass parsing — entities first to build name map, then relations resolved against it
+- [Phase 23]: All auto-extracted facts unconditionally route to approval queue — no auto-approve threshold applies (micro-consolidation is capture-only)
+- [Phase 23]: acquireLock uses INSERT OR IGNORE singleton-row mutex with 5-min stale expiry recovery; releaseLock always runs in finally block
+- [Phase 23]: runMicroConsolidation: no rememberEntity, detectContradiction, or findMergeCandidates — those are nightly-only (CONSOL-03)
 
 ### Pending Todos
 
@@ -104,6 +108,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T14:58:50.270Z
-Stopped at: Completed 22-03-PLAN.md — import/export core functions, format adapters, MCP tools, HTTP endpoints
+Last session: 2026-03-29T15:19:46.059Z
+Stopped at: Completed 23-01-PLAN.md — lock infrastructure and micro-consolidation pipeline
 Resume file: None

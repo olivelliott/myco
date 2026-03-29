@@ -155,7 +155,7 @@ Plans:
   5. When both an incremental trigger and the nightly cron attempt to consolidate simultaneously, one waits for the lock and runs after — no episodes are processed twice
 **Plans**: 2 plans
 Plans:
-- [ ] 23-01-PLAN.md — Lock infrastructure, SourceType extension, micro-consolidation pipeline
+- [x] 23-01-PLAN.md — Lock infrastructure, SourceType extension, micro-consolidation pipeline
 - [ ] 23-02-PLAN.md — Fire-and-forget logEpisode integration + nightly lock wrapping
 
 ## Progress
@@ -184,4 +184,4 @@ Plans:
 | 20. Relationship Strength Scoring | v5.0 | 1/1 | Complete    | 2026-03-27 |
 | 21. Memory Importance Decay | v5.0 | 2/2 | Complete    | 2026-03-27 |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 3/3 | Complete    | 2026-03-29 |
-| 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/2 | Not started | - |
+| 23. Auto-Extraction + Incremental Consolidation | v5.0 | 1/2 | In Progress|  |
