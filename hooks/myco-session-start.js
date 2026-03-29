@@ -165,14 +165,16 @@ function queryProjectFacts(db, projectName) {
 }
 
 /**
- * Query global user preferences.
+ * Query global user preferences, including observation metadata for source attribution.
  * @param {import('better-sqlite3').Database} db
- * @returns {Array<{name: string, observations: string}>}
+ * @returns {Array<{name: string, observations: string, obs_metadata: string|null}>}
  */
 function queryUserPreferences(db) {
   try {
     const stmt = db.prepare(`
-      SELECT e.name, GROUP_CONCAT(o.content, '\n') as observations
+      SELECT e.name,
+             GROUP_CONCAT(o.content, '\n') as observations,
+             o.metadata as obs_metadata
       FROM entities e
       LEFT JOIN observations o ON o.entity_id = e.id AND o.valid_until IS NULL
       WHERE e.type = 'user_preference'
@@ -244,10 +246,19 @@ function buildInjection(rules, facts, preferences, projectName) {
     const lines = ['## Preferences'];
     for (const p of preferences) {
       const obs = p.observations ? p.observations.trim() : '';
+      let attribution = '';
+      if (p.obs_metadata) {
+        try {
+          const meta = JSON.parse(p.obs_metadata);
+          if (meta.source_projects && meta.source_projects.length > 0) {
+            attribution = ` (from: ${meta.source_projects.join(', ')})`;
+          }
+        } catch { /* ignore malformed metadata */ }
+      }
       if (obs) {
-        lines.push(`- **${p.name}**: ${obs}`);
+        lines.push(`- **${p.name}**: ${obs}${attribution}`);
       } else {
-        lines.push(`- **${p.name}**`);
+        lines.push(`- **${p.name}**${attribution}`);
       }
     }
     prefsSection = lines.join('\n') + '\n';
