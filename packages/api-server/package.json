@@ -4,7 +4,12 @@
   "description": "REST API server exposing Myco knowledge graph data to the dashboard",
   "license": "Apache-2.0",
   "author": "Olive",
-  "keywords": ["myco", "api", "hono", "knowledge-graph"],
+  "keywords": [
+    "myco",
+    "api",
+    "hono",
+    "knowledge-graph"
+  ],
   "type": "module",
   "exports": {
     ".": {
@@ -12,15 +17,19 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsup src/index.ts --format esm --dts"
   },
   "dependencies": {
-    "@myco/core": "*",
     "@hono/node-server": "^1.13.7",
+    "@hono/swagger-ui": "^0.6.1",
+    "@hono/zod-openapi": "^1.2.4",
     "@hono/zod-validator": "^0.5.0",
+    "@myco/core": "*",
     "hono": "^4.7.5",
     "nanoid": "^5.1.7"
   },
