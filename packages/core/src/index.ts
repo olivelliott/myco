@@ -17,3 +17,9 @@ export type {
   ExtractedFact,
   ConsolidationSummary,
 } from './types.js';
+export { embedText, embedBatch } from './embed-client.js';
+export { classifyObservation, retireObservation, NEAR_DUP_DISTANCE_THRESHOLD } from './dedup.js';
+export type { ClassificationResult } from './dedup.js';
+export { discoverRelationships, createBackLinks, invalidateEntityCache } from './relationship-discovery.js';
+export { rememberEntity, recallKnowledge, queryEntities, forgetEntity, logEpisode, reEmbedPending } from './memory-ops.js';
+export type { RememberParams, RememberResult, RecallResult, ForgetResult, LogEpisodeResult } from './memory-ops.js';
