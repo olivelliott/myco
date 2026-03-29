@@ -87,6 +87,13 @@ export interface MycoStatements {
   deleteVecEmbeddingByItemId: Statement;
   deleteFtsObservationByObsId: Statement;
 
+  // ── User preference promotion statements (Phase 28) ─────────────────────
+  selectPreferencesByNameAcrossProjects: Statement;
+  updateEntityProject: Statement;
+  updateEntityMetadata: Statement;
+  updateObservationMetadata: Statement;
+  updateObservationEntityId2: Statement;
+
   // ── API route statements ──────────────────────────────────────────────────
   selectAllPendingApprovals: Statement;
   selectEntitiesPaginated: Statement;
@@ -471,6 +478,33 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     deleteFtsObservationByObsId: db.prepare(
       `DELETE FROM fts_observations WHERE observation_id = ?`
+    ),
+
+    // ── User preference promotion statements (Phase 28) ──────────────────────
+    selectPreferencesByNameAcrossProjects: db.prepare(
+      `SELECT e.id, e.name, e.project, e.metadata,
+              GROUP_CONCAT(o.id, '|') as obs_ids
+       FROM entities e
+       LEFT JOIN observations o ON o.entity_id = e.id
+       WHERE e.name = ? AND e.type = 'user_preference'
+         AND e.merged_into IS NULL
+       GROUP BY e.id`
+    ),
+
+    updateEntityProject: db.prepare(
+      `UPDATE entities SET project = ?, updated_at = ? WHERE id = ?`
+    ),
+
+    updateEntityMetadata: db.prepare(
+      `UPDATE entities SET metadata = ?, updated_at = ? WHERE id = ?`
+    ),
+
+    updateObservationMetadata: db.prepare(
+      `UPDATE observations SET metadata = ? WHERE id = ?`
+    ),
+
+    updateObservationEntityId2: db.prepare(
+      `UPDATE observations SET entity_id = ? WHERE entity_id = ?`
     ),
 
     // ── API route statements ─────────────────────────────────────────────────
