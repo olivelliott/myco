@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Feature Parity & Differentiation
-status: Phase complete — ready for verification
+milestone: v6.0
+milestone_name: Proactive Knowledge & Onboarding
+status: Milestone complete
 stopped_at: Completed 26-02-PLAN.md — init_project MCP tool + onboarding tests
-last_updated: "2026-03-29T15:19:57.673Z"
+last_updated: "2026-03-29T15:25:08.645Z"
 progress:
   total_phases: 9
   completed_phases: 8
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 
 ## Current Position
 
-Phase: 26 (Project Onboarding) — EXECUTING
-Plan: 2 of 2
+Phase: 26
+Plan: Not started
 
 ## Performance Metrics
 
