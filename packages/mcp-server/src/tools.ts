@@ -161,6 +161,20 @@ export async function rememberEntity(
     createBackLinks(db, entityId, entity_name, stmts);
   }
 
+  // Phase 28: Preference promotion check
+  if (entity_type === 'user_preference' && project !== undefined) {
+    const promotion = promotePreference(db, stmts, entity_name, project ?? null);
+    if (promotion.promoted) {
+      const sources = promotion.sourceProjects?.join(', ') || 'multiple projects';
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Stored entity "${entity_name}" (${entityId}) with observation. Promoted to global preference (sources: ${sources}).`,
+        }],
+      };
+    }
+  }
+
   return {
     content: [
       {
@@ -168,6 +182,134 @@ export async function rememberEntity(
         text: `Stored entity "${entity_name}" (${entityId}) with observation.`,
       },
     ],
+  };
+}
+
+/**
+ * Check if a user_preference entity should be promoted to global scope.
+ * Called after rememberEntity() when entity_type is 'user_preference'.
+ *
+ * Promotion triggers:
+ * 1. Same preference name exists under 2+ distinct non-null projects -> merge to global
+ * 2. Already-global preference gains a new project -> update source_projects metadata
+ *
+ * On promotion:
+ * - The entity's project is set to NULL (global)
+ * - entity metadata.source_projects is updated with all contributing project names
+ * - All active observations on the winner entity get matching metadata
+ * - Any secondary entities (distinct DB rows) get merged_into set to winner.id
+ */
+export function promotePreference(
+  db: Database.Database,
+  stmts: MycoStatements,
+  entityName: string,
+  currentProject: string | null,
+): { promoted: boolean; globalEntityId?: string; sourceProjects?: string[] } {
+  interface PrefRow {
+    id: string;
+    name: string;
+    project: string | null;
+    metadata: string;
+    obs_ids: string | null;
+  }
+
+  const rows = stmts.selectPreferencesByNameAcrossProjects.all(entityName) as PrefRow[];
+
+  if (rows.length === 0) {
+    return { promoted: false };
+  }
+
+  // Collect all distinct non-null projects across all matching entities
+  const allProjects = new Set<string>();
+  for (const row of rows) {
+    if (row.project !== null) {
+      allProjects.add(row.project);
+    }
+    // Also pull source_projects from existing metadata (already-promoted entities)
+    try {
+      const meta = JSON.parse(row.metadata || '{}') as { source_projects?: string[] };
+      if (Array.isArray(meta.source_projects)) {
+        for (const p of meta.source_projects) {
+          allProjects.add(p);
+        }
+      }
+    } catch {
+      // malformed metadata — skip
+    }
+  }
+
+  // If currentProject is provided and non-null, include it
+  if (currentProject !== null) {
+    allProjects.add(currentProject);
+  }
+
+  const hasGlobal = rows.some(r => r.project === null);
+
+  // Key insight: selectEntityByNameType matches by name+type only (no project filter).
+  // When project "beta" calls rememberEntity for an entity owned by project "alpha",
+  // it finds the same entity (project='alpha') and adds an observation to it.
+  // Promotion should trigger when:
+  //   1. The entity is project-scoped AND the incoming project differs from entity's project
+  //   2. The entity has 2+ distinct source_projects already accumulated
+  //   3. The entity is already global and a new project is being added (update source_projects)
+  const distinctProjects = allProjects.size;
+  const shouldPromote = distinctProjects >= 2 || hasGlobal;
+
+  if (!shouldPromote) {
+    return { promoted: false };
+  }
+
+  const sourceProjects = Array.from(allProjects).sort();
+
+  // Pick winner: prefer existing global entity, then entity with most obs, then first
+  let winner = rows.find(r => r.project === null);
+  if (!winner) {
+    winner = rows.reduce((best, r) => {
+      const bestObsCount = best.obs_ids ? best.obs_ids.split('|').length : 0;
+      const rObsCount = r.obs_ids ? r.obs_ids.split('|').length : 0;
+      return rObsCount > bestObsCount ? r : best;
+    }, rows[0]);
+  }
+
+  const losers = rows.filter(r => r.id !== winner!.id);
+  const now = new Date().toISOString();
+  const metadataJson = JSON.stringify({ source_projects: sourceProjects });
+
+  db.transaction(() => {
+    // Update winner: set project=NULL, update metadata
+    stmts.updateEntityProject.run(null, now, winner!.id);
+    stmts.updateEntityMetadata.run(metadataJson, now, winner!.id);
+
+    // Update active observations on winner with source_projects metadata
+    if (winner!.obs_ids) {
+      const obsIds = winner!.obs_ids.split('|').filter(Boolean);
+      for (const obsId of obsIds) {
+        stmts.updateObservationMetadata.run(metadataJson, obsId);
+      }
+    }
+
+    // Also update any observations written in the current call (not yet in obs_ids from query)
+    // by updating all observations for winner entity
+    const allWinnerObs = db.prepare(
+      `SELECT id FROM observations WHERE entity_id = ?`
+    ).all(winner!.id) as Array<{ id: string }>;
+    for (const obs of allWinnerObs) {
+      stmts.updateObservationMetadata.run(metadataJson, obs.id);
+    }
+
+    // Merge losers into winner
+    for (const loser of losers) {
+      // Move loser's observations to winner
+      stmts.updateObservationEntityId2.run(winner!.id, loser.id);
+      // Mark loser as merged
+      stmts.setEntityMergedInto.run(winner!.id, now, loser.id);
+    }
+  })();
+
+  return {
+    promoted: true,
+    globalEntityId: winner.id,
+    sourceProjects,
   };
 }
 

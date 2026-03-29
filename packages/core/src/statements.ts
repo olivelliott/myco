@@ -61,6 +61,14 @@ export interface MycoStatements {
   countObservationsAfter: Statement;
   countRelationshipsAfter: Statement;
 
+  // ── User preference promotion statements (Phase 28) ─────────────────────
+  selectPreferencesByNameAcrossProjects: Statement;
+  updateEntityProject: Statement;
+  updateEntityMetadata: Statement;
+  updateObservationMetadata: Statement;
+  setEntityMergedInto: Statement;
+  updateObservationEntityId2: Statement;
+
   // ── API route statements ──────────────────────────────────────────────────
   selectAllPendingApprovals: Statement;
   selectEntitiesPaginated: Statement;
@@ -319,6 +327,37 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     countRelationshipsAfter: db.prepare(
       `SELECT COUNT(*) as n FROM relationships WHERE created_at > ?`
+    ),
+
+    // ── User preference promotion statements (Phase 28) ──────────────────────
+    selectPreferencesByNameAcrossProjects: db.prepare(
+      `SELECT e.id, e.name, e.project, e.metadata,
+              GROUP_CONCAT(o.id, '|') as obs_ids
+       FROM entities e
+       LEFT JOIN observations o ON o.entity_id = e.id
+       WHERE e.name = ? AND e.type = 'user_preference'
+         AND e.merged_into IS NULL
+       GROUP BY e.id`
+    ),
+
+    updateEntityProject: db.prepare(
+      `UPDATE entities SET project = ?, updated_at = ? WHERE id = ?`
+    ),
+
+    updateEntityMetadata: db.prepare(
+      `UPDATE entities SET metadata = ?, updated_at = ? WHERE id = ?`
+    ),
+
+    updateObservationMetadata: db.prepare(
+      `UPDATE observations SET metadata = ? WHERE id = ?`
+    ),
+
+    setEntityMergedInto: db.prepare(
+      `UPDATE entities SET merged_into = ?, updated_at = ? WHERE id = ?`
+    ),
+
+    updateObservationEntityId2: db.prepare(
+      `UPDATE observations SET entity_id = ? WHERE entity_id = ?`
     ),
 
     // ── API route statements ─────────────────────────────────────────────────

@@ -132,4 +132,11 @@ export function applySchema(db: Database.Database): void {
   } catch {
     // Index may already exist
   }
+
+  // Migration: add merged_into column for entity deduplication / preference promotion (Phase 28)
+  try {
+    db.exec(`ALTER TABLE entities ADD COLUMN merged_into TEXT DEFAULT NULL REFERENCES entities(id)`);
+  } catch {
+    // Column already exists
+  }
 }
