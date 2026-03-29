@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Ready to execute
-stopped_at: Completed 28-01-PLAN.md — preference promotion logic with promotePreference
-last_updated: "2026-03-29T16:20:24.321Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 28-02-PLAN.md — source attribution in session-start preference injection
+last_updated: "2026-03-29T16:32:43.395Z"
 progress:
   total_phases: 11
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 19
-  completed_plans: 16
+  completed_plans: 18
 ---
 
 # Project State
@@ -48,6 +48,7 @@ Plan: 2 of 2
 | Phase 27-workflow-rules-and-knowledge-correction P01 | 480 | 2 tasks | 1 files |
 | Phase 27-workflow-rules-and-knowledge-correction P02 | 480 | 2 tasks | 3 files |
 | Phase 28-user-preferences P01 | 344 | 1 tasks | 4 files |
+| Phase 28-user-preferences P02 | 124 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,7 @@ Recent decisions affecting current work:
 - [Phase 27]: updateKnowledge confirm phase must pass 'unknown' agent_id (NOT NULL constraint on observations)
 - [Phase 28-user-preferences]: promotePreference triggers when allProjects.size >= 2 (entity.project + source_projects + incomingProject) — handles the case where selectEntityByNameType is project-agnostic so multiple projects share one entity row
 - [Phase 28-user-preferences]: merged_into nullable FK on entities table added via try/catch migration (consistent with existing schema.ts migration pattern)
+- [Phase 28-user-preferences]: obs_metadata in GROUP BY picks one observation's metadata per entity; acceptable because Plan 01 ensures all active observations on a promoted preference share the same source_projects value
 
 ### Pending Todos
 
@@ -91,6 +93,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T16:20:24.316Z
-Stopped at: Completed 28-01-PLAN.md — preference promotion logic with promotePreference
+Last session: 2026-03-29T16:32:43.390Z
+Stopped at: Completed 28-02-PLAN.md — source attribution in session-start preference injection
 Resume file: None

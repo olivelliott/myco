@@ -79,7 +79,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 - [x] **Phase 25: Session-Start Recall** - myco-recall-hook binary injects scoped knowledge at every Claude Code session start before the agent makes a decision (completed 2026-03-29)
 - [x] **Phase 26: Project Onboarding** - myco init scans the codebase and populates the knowledge graph through a batch approval flow (completed 2026-03-29)
 - [x] **Phase 27: Workflow Rules and Knowledge Correction** - First-class rule entities and an update_knowledge tool keep the injected context actionable and trustworthy (completed 2026-03-29)
-- [ ] **Phase 28: User Preferences** - Preferences accumulate globally across projects and surface reliably in session-start injection
+- [x] **Phase 28: User Preferences** - Preferences accumulate globally across projects and surface reliably in session-start injection (completed 2026-03-29)
 
 ## Phase Details
 
@@ -231,10 +231,10 @@ Plans:
   1. A preference inferred in project A is stored on a global user entity (`project=NULL`) with the source project recorded as evidence — it surfaces in sessions started from project B
   2. A preference first recorded in a single project is marked as project-scoped until it is corroborated by a second distinct project or explicitly confirmed by the user — at that point it promotes to the global user entity
   3. Session-start injection includes the user's global preferences alongside workflow rules and project facts, with each preference showing its source project attribution
-**Plans:** 0/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 28-01-PLAN.md — Preference promotion logic + prepared statements + integration tests
-- [ ] 28-02-PLAN.md — Session-start source attribution formatting + end-to-end tests
+- [x] 28-01-PLAN.md — Preference promotion logic + prepared statements + integration tests
+- [x] 28-02-PLAN.md — Session-start source attribution formatting + end-to-end tests
 
 ## Progress
 
@@ -267,4 +267,4 @@ Plans:
 | 25. Session-Start Recall | v6.0 | 1/1 | Complete    | 2026-03-29 |
 | 26. Project Onboarding | v6.0 | 2/2 | Complete    | 2026-03-29 |
 | 27. Workflow Rules and Knowledge Correction | v6.0 | 2/2 | Complete    | 2026-03-29 |
-| 28. User Preferences | v6.0 | 0/2 | Planned    |  |
+| 28. User Preferences | v6.0 | 2/2 | Complete   | 2026-03-29 |
