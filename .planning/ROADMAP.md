@@ -204,7 +204,10 @@ Plans:
   2. Accepting the batch summary commits all approved entities to the graph and registers the project path in `project_paths` in one operation — the project is then immediately available for session-start recall
   3. Running `myco init` a second time on the same project does not create duplicate entities — the dedup classifier handles re-runs correctly
   4. An agent can trigger the same onboarding scan from within a Claude Code session via the `init_project` MCP tool and receive the same batch summary result as the CLI command
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 26-01-PLAN.md — Onboarding scanner module + CLI init subcommand with terminal approval
+- [ ] 26-02-PLAN.md — init_project MCP tool + onboarding tests
 
 ### Phase 27: Workflow Rules and Knowledge Correction
 **Goal**: Agents can store actionable procedural instructions as first-class rule entities that are always surfaced at session start, and any stale or incorrect knowledge can be found and superseded in a single operation
@@ -215,7 +218,10 @@ Plans:
   2. All workflow rules for the current project and global scope appear at the top of the session-start injection on the next session — they are never similarity-ranked out
   3. Calling `update_knowledge` with a natural language description of the change finds the matching active observation, presents it for confirmation, and on confirmation soft-retires it (setting `valid_until`) then inserts the replacement in a single atomic operation
   4. After calling `update_knowledge`, the retired observation is no longer returned by `recall` queries but is still present in the database with its `valid_until` timestamp set
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 26-01-PLAN.md — Onboarding scanner module + CLI init subcommand with terminal approval
+- [ ] 26-02-PLAN.md — init_project MCP tool + onboarding tests
 
 ### Phase 28: User Preferences
 **Goal**: User preferences accumulate globally across projects with source attribution, so the agent always knows the user's preferences regardless of which project initiated the session
@@ -225,7 +231,10 @@ Plans:
   1. A preference inferred in project A is stored on a global user entity (`project=NULL`) with the source project recorded as evidence — it surfaces in sessions started from project B
   2. A preference first recorded in a single project is marked as project-scoped until it is corroborated by a second distinct project or explicitly confirmed by the user — at that point it promotes to the global user entity
   3. Session-start injection includes the user's global preferences alongside workflow rules and project facts, with each preference showing its source project attribution
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 26-01-PLAN.md — Onboarding scanner module + CLI init subcommand with terminal approval
+- [ ] 26-02-PLAN.md — init_project MCP tool + onboarding tests
 **UI hint**: yes
 
 ## Progress
