@@ -1,8 +1,8 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Feature Parity & Differentiation
-status: Milestone complete
+milestone: v6.0
+milestone_name: Proactive Knowledge & Onboarding
+status: Executing
 stopped_at: Completed 24-01-PLAN.md — project_paths table, walk-up resolution, ProjectPath type
 last_updated: "2026-03-29T14:34:52.837Z"
 progress:
@@ -19,12 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 24 — Context Scoping Schema
+**Current focus:** Phase 25 — Session-Start Recall
 
 ## Current Position
 
-Phase: 24
+Phase: 25 (session-start-recall) — READY
 Plan: Not started
+Status: Executing
+Last activity: 2026-03-29 — Phase 24 complete, starting Phase 25
 
 ## Performance Metrics
 
