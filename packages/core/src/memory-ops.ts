@@ -11,6 +11,15 @@ import type { SourceType } from './types.js';
 // The session ID is created once per module load lifetime.
 const SESSION_ID = generateSessionId();
 
+// ─── Episode callback (fire-and-forget extraction) ───────────────────────────
+// EXTRACT-02: Callback is registered by @myco/mcp-server at startup to avoid circular dependency.
+// logEpisode calls this via setImmediate after returning the response.
+let onEpisodeLogged: ((episodeId: string) => Promise<void>) | null = null;
+
+export function registerEpisodeCallback(fn: (episodeId: string) => Promise<void>): void {
+  onEpisodeLogged = fn;
+}
+
 export interface RememberParams {
   content: string;
   entity_name: string;
@@ -564,6 +573,15 @@ export async function logEpisode(
   const id = nanoid();
 
   stmts.insertEpisode.run(id, prov.session_id, prov.agent_id, event_type, JSON.stringify(payload), prov.created_at);
+
+  // EXTRACT-02: fire-and-forget — does NOT block response
+  if (onEpisodeLogged) {
+    setImmediate(() => {
+      onEpisodeLogged!(id).catch((err: unknown) => {
+        console.error('[log_episode] background extraction error:', err instanceof Error ? err.message : err);
+      });
+    });
+  }
 
   return {
     content: [{ type: 'text' as const, text: JSON.stringify({ id, session_id: prov.session_id }) }],
