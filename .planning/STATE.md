@@ -1,16 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: Proactive Knowledge & Onboarding
-status: Ready to plan
-stopped_at: Roadmap created — v6.0 phases 24-28 defined
-last_updated: "2026-03-27"
-last_activity: 2026-03-27 — v6.0 roadmap written, 18 requirements mapped to 5 phases
+milestone: v5.0
+milestone_name: Feature Parity & Differentiation
+status: Milestone complete
+stopped_at: Completed 24-01-PLAN.md — project_paths table, walk-up resolution, ProjectPath type
+last_updated: "2026-03-29T14:34:52.837Z"
 progress:
-  total_phases: 5
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 7
+  completed_phases: 6
+  total_plans: 12
+  completed_plans: 11
 ---
 
 # Project State
@@ -20,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 24 — Context Scoping Schema (v6.0 first phase)
+**Current focus:** Phase 24 — Context Scoping Schema
 
 ## Current Position
 
-Phase: 24 of 28 (Context Scoping Schema)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-03-27 — v6.0 roadmap written, 18 requirements mapped to 5 phases
-
-Progress: [░░░░░░░░░░] 0% (v6.0)
+Phase: 24
+Plan: Not started
 
 ## Performance Metrics
 
@@ -46,6 +41,7 @@ Progress: [░░░░░░░░░░] 0% (v6.0)
 | - | - | - | - |
 
 *Updated after each plan completion*
+| Phase 24 P01 | 2 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -61,6 +57,8 @@ Recent decisions affecting current work:
 - [v6.0 research]: `myco init` scans README, CLAUDE.md, package manifests only — no source files (anchoring bias research)
 - [v6.0 research]: One new npm dependency: `ignore@5.3.x` for gitignore-aware file filtering during `myco init`
 - [v6.0 research]: Novelty filter tracking needs design decision — `injection_log` table vs deferred consolidation update
+- [Phase 24]: Migration framework (migrations.ts + schema_migrations table) added alongside existing try/catch ALTER TABLE pattern — new tables use migration tracking, legacy column additions keep try/catch
+- [Phase 24]: selectProjectForPath uses named $path parameter with slash-boundary LIKE (directory_path || '/%') to prevent false prefix matches like /a/bx matching /a/b
 
 ### Pending Todos
 
@@ -75,6 +73,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27
-Stopped at: Roadmap created — v6.0 phases 24-28 written to ROADMAP.md
+Last session: 2026-03-29T14:30:08.880Z
+Stopped at: Completed 24-01-PLAN.md — project_paths table, walk-up resolution, ProjectPath type
 Resume file: None

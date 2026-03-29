@@ -9,7 +9,7 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 
 ### Context Scoping
 
-- [ ] **SCOPE-01**: Working directory automatically maps to a project entity via `project_paths` table with walk-up directory resolution
+- [x] **SCOPE-01**: Working directory automatically maps to a project entity via `project_paths` table with walk-up directory resolution
 - [ ] **SCOPE-02**: Starting a Claude Code session in a project directory scopes all recall to that project without explicit `project` parameter
 
 ### Session-Start Recall
@@ -63,7 +63,7 @@ Requirements for Proactive Knowledge & Onboarding milestone. Each maps to roadma
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCOPE-01 | Phase 24 | Pending |
+| SCOPE-01 | Phase 24 | Complete |
 | SCOPE-02 | Phase 25 | Pending |
 | RECALL-01 | Phase 25 | Pending |
 | RECALL-02 | Phase 25 | Pending |

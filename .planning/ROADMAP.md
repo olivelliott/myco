@@ -75,7 +75,7 @@ Full details: `.planning/milestones/v4.0-ROADMAP.md`
 
 **Milestone Goal:** Make Myco's knowledge graph proactively useful — easy to populate via guided onboarding, automatically surfaced at session start, and easy to correct when knowledge becomes wrong or outdated.
 
-- [ ] **Phase 24: Context Scoping Schema** - project_paths table and walk-up path resolution enable working directory to map to a project entity
+- [x] **Phase 24: Context Scoping Schema** - project_paths table and walk-up path resolution enable working directory to map to a project entity (completed 2026-03-29)
 - [ ] **Phase 25: Session-Start Recall** - myco-recall-hook binary injects scoped knowledge at every Claude Code session start before the agent makes a decision
 - [ ] **Phase 26: Project Onboarding** - myco init scans the codebase and populates the knowledge graph through a batch approval flow
 - [ ] **Phase 27: Workflow Rules and Knowledge Correction** - First-class rule entities and an update_knowledge tool keep the injected context actionable and trustworthy
@@ -177,7 +177,7 @@ Plans:
   1. After running `myco link-project /path/to/project MyProject`, a row exists in `project_paths` and querying with any subdirectory of that path returns "MyProject" via walk-up resolution
   2. The `selectProjectForPath` prepared statement traverses parent directories and returns the nearest registered ancestor — a session started in `/path/to/project/src` resolves to the project registered at `/path/to/project`
   3. The migration runs cleanly on an existing v5.0 database without errors, and the `project_paths` table is absent before migration 9 and present after
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 24-01-PLAN.md — Migration 9 (project_paths table), walk-up path resolution, prepared statements, integration tests
 
@@ -253,7 +253,7 @@ Plans:
 | 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |
-| 24. Context Scoping Schema | v6.0 | 0/1 | Planning complete | - |
+| 24. Context Scoping Schema | v6.0 | 0/1 | Complete    | 2026-03-29 |
 | 25. Session-Start Recall | v6.0 | 0/? | Not started | - |
 | 26. Project Onboarding | v6.0 | 0/? | Not started | - |
 | 27. Workflow Rules and Knowledge Correction | v6.0 | 0/? | Not started | - |
