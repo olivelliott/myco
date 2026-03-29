@@ -9,6 +9,7 @@ import { embedText, embedBatch } from './embed-client.js';
 import { runConsolidation } from './consolidator.js';
 import { discoverRelationships, createBackLinks, invalidateEntityCache } from './relationship-discovery.js';
 import { classifyObservation, retireObservation } from './dedup-resolver.js';
+import { scanProject } from './onboarding-scanner.js';
 
 // The session ID is created once per server process lifetime.
 const SESSION_ID = generateSessionId();
@@ -978,6 +979,56 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
         console.error('[forget] tool error:', err);
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'An unexpected error occurred', code: 'INTERNAL_ERROR' }) }],
+        };
+      }
+    },
+  );
+
+  server.registerTool(
+    'init_project',
+    {
+      description: 'Scan a project directory to discover conventions, patterns, and preferences. Returns proposed entities for the agent to present to the user for approval. After approval, call remember() for each accepted entity to commit them to the knowledge graph.',
+      inputSchema: {
+        path: z.string().optional().describe('Absolute path to the project directory. Defaults to the current working directory if omitted.'),
+      },
+    },
+    async ({ path: projectPath }) => {
+      try {
+        const targetPath = projectPath || process.cwd();
+        console.error('[init_project] scanning:', targetPath);
+
+        const result = await scanProject(targetPath);
+
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              project_name: result.project_name,
+              project_path: result.project_path,
+              files_scanned: result.files_scanned,
+              scan_duration_ms: result.scan_duration_ms,
+              proposed_entities: result.proposed_entities.map(e => ({
+                entity_name: e.entity_name,
+                entity_type: e.entity_type,
+                observation: e.observation,
+                confidence: e.confidence,
+                category: e.category,
+              })),
+              instructions: 'Present these proposed entities to the user. For each entity the user approves, call the remember() tool with: entity_name, entity_type, content=observation, confidence, project=project_name. After all approved entities are stored, the project knowledge will be available in future sessions.',
+            }),
+          }],
+        };
+      } catch (err) {
+        console.error('[init_project] tool error:', err);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              error: 'Failed to scan project',
+              code: 'SCAN_ERROR',
+              message: err instanceof Error ? err.message : String(err),
+            }),
+          }],
         };
       }
     },
