@@ -2,6 +2,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type Database from 'better-sqlite3';
 import type { MycoStatements } from '@myco/core';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import {
   rememberEntity,
   recallKnowledge,
@@ -9,6 +12,10 @@ import {
   forgetEntity,
   logEpisode,
   reEmbedPending,
+  exportGraph,
+  importGraph,
+  normalizeMem0,
+  normalizeAnthropicJSONL,
 } from '@myco/core';
 import type {
   RememberParams,
@@ -16,6 +23,7 @@ import type {
   RecallResult,
   ForgetResult,
   LogEpisodeResult,
+  GraphExport,
 } from '@myco/core';
 import { runConsolidation } from './consolidator.js';
 
@@ -396,6 +404,79 @@ export function registerTools(server: McpServer, db: Database.Database, stmts: M
         return forgetEntity(db, { entity_name, entity_type, observation_id, relationship_id }, stmts);
       } catch (err) {
         console.error('[forget] tool error:', err);
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'An unexpected error occurred', code: 'INTERNAL_ERROR' }) }],
+        };
+      }
+    },
+  );
+
+  server.registerTool(
+    'export_graph',
+    {
+      description: 'Export the entire knowledge graph as JSON. Returns all entities, observations (including retired), and relationships.',
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        const result = exportGraph(db);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify(result),
+          }],
+        };
+      } catch (err) {
+        console.error('[export_graph] tool error:', err);
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'An unexpected error occurred', code: 'INTERNAL_ERROR' }) }],
+        };
+      }
+    },
+  );
+
+  server.registerTool(
+    'import_graph',
+    {
+      description: 'Import knowledge from a JSON file or string. Supports native Myco format, Mem0 format, and Anthropic MCP reference server JSONL format. Deduplicates automatically.',
+      inputSchema: {
+        data: z.string().describe('JSON string, JSONL string, or file path containing the import data (paths starting with / or ~ are read from disk)'),
+        format: z.enum(['native', 'mem0', 'anthropic']).default('native')
+          .describe('Format of the import data: native (Myco export), mem0 (Mem0 export), anthropic (MCP reference server JSONL)'),
+      },
+    },
+    async ({ data, format }) => {
+      try {
+        // Resolve file path if data starts with / or ~
+        let rawData = data;
+        if (data.startsWith('/') || data.startsWith('~')) {
+          const resolved = data.startsWith('~')
+            ? path.join(os.homedir(), data.slice(1))
+            : data;
+          rawData = fs.readFileSync(resolved, 'utf-8');
+        }
+
+        let payload: GraphExport;
+
+        if (format === 'anthropic') {
+          // Anthropic JSONL — pass raw string directly (not JSON.parse)
+          payload = normalizeAnthropicJSONL(rawData);
+        } else if (format === 'mem0') {
+          payload = normalizeMem0(JSON.parse(rawData) as { results: Array<{ id: string; memory: string; user_id?: string; metadata?: Record<string, unknown>; created_at?: string }> });
+        } else {
+          // native format
+          payload = JSON.parse(rawData) as GraphExport;
+        }
+
+        const result = await importGraph(db, payload, stmts);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify(result),
+          }],
+        };
+      } catch (err) {
+        console.error('[import_graph] tool error:', err);
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'An unexpected error occurred', code: 'INTERNAL_ERROR' }) }],
         };

@@ -11,6 +11,7 @@ import { entitiesRoutes } from './routes/entities.js';
 import { episodesRoutes } from './routes/episodes.js';
 import { graphRoutes } from './routes/graph.js';
 import { registerMemoryRoutes } from './routes/memory.js';
+import { registerIORoutes } from './routes/io.js';
 
 const db = getDb();
 const stmts = getStatements();
@@ -48,6 +49,9 @@ app.route('/api/graph', graphRoutes(db, stmts));
 
 // Register memory write routes directly on OpenAPIHono instance so they appear in OpenAPI spec
 registerMemoryRoutes(app, db, stmts);
+
+// Register import/export routes on same OpenAPIHono instance
+registerIORoutes(app, db, stmts);
 
 // OpenAPI spec and Swagger UI
 app.doc('/api/spec', {
