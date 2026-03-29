@@ -11,6 +11,9 @@ loadConfig();
 import { openDatabase, prepareStatements } from '@myco/core';
 import { runConsolidation } from './consolidator.js';
 import { rememberEntity } from './tools.js';
+import { scanProject } from './onboarding-scanner.js';
+import { nanoid } from 'nanoid';
+import * as readline from 'node:readline/promises';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -18,8 +21,9 @@ function printUsage(): void {
   console.log(`Usage: myco-cli <command>
 
 Commands:
-  consolidate              Trigger consolidation pipeline
-  list-approvals [--limit N]  Show pending approval queue
+  init [path]                   Scan a project and populate knowledge graph
+  consolidate                   Trigger consolidation pipeline
+  list-approvals [--limit N]    Show pending approval queue
   resolve-approval <id> <approve|reject|edit> [--content "..."]  Resolve a queued item
 `);
 }
@@ -37,6 +41,112 @@ function parseArgs(args: string[]): Record<string, string> {
 }
 
 // ─── Subcommands ──────────────────────────────────────────────────────────────
+
+async function cmdInit(args: string[]): Promise<void> {
+  const projectPath = args[0] || process.cwd();
+
+  console.error('[myco-cli] Scanning project at', projectPath, '...');
+
+  const result = await scanProject(projectPath);
+
+  if (result.proposed_entities.length === 0) {
+    console.log('No entities found during scan.');
+    return;
+  }
+
+  // Print numbered table
+  console.log('\n  Proposed Knowledge for: ' + result.project_name);
+  console.log('  ' + '─'.repeat(70));
+  console.log(
+    '  #  │ Type             │ Entity                │ Observation'
+  );
+  console.log('  ' + '─'.repeat(70));
+
+  result.proposed_entities.forEach((e, i) => {
+    const num = String(i + 1).padStart(2);
+    const type = e.entity_type.padEnd(16);
+    const name = e.entity_name.substring(0, 21).padEnd(21);
+    const obs = e.observation.substring(0, 50);
+    console.log(`  ${num} │ ${type} │ ${name} │ ${obs}`);
+  });
+
+  console.log('  ' + '─'.repeat(70));
+  console.log(`  Files scanned: ${result.files_scanned.join(', ')}`);
+  console.log(`  Scan time: ${result.scan_duration_ms}ms\n`);
+
+  // Prompt for approval
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const answer = await rl.question('  Accept? [y]es all / [n]o / comma-separated numbers (e.g. 1,3,5): ');
+  rl.close();
+
+  const trimmed = answer.trim().toLowerCase();
+
+  if (trimmed === 'n' || trimmed === 'no') {
+    console.log('Rejected all. Nothing written.');
+    return;
+  }
+
+  let selectedIndices: number[];
+  if (trimmed === 'y' || trimmed === 'yes' || trimmed === '') {
+    selectedIndices = result.proposed_entities.map((_, i) => i);
+  } else {
+    // Parse comma-separated line numbers (1-indexed)
+    selectedIndices = trimmed.split(',')
+      .map(s => parseInt(s.trim(), 10) - 1)
+      .filter(i => i >= 0 && i < result.proposed_entities.length);
+
+    if (selectedIndices.length === 0) {
+      console.log('No valid selections. Nothing written.');
+      return;
+    }
+  }
+
+  // Write approved entities to graph
+  const db = openDatabase();
+  const stmts = prepareStatements(db);
+
+  let written = 0;
+  for (const idx of selectedIndices) {
+    const entity = result.proposed_entities[idx];
+    try {
+      await rememberEntity(db, {
+        content: entity.observation,
+        entity_name: entity.entity_name,
+        entity_type: entity.entity_type,
+        confidence: entity.confidence,
+        // 'onboarding' is not in SourceType union — use 'agent_session' as the
+        // closest match for human-guided initial knowledge population
+        source_type: 'agent_session',
+        relations: entity.relations.map(r => ({
+          target_name: r.target_name,
+          target_type: r.target_type,
+          relation_type: r.relation_type,
+        })),
+        project: result.project_name,
+      }, stmts);
+      written++;
+    } catch (err) {
+      console.error(`  Warning: failed to write "${entity.entity_name}":`, (err as Error).message);
+    }
+  }
+
+  // Register project path
+  const existing = stmts.selectProjectForPath.get({ path: result.project_path }) as { id: string } | undefined;
+  if (!existing) {
+    stmts.insertProjectPath.run(
+      nanoid(),
+      result.project_name,
+      result.project_path,
+      new Date().toISOString(),
+    );
+    console.log(`  Registered project path: ${result.project_path}`);
+  } else {
+    console.log(`  Project path already registered.`);
+  }
+
+  console.log(`\n  Done. Wrote ${written}/${selectedIndices.length} entities to knowledge graph.`);
+  console.log(`  Session-start recall will now surface this knowledge.\n`);
+}
 
 async function cmdConsolidate(): Promise<void> {
   const db = openDatabase();
@@ -228,6 +338,10 @@ if (!subcommand || subcommand === '--help' || subcommand === '-h') {
 }
 
 switch (subcommand) {
+  case 'init':
+    await cmdInit(process.argv.slice(3));
+    break;
+
   case 'consolidate':
     await cmdConsolidate();
     break;
