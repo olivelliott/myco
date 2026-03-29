@@ -179,7 +179,7 @@ Plans:
   3. The migration runs cleanly on an existing v5.0 database without errors, and the `project_paths` table is absent before migration 9 and present after
 **Plans:** 1/1 plans complete
 Plans:
-- [ ] 24-01-PLAN.md — Migration 9 (project_paths table), walk-up path resolution, prepared statements, integration tests
+- [x] 24-01-PLAN.md — Migration 9 (project_paths table), walk-up path resolution, prepared statements, integration tests
 
 ### Phase 25: Session-Start Recall
 **Goal**: Every Claude Code session automatically receives relevant knowledge before the agent makes its first decision — workflow rules, project facts, and user preferences injected via the SessionStart hook
@@ -191,7 +191,9 @@ Plans:
   3. Starting the same session three times with no graph changes between sessions shows "No changes since last session" on the third start rather than re-injecting identical content
   4. The hook completes and writes its output in under 500ms measured end-to-end — it uses FTS5 queries only, opens a read-only database connection, and never calls Ollama
   5. Starting a session in a directory with no registered project still works — the hook injects global-scope knowledge and degrades gracefully with a note that no project context was found
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 25-01-PLAN.md — Upgrade session-start hook with DB-backed knowledge injection, token budgeting, novelty filtering
 
 ### Phase 26: Project Onboarding
 **Goal**: A developer can scan any codebase with `myco init` and commit a reviewed batch of inferred project knowledge to the graph in a single workflow, populating what session-start recall will surface in every future session
@@ -253,8 +255,8 @@ Plans:
 | 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |
-| 24. Context Scoping Schema | v6.0 | 0/1 | Complete    | 2026-03-29 |
-| 25. Session-Start Recall | v6.0 | 0/? | Not started | - |
+| 24. Context Scoping Schema | v6.0 | 1/1 | Complete | 2026-03-29 |
+| 25. Session-Start Recall | v6.0 | 0/1 | Not started | - |
 | 26. Project Onboarding | v6.0 | 0/? | Not started | - |
 | 27. Workflow Rules and Knowledge Correction | v6.0 | 0/? | Not started | - |
 | 28. User Preferences | v6.0 | 0/? | Not started | - |
