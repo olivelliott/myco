@@ -1,13 +1,22 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { rmSync, mkdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { openDatabase, prepareStatements } from '@myco/core';
 import type Database from 'better-sqlite3';
 import type { MycoStatements } from '@myco/core';
 import { rememberEntity } from '../src/tools.js';
 import { promotePreference } from '../src/tools.js';
 import * as embedClient from '../src/embed-client.js';
+
+// Load the session-start hook as CommonJS module
+const requireCjs = createRequire(import.meta.url);
+const hookPath = resolve(new URL(import.meta.url).pathname, '../../../../hooks/myco-session-start.js');
+const sessionHook = requireCjs(hookPath) as {
+  buildInjection: (rules: unknown[], facts: unknown[], preferences: Array<{ name: string; observations: string | null; obs_metadata: string | null }>, projectName: string | null) => string;
+  queryUserPreferences: (db: Database.Database) => Array<{ name: string; observations: string | null; obs_metadata: string | null }>;
+};
 
 const testDir = join(tmpdir(), 'myco-user-prefs-test-' + process.pid);
 
@@ -189,5 +198,117 @@ describe('User preference promotion logic', () => {
 
     const result = promotePreference(db, stmts, 'light theme', 'alpha');
     expect(result.promoted).toBe(false);
+  });
+});
+
+describe('Session-start source attribution', () => {
+  let db: Database.Database;
+  let stmts: MycoStatements;
+  let embedSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    mkdirSync(testDir, { recursive: true });
+    db = openDatabase(join(testDir, `test-attr-${Date.now()}.db`));
+    stmts = prepareStatements(db);
+    embedSpy = vi.spyOn(embedClient, 'embedText').mockResolvedValue(null);
+  });
+
+  afterEach(() => {
+    embedSpy.mockRestore();
+    db.close();
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it('Test 7: queryUserPreferences returns obs_metadata field', async () => {
+    // Create a global preference directly with metadata
+    await rememberEntity(db, {
+      content: 'prefers dark themes',
+      entity_name: 'dark theme',
+      entity_type: 'user_preference',
+      project: 'alpha',
+    }, stmts);
+    await rememberEntity(db, {
+      content: 'prefers dark themes',
+      entity_name: 'dark theme',
+      entity_type: 'user_preference',
+      project: 'beta',
+    }, stmts);
+
+    // After promotion, queryUserPreferences should return obs_metadata
+    const prefs = sessionHook.queryUserPreferences(db);
+    expect(prefs.length).toBeGreaterThan(0);
+    const darkThemePref = prefs.find(p => p.name === 'dark theme');
+    expect(darkThemePref).toBeDefined();
+    // obs_metadata field must be present (can be string or null)
+    expect('obs_metadata' in darkThemePref!).toBe(true);
+  });
+
+  it('Test 8: buildInjection formats a preference with source_projects as "(from: alpha, beta)"', () => {
+    const preferences = [
+      {
+        name: 'dark theme',
+        observations: 'prefers dark themes',
+        obs_metadata: '{"source_projects":["alpha","beta"]}',
+      },
+    ];
+
+    const output = sessionHook.buildInjection([], [], preferences, 'myproject');
+    expect(output).toContain('(from: alpha, beta)');
+    expect(output).toContain('**dark theme**');
+  });
+
+  it('Test 9: buildInjection formats a preference without source_projects metadata — no attribution suffix', () => {
+    const preferences = [
+      {
+        name: 'light mode',
+        observations: 'prefers light mode',
+        obs_metadata: null,
+      },
+    ];
+
+    const output = sessionHook.buildInjection([], [], preferences, 'myproject');
+    expect(output).toContain('**light mode**: prefers light mode');
+    expect(output).not.toContain('(from:');
+  });
+
+  it('Test 10: buildInjection with empty obs_metadata object renders without attribution', () => {
+    const preferences = [
+      {
+        name: 'vim keys',
+        observations: 'prefers vim keybindings',
+        obs_metadata: '{}',
+      },
+    ];
+
+    const output = sessionHook.buildInjection([], [], preferences, 'myproject');
+    expect(output).toContain('**vim keys**: prefers vim keybindings');
+    expect(output).not.toContain('(from:');
+  });
+
+  it('Test 11: End-to-end — after promoting a preference, queryUserPreferences + buildInjection shows "(from: ...)" attribution', async () => {
+    // Promote a preference from two projects
+    await rememberEntity(db, {
+      content: 'prefers dark themes',
+      entity_name: 'dark theme',
+      entity_type: 'user_preference',
+      project: 'projectA',
+    }, stmts);
+    await rememberEntity(db, {
+      content: 'prefers dark themes',
+      entity_name: 'dark theme',
+      entity_type: 'user_preference',
+      project: 'projectB',
+    }, stmts);
+
+    // Query preferences using session-start hook
+    const prefs = sessionHook.queryUserPreferences(db);
+    const darkThemePref = prefs.find(p => p.name === 'dark theme');
+    expect(darkThemePref).toBeDefined();
+
+    // Build injection
+    const output = sessionHook.buildInjection([], [], prefs, 'any-project');
+    expect(output).toContain('(from:');
+    expect(output).toContain('projectA');
+    expect(output).toContain('projectB');
   });
 });
