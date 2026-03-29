@@ -659,7 +659,7 @@ export async function updateKnowledge(
       // Insert replacement with valid_from
       stmts.insertObservationTemporal.run(
         newObsId, entityId, new_value,
-        SESSION_ID, null, 'agent_session', 1.0, now, now,
+        SESSION_ID, 'unknown', 'agent_session', 1.0, now, now,
       );
 
       // Insert FTS entry for the new observation

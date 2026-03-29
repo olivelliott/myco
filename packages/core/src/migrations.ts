@@ -137,6 +137,18 @@ const migrations: Migration[] = [
       db.exec(`CREATE INDEX IF NOT EXISTS idx_project_paths_directory ON project_paths(directory_path)`);
     },
   },
+  {
+    id: 10,
+    name: 'add_entity_decay_exempt',
+    up: (db) => {
+      try {
+        db.exec(`ALTER TABLE entities ADD COLUMN decay_exempt INTEGER NOT NULL DEFAULT 0`);
+      } catch {
+        // Column already exists
+      }
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_entities_decay_exempt ON entities(decay_exempt) WHERE decay_exempt = 1`);
+    },
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {
