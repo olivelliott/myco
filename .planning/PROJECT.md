@@ -12,34 +12,19 @@ Open source under Apache 2.0. Everything runs locally — SQLite, Ollama, no clo
 
 Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
 
-## Current Milestone: v5.0 Feature Parity & Differentiation
-
-**Goal:** Close competitive gaps and add differentiating features that make Myco the most capable local-first MCP memory server.
-
-**Target features:**
-- Import/export: JSON export of entire knowledge graph, import from Mem0/reference server formats
-- Temporal fact versioning: facts track when they changed, query "what was true at time X"
-- Auto-entity extraction: passive knowledge capture from conversations, not just explicit `remember`
-- Auto-dedup / conflict resolution: intelligent ADD/UPDATE/DELETE/NOOP when new memories conflict with existing
-- Incremental consolidation: consolidate on-the-fly as memories are added, nightly cycle for deeper analysis
-- Codebase-to-graph ingestion: `codify` tool that turns project structure/conventions into graph knowledge
-- REST API for non-MCP access: expose memory operations over HTTP for LangGraph, CrewAI, etc.
-- Memory importance decay: unreinforced facts fade over time, keeping the graph fresh
-- Relationship strength scoring: edges weighted by reinforcement frequency and recency
-
 ## Current State
 
-**Shipped:** v3.0 — 2026-03-26
-**Codebase:** ~5,000 LOC TypeScript across 4 packages
-**Tech Stack:** Node.js 22, TypeScript 5.9, better-sqlite3, sqlite-vec, Ollama, Hono, React 19, Vite 8, Tailwind v4, shadcn/ui
+**Shipped:** v5.0 — 2026-03-29
+**Codebase:** ~7,500 LOC TypeScript across 4 packages
+**Tech Stack:** Node.js 22, TypeScript 5.9, better-sqlite3, sqlite-vec, Ollama, Hono + OpenAPIHono, React 19, Vite 8, Tailwind v4, shadcn/ui, Vercel AI SDK
 **License:** Apache 2.0
-**98 tests** passing across 6 test files
+**147 tests** passing across 10 test files
 
 ### Architecture
-- `packages/core` — shared DB, schema, types, provenance, prepared statement factory
-- `packages/mcp-server` — MCP tools (remember, recall, query, log_episode, forget, consolidate, approvals), consolidation pipeline, cron scheduler, CLI
-- `packages/api-server` — Hono REST API on port 3001 (5 route groups)
-- `packages/dashboard` — React PWA with approval queue, knowledge graph explorer, activity dashboard
+- `packages/core` — shared DB, schema, types, provenance, prepared statements, **memory-ops** (remember, recall, query, forget, logEpisode), embed-client, dedup classification, decay computation, relationship discovery, import/export with format adapters
+- `packages/mcp-server` — thin MCP tool wrappers calling `@myco/core`, consolidation pipeline (micro + nightly), cron scheduler, CLI
+- `packages/api-server` — Hono OpenAPI REST API on port 3001 with Swagger UI at /api/docs, Bearer auth, write endpoints (remember/recall/forget/query), import/export
+- `packages/dashboard` — React PWA with approval queue, knowledge graph explorer (strength-based edge width), activity dashboard
 
 ## Requirements
 
@@ -70,6 +55,17 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] Error handling hardening and API input validation (Zod, structured errors) — *v3.0 Phase 11*
 
 - [x] Namespace/project isolation via project column on entities — *v3.0 Phase 12*
+- [x] Versioned schema migration framework replacing try/catch ALTER TABLE — *v5.0 Phase 18*
+- [x] Temporal fact versioning with valid_from/valid_until and point-in-time as_of queries — *v5.0 Phase 19*
+- [x] Dedup classification (ADD/UPDATE/NOOP) before every write, near-duplicate detection via cosine similarity — *v5.0 Phase 19*
+- [x] Entity merge via merged_into soft-delete through approval queue — *v5.0 Phase 19*
+- [x] Relationship strength scoring with ON CONFLICT upsert, dashboard edge thickness visualization — *v5.0 Phase 20*
+- [x] Memory importance decay (exponential, reinforcement boost, 0.1 floor, decay-exempt types) — *v5.0 Phase 21*
+- [x] Shared business logic in @myco/core memory-ops module (MCP + REST share same functions) — *v5.0 Phase 22*
+- [x] REST write endpoints (remember/recall/forget/query) with OpenAPI docs and optional Bearer auth — *v5.0 Phase 22*
+- [x] Knowledge graph import/export with Mem0 and Anthropic JSONL format adapters — *v5.0 Phase 22*
+- [x] Auto-entity extraction from log_episode via LLM (fire-and-forget, non-blocking) — *v5.0 Phase 23*
+- [x] Incremental micro-consolidation with consolidation_lock mutex table — *v5.0 Phase 23*
 
 ### Active
 
@@ -97,6 +93,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - **v2.0** (2026-03-22) — Rename to Myco, Apache 2.0 open source, tech debt cleanup
 - **v3.0** (2026-03-26) — Performance & architecture: config, prepared statements, query filters, error handling, namespace isolation
 - **v4.0** (2026-03-27) — Dashboard & graph experience: bioluminescent theme, graph core features, timeline, approvals refresh
+- **v5.0** (2026-03-29) — Feature parity & differentiation: temporal versioning, dedup classification, relationship strength, memory decay, REST write API with OpenAPI, import/export with format adapters, auto-extraction + incremental consolidation
 
 ### Out of Scope
 
@@ -111,8 +108,8 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - v2.0 shipped 2026-03-22 — rename to Myco, open source packaging, tech debt cleanup
 - v3.0 shipped 2026-03-26 — 20 requirements validated across 4 phases (config, prepared statements, query filters, error handling, namespace isolation)
 - v4.0 shipped 2026-03-27 — dashboard & graph experience overhaul
-- v5.0 started 2026-03-27 — feature parity & differentiation (driven by competitive analysis vs Mem0, Zep, Cognee, mcp-memory-service)
-- 98 tests passing across 6 test files (core, mcp-server, gsd-hook, statements, embed-client, recall-filters)
+- v5.0 shipped 2026-03-29 — feature parity & differentiation: 6 phases, 12 plans, 28 requirements satisfied
+- 147 tests passing across 10 test files
 - Design direction: bioluminescent deep-sea aesthetic — dark void, rich glows, organic depth, mycorrhizal metaphor
 - Vercel AI SDK v4.3.19 used for consolidation (v6 incompatible with ollama-ai-provider)
 - MCP SDK uses `registerTool()` with Zod v4
@@ -137,6 +134,12 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 | High-confidence auto-approve (≥0.85) | Keeps approval queue manageable | ✓ Validated v1.0 |
 | Nightly cron + manual trigger | Automatic + on-demand consolidation | ✓ Validated v1.0 |
 | Vercel AI SDK v4.3.19 (not v6) | ollama-ai-provider returns LanguageModelV1 which v6 dropped | ✓ Working v1.0 |
+| Versioned migration framework over try/catch | Idempotent, trackable, supports v4→v5 upgrades | ✓ Validated v5.0 |
+| Exact text match for NOOP, cosine>0.92 for near-dup | Deterministic + semantic detection, no false positives | ✓ Validated v5.0 |
+| Exponential decay lambda=0.03 with 0.1 floor | ~23 day half-life, never fully forgotten | ✓ Validated v5.0 |
+| Business logic in @myco/core, MCP as thin wrappers | Single source of truth for REST + MCP | ✓ Validated v5.0 |
+| setImmediate fire-and-forget for extraction | Non-blocking MCP response, extraction runs after | ✓ Validated v5.0 |
+| consolidation_lock table with 5-min expiry | Atomic mutex for micro+nightly, crash-safe | ✓ Validated v5.0 |
 | GSD hook: direct SQLite write | MCP tools not callable from shell hooks | ✓ Validated v1.0 |
 | Separate api-server + dashboard | Decoupled concerns; WAL mode concurrent reads | ✓ Validated v1.0 |
 | Rename to "Myco" | Mycorrhizal network metaphor — underground knowledge web | ✓ Shipped v2.0 |

@@ -1,5 +1,26 @@
 # Milestones
 
+## v5.0 Feature Parity & Differentiation (Shipped: 2026-03-29)
+
+**Phases completed:** 6 phases, 12 plans, 11 tasks
+
+**Key accomplishments:**
+
+- Versioned SQLite migration framework (9 migrations, schema_migrations table) replacing try/catch ALTER TABLE, with v5.0 columns for temporal versioning, decay, entity merges, and relationship strength
+- Dedup classification pipeline (ADD/UPDATE/NOOP) wired into rememberEntity write path with valid_from timestamps on all new observations
+- One-liner:
+- Temporal as_of and history query filtering added to recall and query tools with valid_until IS NULL on all default query paths
+- ON CONFLICT upsert for atomic relationship reinforcement with strength-based edge width (1-5px linear clamp) and hover tooltip in the force-graph canvas renderer
+- Pure `computeEffectiveConfidence` function with exponential decay (LAMBDA=0.03, FLOOR=0.1), reinforcement boost, and 10-test suite — exported from @myco/core
+- Task 1 — Prepared statements extended (packages/core/src/statements.ts):
+- New core modules:
+- Four POST memory write endpoints (remember/recall/forget/query) on OpenAPIHono, with Swagger UI at /api/docs, Bearer token auth middleware, all calling @myco/core functions
+- `exportGraph(db)`
+- One-liner:
+- Task 1 — registerEpisodeCallback + fire-and-forget in logEpisode:
+
+---
+
 ## v3.0 Performance & Architecture Optimization (Shipped: 2026-03-26)
 
 **Phases completed:** 4 phases, 8 plans, 13 tasks
