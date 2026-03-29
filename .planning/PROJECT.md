@@ -70,6 +70,8 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] Working directory to project entity mapping via project_paths table with walk-up resolution — *v6.0 Phase 24*
 - [x] Automatic session-start recall injecting workflow rules, project facts, and user preferences via SessionStart hook — *v6.0 Phase 25*
 - [x] Project onboarding via `myco init` CLI and `init_project` MCP tool with LLM inference and batch approval — *v6.0 Phase 26*
+- [x] Workflow rules as first-class `workflow_rule` entities with `remember_rule` tool, always surfaced at session start — *v6.0 Phase 27*
+- [x] Knowledge correction via `update_knowledge` tool with search-confirm-retire atomic flow — *v6.0 Phase 27*
 
 ### Active
 
