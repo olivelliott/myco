@@ -177,7 +177,9 @@ Plans:
   1. After running `myco link-project /path/to/project MyProject`, a row exists in `project_paths` and querying with any subdirectory of that path returns "MyProject" via walk-up resolution
   2. The `selectProjectForPath` prepared statement traverses parent directories and returns the nearest registered ancestor — a session started in `/path/to/project/src` resolves to the project registered at `/path/to/project`
   3. The migration runs cleanly on an existing v5.0 database without errors, and the `project_paths` table is absent before migration 9 and present after
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 24-01-PLAN.md — Migration 9 (project_paths table), walk-up path resolution, prepared statements, integration tests
 
 ### Phase 25: Session-Start Recall
 **Goal**: Every Claude Code session automatically receives relevant knowledge before the agent makes its first decision — workflow rules, project facts, and user preferences injected via the SessionStart hook
@@ -251,7 +253,7 @@ Plans:
 | 21. Memory Importance Decay | v5.0 | 0/? | Not started | - |
 | 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/? | Not started | - |
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |
-| 24. Context Scoping Schema | v6.0 | 0/? | Not started | - |
+| 24. Context Scoping Schema | v6.0 | 0/1 | Planning complete | - |
 | 25. Session-Start Recall | v6.0 | 0/? | Not started | - |
 | 26. Project Onboarding | v6.0 | 0/? | Not started | - |
 | 27. Workflow Rules and Knowledge Correction | v6.0 | 0/? | Not started | - |
