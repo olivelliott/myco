@@ -139,7 +139,7 @@ Plans:
   5. The import tool accepts a Mem0-format JSON or the Anthropic reference server JSONL format and successfully loads its entries into the Myco knowledge graph
 **Plans**: 3 plans
 Plans:
-- [ ] 22-01-PLAN.md — Extract business logic to @myco/core memory-ops
+- [x] 22-01-PLAN.md — Extract business logic to @myco/core memory-ops
 - [ ] 22-02-PLAN.md — REST write routes with OpenAPI docs + auth middleware
 - [ ] 22-03-PLAN.md — Import/export functions, format adapters, MCP tools + HTTP endpoints
 
@@ -182,5 +182,5 @@ Plans:
 | 19. Temporal Versioning + Dedup Resolution | v5.0 | 3/3 | Complete    | 2026-03-27 |
 | 20. Relationship Strength Scoring | v5.0 | 1/1 | Complete    | 2026-03-27 |
 | 21. Memory Importance Decay | v5.0 | 2/2 | Complete    | 2026-03-27 |
-| 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 0/3 | Not started | - |
+| 22. Core Refactor + REST Write Routes + Import/Export | v5.0 | 1/3 | In Progress|  |
 | 23. Auto-Extraction + Incremental Consolidation | v5.0 | 0/? | Not started | - |

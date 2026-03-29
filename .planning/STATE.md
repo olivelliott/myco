@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Feature Parity & Differentiation
-status: Phase complete — ready for verification
-stopped_at: Completed 21-02-PLAN.md — decay integration into recall pipeline
-last_updated: "2026-03-27T23:01:29.885Z"
+status: Ready to execute
+stopped_at: Completed 22-01-PLAN.md — extract business logic to @myco/core, thin wrapper MCP tools
+last_updated: "2026-03-29T14:46:45.048Z"
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 10
+  completed_plans: 8
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 21 — memory-importance-decay
+**Current focus:** Phase 22 — core-refactor-rest-write-routes-import-export
 
 ## Current Position
 
-Phase: 21 (memory-importance-decay) — EXECUTING
-Plan: 2 of 2
+Phase: 22 (core-refactor-rest-write-routes-import-export) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Plan: 2 of 2
 | Phase 20-relationship-strength-scoring P01 | 8 | 2 tasks | 4 files |
 | Phase 21-memory-importance-decay P01 | 2 | 2 tasks | 3 files |
 | Phase 21-memory-importance-decay P02 | 3 | 2 tasks | 2 files |
+| Phase 22-core-refactor-rest-write-routes-import-export P01 | 15 | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Recent decisions affecting current work:
 - [Phase 21]: DECAY-03: recall results re-sorted by final_score (similarity * effective_confidence) not raw relevance_score
 - [Phase 21]: Lazy last_accessed_at write uses dynamic IN (?) — STMT-02 exception applies since placeholder count varies with result set
 - [Phase 21]: Empty result guard (scoredRows.length > 0) prevents SQL syntax error on empty IN () clause in lazy write
+- [Phase 22-01]: @myco/core/embed-client subpath export required for vi.spyOn testability — memory-ops.js imports embed-client.js directly (same ESM module instance), not through barrel
+- [Phase 22-01]: MCP tools.ts thin wrapper pattern: only registerTools + Zod schemas remain; all business logic imported from @myco/core
 
 ### Pending Todos
 
@@ -94,6 +97,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T23:01:29.882Z
-Stopped at: Completed 21-02-PLAN.md — decay integration into recall pipeline
+Last session: 2026-03-29T14:46:45.043Z
+Stopped at: Completed 22-01-PLAN.md — extract business logic to @myco/core, thin wrapper MCP tools
 Resume file: None

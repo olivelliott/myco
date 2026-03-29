@@ -46,7 +46,7 @@ Requirements for Feature Parity & Differentiation milestone. Each maps to roadma
 
 ### REST API
 
-- [ ] **API-01**: Memory write operations (remember, forget, import, export) are accessible via HTTP endpoints
+- [x] **API-01**: Memory write operations (remember, forget, import, export) are accessible via HTTP endpoints
 - [ ] **API-02**: REST API includes OpenAPI/Swagger documentation
 - [ ] **API-03**: Optional API key authentication protects write endpoints
 
