@@ -245,12 +245,12 @@ describe('openDatabase()', () => {
     db.close();
   });
 
-  it('schema_migrations table has 9 applied migrations', () => {
+  it('schema_migrations table has 11 applied migrations', () => {
     const db = openDatabase(dbPath);
     const result = db
       .prepare(`SELECT COUNT(*) as cnt FROM schema_migrations`)
       .get() as { cnt: number };
-    expect(result.cnt).toBe(10);
+    expect(result.cnt).toBe(11);
     db.close();
   });
 

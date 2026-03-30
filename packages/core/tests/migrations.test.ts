@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import Database from 'better-sqlite3';
 import * as sqliteVec from 'sqlite-vec';
 import { runMigrations } from '../src/migrations.js';
+import { applySchema } from '../src/schema.js';
 
 function makeTempDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'myco-migrations-test-'));
@@ -31,16 +32,18 @@ describe('runMigrations()', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('creates schema_migrations table with 9 rows on fresh DB', () => {
+  it('creates schema_migrations table with 11 rows on fresh DB', () => {
     const db = openRawDb(dbPath);
+    applySchema(db);
     runMigrations(db);
     const count = db.prepare('SELECT COUNT(*) as cnt FROM schema_migrations').get() as { cnt: number };
-    expect(count.cnt).toBe(10);
+    expect(count.cnt).toBe(11);
     db.close();
   });
 
   it('creates all 6 core tables on fresh DB', () => {
     const db = openRawDb(dbPath);
+    applySchema(db);
     runMigrations(db);
     const tables = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`)
@@ -57,6 +60,7 @@ describe('runMigrations()', () => {
 
   it('creates vec_embeddings virtual table on fresh DB', () => {
     const db = openRawDb(dbPath);
+    applySchema(db);
     runMigrations(db);
     const vtables = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' OR type='shadow' ORDER BY name`)
@@ -68,22 +72,25 @@ describe('runMigrations()', () => {
 
   it('is idempotent — calling runMigrations twice does not throw', () => {
     const db = openRawDb(dbPath);
+    applySchema(db);
     runMigrations(db);
     expect(() => runMigrations(db)).not.toThrow();
     db.close();
   });
 
-  it('still has 9 rows after calling runMigrations twice', () => {
+  it('still has 11 rows after calling runMigrations twice', () => {
     const db = openRawDb(dbPath);
+    applySchema(db);
     runMigrations(db);
     runMigrations(db);
     const count = db.prepare('SELECT COUNT(*) as cnt FROM schema_migrations').get() as { cnt: number };
-    expect(count.cnt).toBe(10);
+    expect(count.cnt).toBe(11);
     db.close();
   });
 
   it('observations table has v5.0 temporal columns after runMigrations', () => {
     const db = openRawDb(dbPath);
+    applySchema(db);
     runMigrations(db);
     const cols = db.prepare('PRAGMA table_info(observations)').all() as Array<{ name: string }>;
     const colNames = cols.map(c => c.name);
@@ -94,6 +101,7 @@ describe('runMigrations()', () => {
 
   it('observations table has v5.0 decay columns after runMigrations', () => {
     const db = openRawDb(dbPath);
+    applySchema(db);
     runMigrations(db);
     const cols = db.prepare('PRAGMA table_info(observations)').all() as Array<{ name: string }>;
     const colNames = cols.map(c => c.name);
@@ -106,6 +114,7 @@ describe('runMigrations()', () => {
 
   it('entities table has merged_into column after runMigrations', () => {
     const db = openRawDb(dbPath);
+    applySchema(db);
     runMigrations(db);
     const cols = db.prepare('PRAGMA table_info(entities)').all() as Array<{ name: string }>;
     const colNames = cols.map(c => c.name);
@@ -115,6 +124,7 @@ describe('runMigrations()', () => {
 
   it('relationships table has strength and reinforcement_count after runMigrations', () => {
     const db = openRawDb(dbPath);
+    applySchema(db);
     runMigrations(db);
     const cols = db.prepare('PRAGMA table_info(relationships)').all() as Array<{ name: string }>;
     const colNames = cols.map(c => c.name);
@@ -170,9 +180,9 @@ describe('runMigrations()', () => {
     // Now run migrations — should not throw even though those columns already exist
     expect(() => runMigrations(db)).not.toThrow();
 
-    // Should have 9 rows recorded
+    // Should have 11 rows recorded
     const count = db.prepare('SELECT COUNT(*) as cnt FROM schema_migrations').get() as { cnt: number };
-    expect(count.cnt).toBe(10);
+    expect(count.cnt).toBe(11);
 
     db.close();
   });

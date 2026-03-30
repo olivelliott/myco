@@ -40,6 +40,12 @@ function markUnhealthy(): void {
   console.error('[embed] Ollama unreachable, cooldown 30s');
 }
 
+/** Reset health state and client singleton — for testing only. */
+export function resetEmbedClient(): void {
+  lastFailureMs = 0;
+  client = null;
+}
+
 /**
  * Generate an embedding vector for the given text using Ollama.
  * Returns null if Ollama is unavailable, in cooldown, or unresponsive.

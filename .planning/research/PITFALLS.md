@@ -1,277 +1,273 @@
 # Pitfalls Research
 
-**Domain:** Feature parity and differentiation — temporal versioning, auto-entity extraction, incremental consolidation, codebase ingestion, import/export, memory decay, relationship strength scoring, REST API — added to an existing SQLite + MCP memory server
-**Project:** Myco v5.0 Feature Parity & Differentiation
+**Domain:** Proactive knowledge & onboarding — adding automatic session-start recall, project onboarding scanning, workflow rules, smart context scoping, user preference accumulation, and knowledge correction to an existing MCP memory server
+**Project:** Myco v6.0 Proactive Knowledge & Onboarding
 **Researched:** 2026-03-27
-**Confidence:** HIGH (most pitfalls derived from known constraints of the existing system + verified against current sources)
-**Scope:** Adding these features to the existing better-sqlite3 + sqlite-vec + Ollama + Hono system. Existing system has WAL mode, prepared statement caching, 98 tests, and the `project` namespace column.
+**Confidence:** HIGH (pitfalls derived from verified MCP hook behavior, existing Myco codebase constraints, published research on agent memory UX, and documented MCP protocol limitations)
+**Scope:** Adding proactive features to the existing better-sqlite3 + sqlite-vec + Ollama + Hono system. Existing system has: remember/recall/query/forget tools, project namespace column, approval queue, entity/observation/relationship graph, SessionStart hooks (via .gsd hooks), WAL mode SQLite.
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause data corruption, silent failures, or require rewrites of newly-added features.
+Mistakes that cause user abandonment, context window exhaustion, or trust collapse in the proactive system.
 
 ---
 
-### Pitfall 1: Temporal Versioning — SQLite Has No Stable Transaction Time
+### Pitfall 1: Context Window Bloat from Uncapped Session-Start Injection
 
 **What goes wrong:**
-Temporal fact versioning requires recording when a fact became valid. The naive approach is `valid_from = CURRENT_TIMESTAMP` in SQL. In SQLite, `CURRENT_TIMESTAMP` and `strftime('now')` are stable only within a single statement, not across a transaction. Two INSERTs in one transaction can record different timestamps if statements execute across a second boundary. The nightly consolidation runs many mutations in a single transaction — all "fact versions created during consolidation" would appear at subtly different timestamps.
+The `myco_context` SessionStart hook reads the current project from the working directory, queries the graph for relevant entities/preferences/rules, and writes to stdout, which Claude Code injects verbatim into every new session context. If the project graph has grown over weeks of use (200+ entities, 50+ workflow rules, 30+ preferences), the injected block can consume 8,000-20,000 tokens before the user writes a single character. This eats into the effective context window for actual work, increases cost per session, and — critically — triggers "context rot" where Claude starts ignoring injected information buried deep in a long context.
+
+Research on LLM context degradation confirms that models exhibit measurable performance drops when relevant information is distributed across very long contexts. The injected block becomes invisible noise rather than useful signal.
 
 **Why it happens:**
-SQLite has no "transaction start time" concept like PostgreSQL's `NOW()` (which is stable for the full transaction). Developers copy patterns from Postgres temporal tables and assume timestamp semantics are equivalent.
+The hook is designed to be "comprehensive" — "more context = better recall" feels intuitively correct. Developers query broadly and dump everything. There is no token budget enforced at the query level.
 
 **How to avoid:**
-- Record `valid_from` in application code before opening the transaction: `const now = new Date().toISOString()`. Pass this as a bound parameter to all statements in that batch.
-- Never use `DEFAULT CURRENT_TIMESTAMP` for temporal versioning. Reserve `DEFAULT` timestamps for system-managed `created_at` columns where millisecond consistency is irrelevant.
-- For `valid_to`, set to `NULL` (representing "currently valid") on insert. On superseding a fact, issue a single UPDATE to set `valid_to = now` before the INSERT of the replacement.
-- Add a composite index: `(entity_id, valid_from, valid_to)` so "what was true at time X" queries (`WHERE valid_from <= X AND (valid_to IS NULL OR valid_to > X)`) hit the index instead of scanning.
+- Hard cap the session-start injection at **1,500 tokens** (approximately 6,000 characters). This is a design constraint, not an implementation detail — build the cap into the query that feeds the hook, not as a truncation at the end.
+- Prioritize by recency and relevance: workflow rules first (most actionable), then preferences (most persistent value), then top 5 project facts by recent access. Never dump full observation text — use entity name + summary only.
+- If the project has more than the cap allows, surface a one-line "More context available — call `myco recall` for details" note instead of silently truncating.
+- Keep the hook fast: the `SessionStart` hook documentation explicitly warns it runs on every session start. SQLite query latency for the injected context must be under 50ms. Use prepared statements and indexed queries only.
 
 **Warning signs:**
-- Two facts for the same observation differ by less than 1ms in `valid_from` after a consolidation run — likely clock drift in DEFAULT values.
-- "What was true at time X?" queries return empty results for a known historical period — the `valid_to` on the superseded row was not set when the replacement was inserted.
+- Sessions feel sluggish after onboarding populates the graph — startup hook is doing expensive embedding searches.
+- The user's first assistant turn contains an apology for having forgotten something that was in the injected block — context rot has kicked in.
+- `wc -c` on hook output exceeds 8,000 bytes.
 
-**Phase to address:** Temporal Fact Versioning phase. Schema design must be locked before any other feature writes observations, or the migration to add `valid_from`/`valid_to` will need to backfill NULL values for all existing rows.
+**Phase to address:** Automatic Session-Start Recall phase. The token budget and priority ordering must be defined in the design spec before any injection query is written. This cannot be retrofitted easily — changing what gets injected requires re-evaluating all downstream behavior.
 
 ---
 
-### Pitfall 2: Auto-Entity Extraction — LLM Hallucination Creates Ghost Entities
+### Pitfall 2: Wrong Working Directory Kills Context Scoping
 
 **What goes wrong:**
-The existing consolidator already uses LLM structured output to extract `ExtractedFact` objects from episodes. Auto-extraction (passive capture from conversations) applies the same pattern to a wider, less-curated input stream. LLMs reliably hallucinate entities that are grammatically plausible but not actually present in the text — especially proper nouns, technical terms, and version numbers. These ghost entities enter the graph with full confidence if not gated.
+Smart context scoping assumes `process.cwd()` in the SessionStart hook reflects the Claude Code session's working directory. This assumption breaks in multiple real-world scenarios:
 
-The existing schema has no `source: 'auto_extracted'` marker on entities, making it impossible to retroactively filter or audit auto-extracted facts separately from explicitly-remembered ones.
+1. **Global MCP server processes**: The Myco MCP server is a long-running background process started once. Its `process.cwd()` is wherever it was launched (often `$HOME`), not the current project directory.
+2. **Hook subprocess CWD**: The SessionStart hook script inherits the CWD from the Claude Code launcher, but this is the Claude Code binary's launch directory — not necessarily the project the user is working in.
+3. **Claude Code passed an explicit path**: `claude --project /path/to/myco` — the hook CWD may be different from the project path.
+
+Multiple open issues in the MCP ecosystem confirm this is a known failure mode: MCP servers launched via package managers (uvx, npx) run inside sandbox processes with `~/.cache/...` as their CWD, not the user's project.
 
 **Why it happens:**
-- Auto-extraction removes the human signal ("I explicitly asked to remember this") that filters the consolidation input.
-- The `evidence_quote` field in `ExtractedFactSchema` is supposed to ground the extraction, but LLMs frequently generate plausible-sounding quotes that are paraphrases, not verbatim text. If the quote is verified post-hoc, many extractions fail.
-- At batch consolidation scale (10 episodes per run), a 5% hallucination rate produces 1-2 ghost entities per nightly run. Over a month, the graph fills with noise.
+Developers test the hook in a single-project scenario where they always `cd` to the project before launching Claude. Multi-project reality breaks the assumption. The MCP protocol provides no standard mechanism for the client to pass its working directory to the server.
 
 **How to avoid:**
-- Add `source_type: 'auto_extracted'` as a valid `SourceType` and tag all auto-extracted entities/observations with it.
-- Auto-extracted facts should default to `confidence < 0.7` and always route through the approval queue — never auto-approve.
-- Verify `evidence_quote` is a substring of the source episode text (or within Levenshtein distance 20). Reject extractions where the quote cannot be found.
-- Keep auto-extraction opt-in per agent session with a `passive_capture: boolean` flag so power users can disable it.
+- The SessionStart hook script should pass `$PWD` (the shell's CWD at hook invocation time) explicitly as a command argument to the `myco` CLI, not rely on `process.cwd()` inside the Node.js process.
+- Design the project detection to gracefully degrade: if no project matches the CWD, inject global preferences only (zero project-scoped context). Never fail or inject wrong-project context.
+- Add a `MYCO_PROJECT` environment variable override that takes precedence over CWD-based detection. Users can set this in `.envrc` files for complex project structures.
+- Test with a monorepo scenario: `CWD = /path/to/monorepo/packages/frontend` should match the `myco-monorepo` project, not fail to match.
 
 **Warning signs:**
-- The approval queue fills 10x faster after enabling auto-extraction — expected, but if queue items are consistently rejected at >50%, the extraction prompt needs tightening.
-- Entities appear with no relationships and no reinforcing observations — classic ghost entity signature.
-- Entity names contain version numbers or partial sentences: `"React 18.2.0 with concurrent"` — the LLM failed to isolate entity boundaries.
+- User reports Myco is "injecting the wrong project's rules" — CWD detection is matching a parent directory or adjacent project.
+- The hook injects global-only context even when working inside a known project — CWD is not being passed to the detection logic.
+- Running `myco status` from the project directory returns a different project than the hook injects at session start.
 
-**Phase to address:** Auto-Entity Extraction phase. The approval queue must already be stable and batch-operable (from the Approvals UI polish in v4.0) before auto-extraction is enabled, or the queue will be unusable under the new load.
+**Phase to address:** Smart Context Scoping phase. CWD detection must be validated end-to-end in the hook execution environment before any session-start injection feature ships. Test in: bare terminal launch, `claude .` in project root, `claude .` in subdirectory, and launched from a different directory with an explicit path.
 
 ---
 
-### Pitfall 3: Incremental Consolidation — Duplicate Processing and Consistency Drift
+### Pitfall 3: Onboarding Scans That Are Slow, Noisy, or Both
 
 **What goes wrong:**
-The existing nightly consolidation marks episodes with `consolidated_at` to track what has been processed. Incremental consolidation (triggered on each `remember` call or at a lower frequency) processes the same episodes multiple times if the `consolidated_at` marker is not checked correctly. Worse: two consolidation runs can concurrently process overlapping episode windows — one nightly, one triggered incrementally — and both create entities, producing duplicates that bypass the dedup logic.
+The `myco init` onboarding walkthrough scans the codebase to infer project knowledge. Two failure modes exist and they pull in opposite directions:
 
-The deeper problem: incremental consolidation creates entities from small context windows (1-3 episodes), while nightly consolidation sees the full session and can make better inferences. The two passes produce semantically inconsistent entity sets — the same real-world concept appears under two slightly different names.
+**Too slow**: Reading all files with Ollama embedding + LLM extraction takes minutes for a medium project (100+ files). The user walks away or kills it. Real-world codebase indexing tools note that startup performance is a common failure point — systems that process the Linux kernel (28M LOC) in 3 minutes use RAM-first processing with LZ4 compression, a level of optimization far beyond a first implementation.
+
+**Too noisy**: An LLM scanning code produces ghost entities (hallucinated architectural claims), brittle version-number facts ("uses React 18.2.0"), and micro-observations that pollute the graph ("src/utils/helpers.ts exports 3 functions"). These are worse than missing knowledge because they actively mislead recall.
+
+The v5.0 PITFALLS research already documents the ghost entity problem for auto-extraction. Onboarding scans apply the same risk to a larger input surface.
 
 **Why it happens:**
-- The `runConsolidation` function in `consolidator.ts` currently selects `WHERE consolidated_at IS NULL` and marks them at end of run. If a second run starts before the first finishes (possible if nightly fires while incremental is running), both select the same unconsolidated episodes.
-- Better-sqlite3 is synchronous and single-writer. Two calls to `runConsolidation` from different async pathways (cron vs. MCP tool call) will serialize — but both will see the same unprocessed episodes before either marks them.
+- "More scanning = more knowledge" feels correct. Developers scan everything.
+- LLM extraction prompts are tuned for accuracy on clean text, not code. Code has unusual token distributions — import statements, version strings, and variable names all look like entity candidates.
+- The initial implementation does not set quality thresholds because "it's just a first pass."
 
 **How to avoid:**
-- Implement a consolidation lock: a `consolidation_lock` table with a single row `{ locked_at, locked_by }`. Any consolidation attempt that finds an unexpired lock (e.g., `locked_at > now - 5 minutes`) skips itself. Release the lock in a `finally` block.
-- For incremental consolidation, process only the single most-recent unconsolidated episode (not all unconsolidated). This makes the operation cheap and idempotent.
-- Incremental consolidation should write to a `pending_approval` state only — never directly to the graph. The nightly run merges pending items into the graph with full dedup logic and wider context.
-- Add `consolidation_source: 'incremental' | 'nightly'` metadata to entities created during consolidation. This makes the provenance auditable.
+- Limit `myco init` scanning to three artifact types: README files, CLAUDE.md / project instruction files, and package.json/pyproject.toml manifest files. These contain human-written, high-signal project knowledge. Skip source files entirely in v6.0.
+- Set a hard scan timeout of 30 seconds. Surface partial results with a "scan incomplete" flag rather than running indefinitely.
+- All onboarding-inferred entities must default to `confidence = 0.6` and route through the approval queue for human review before entering the graph. Never auto-approve onboarding inferences.
+- Present the inferred knowledge as a batch summary for one-shot approval, not as hundreds of individual queue items. The user reviews the whole set and approves or rejects by category.
 
 **Warning signs:**
-- Entity count grows faster than the number of unique concepts discussed — dedup is not catching incremental-vs-nightly duplicates.
-- Two entities have nearly identical names and observations but different `session_id` values — created in separate consolidation passes.
-- The approval queue receives the same proposed fact multiple times — the same episode was consolidated twice.
+- `myco init` takes more than 60 seconds on a TypeScript project with 200 files — scope is too broad.
+- After onboarding, `recall "architecture"` returns function names and import paths — extraction granularity is too fine.
+- The approval queue has 80+ items after a single `myco init` run — the user will abandon the queue entirely.
 
-**Phase to address:** Incremental Consolidation phase. Must build the lock mechanism first, before any incremental triggers. Do not enable incremental until the nightly pipeline has been running stably for at least one week of testing.
+**Phase to address:** Project Onboarding phase. The scan scope constraints must be in the design spec before scanning code is written. Expanding scan scope later (adding source file analysis) is a separate feature addition, not scope creep recovery.
 
 ---
 
-### Pitfall 4: Auto-Dedup / Conflict Resolution — Wrong Merges Are Harder to Undo Than Missed Merges
+### Pitfall 4: Stale/Wrong Knowledge Is Harder to Fix Than Missing Knowledge
 
 **What goes wrong:**
-Entity merging is destructive: relationships from entity A are re-pointed to entity B, entity A is deleted (cascade deletes its observations), and the reverse is impossible without full audit trails. The existing `isMergeCandidate` function (Levenshtein ≤ 2 on lowercased names) will incorrectly merge `"React"` and `"Recat"`, `"git"` and `"bit"`, or `"TypeScript"` and `"JavaScript"` (distance = 4, safe) — but also `"Vite"` and `"Vim"` (distance = 2, WRONG merge).
+An agent using Myco will act on injected context confidently. If a workflow rule says "run tests before committing" but the project switched to a CI-only test model six months ago, the agent will keep running local tests unnecessarily. The user does not notice until they see wasted time and ask "why is it doing that?" At that point they must: (1) know the rule exists, (2) know where to find it, (3) know how to supersede it, and (4) trust that it's actually gone. This is a 4-step friction path for every piece of stale knowledge.
 
-At high volume (codebase ingestion or auto-extraction adding 50+ entities per session), false-positive merges compound. A single wrong merge can destroy the observations of a legitimate entity.
+The deeper problem: an incorrect preference (e.g., "user prefers verbose comments") applied across all projects generates actively harmful output in projects where terse code is the convention. Missing knowledge is neutral — the agent falls back to defaults. Wrong knowledge is adversarial — the agent confidently does the wrong thing with no obvious signal that memory is the cause.
+
+Published research on agent memory confirms this failure mode: "the system's confidence becomes inversely correlated with its reliability" when stale retrieved context is used in personalization.
 
 **Why it happens:**
-- Levenshtein on raw names is too aggressive for short technical terms. `"Go"` and `"Io"` have distance 1. `"npm"` and `"npx"` have distance 1.
-- The dedup logic does not consider entity type. `"React"` (framework) and `"React"` (agent name from a conversation) are the same string but different concepts — merging them corrupts both.
-- Developers underestimate how many short technical names exist in a typical developer knowledge graph.
+- Knowledge correction is designed after the fact, once the system is already populating the graph. The correction UX is treated as a secondary feature.
+- Superseded observations remain in the graph with `valid_until` set but still appear in some query paths when filters are too permissive.
+- There is no "last verified" timestamp on facts — knowledge becomes stale silently with no indicator.
 
 **How to avoid:**
-- All merge candidates must be routed to the approval queue, never auto-merged. The confidence threshold for auto-approval (`≥ 0.85`) should never apply to merges.
-- Require entity type agreement before even considering a merge: never merge entities of different types.
-- Augment Levenshtein with embedding cosine similarity: only propose a merge if both `levenshtein(a, b) <= 2` AND `cosineSimilarity(embedA, embedB) > 0.92`. The embedding requirement eliminates `"Go"` / `"Io"` false positives.
-- Store a `merged_into` column on soft-deleted entities (rather than hard-deleting) for the first three months after deploying dedup. This enables undo.
+- Treat knowledge correction as a first-class v6.0 requirement, not a nice-to-have. The `myco update` / "I changed my mind" flow must be designed before proactive injection ships, because injecting uncorrectable knowledge is worse than injecting nothing.
+- The correction flow must: (a) semantically search for related entities/observations, (b) show matching facts with their source and age, (c) allow the user to mark selected facts as superseded in a single command. Minimum viable: `myco update "I no longer use verbose comments"` → shows matching observations → user confirms → they are soft-retired.
+- Add `last_verified_at` and `verified_by` columns to observations. Onboarding-inferred facts start with `last_verified_at = NULL` (unverified). Facts explicitly confirmed by the user get `last_verified_at = now`. Session-start injection should surface the age of injected knowledge ("This rule was last verified 47 days ago").
+- For workflow rules specifically, add an `active: boolean` flag. Rules can be disabled without deletion, making "turn this off" a one-step action rather than a search-and-supersede flow.
 
 **Warning signs:**
-- An entity with many observations disappears from the graph after a consolidation run — it was merged into another entity and the source entity was deleted.
-- The observation count on an entity spikes unexpectedly — orphaned observations from a merged source were re-attached.
-- A relationship loops from an entity back to itself (`from_id = to_id`) — created when two sides of a relationship were merged into the same entity.
+- The user reports "it keeps doing X even though I told it to stop" — the old observation was superseded in text but the entity remains in a retrieval path.
+- Onboarding-inferred facts have no `last_verified_at` timestamp — there is no way to know how stale they are.
+- A `recall "preferences"` returns contradictory facts (old preference + new preference both visible) — the supersession mechanism is not filtering correctly.
 
-**Phase to address:** Auto-Dedup / Conflict Resolution phase. The approval queue UI must support a "proposed merge" item type that shows both entities side-by-side with their observations before the user confirms.
+**Phase to address:** Knowledge Correction & Evolution phase — but the `last_verified_at` column and `active` flag for workflow rules must be added in the Onboarding phase schema work, before any knowledge is injected. Retrofitting audit timestamps onto existing observations requires a migration and backfill.
 
 ---
 
-### Pitfall 5: Schema Migrations — The `ALTER TABLE` Accumulation Problem
+### Pitfall 5: Workflow Rules That Are Too Rigid or Too Vague to Be Actionable
 
 **What goes wrong:**
-The existing `schema.ts` already shows this pattern: each v3.0 migration is a `try/catch ALTER TABLE` block appended at the bottom of `applySchema()`. By the time v5.0 adds temporal versioning columns (`valid_from`, `valid_to`, `superseded_by`), relationship strength columns (`strength`, `reinforcement_count`, `last_reinforced_at`), and decay columns (`importance_score`, `last_accessed_at`, `half_life_days`), the migration block will be 200+ lines of `try/catch ALTER TABLE` executed on every server startup. On a database with 100k+ rows, these idempotent migrations scan `sqlite_master` for each attempt — a measurable startup delay.
+Workflow rules stored as graph entities must be precise enough to be acted on without being so prescriptive that they break when context changes. Two failure modes:
 
-The deeper issue: `ALTER TABLE` in SQLite cannot change a column's type, add a NOT NULL constraint to an existing column, or add a column with a non-constant default. When temporal versioning needs `valid_from TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`, this is a non-constant default — the column must be added as nullable and backfilled.
+**Too vague**: "Follow best practices for this project" or "Be careful with database changes" — the agent cannot operationalize these. They consume tokens in the session-start injection with zero behavioral change.
+
+**Too rigid**: "Always run `npm run test:unit` before every commit" — when the project switches to a monorepo with package-level test commands, this rule is incorrect. The agent either follows it blindly (wrong behavior) or detects the conflict and stops to ask (workflow interruption).
 
 **Why it happens:**
-- The startup-migration pattern is pragmatic for small schemas. It becomes a liability when there are 15+ column additions across 5 tables.
-- Developers forget that SQLite's `ALTER TABLE ADD COLUMN` only supports literal constant defaults, not expressions.
+- Onboarding scanning infers rules from README and CLAUDE.md content. READMEs are written for humans and use natural, vague language. LLM extraction does not normalize vagueness.
+- Rule storage is a simple text observation — there is no structured schema for rules that would enforce actionability.
+- Users write rules once and never revisit them, so initially-correct rules drift as the project evolves.
 
 **How to avoid:**
-- Introduce a `schema_migrations` table (migration ID, applied_at) before v5.0 begins. Migrate each existing `try/catch ALTER TABLE` into numbered migration entries. On startup, check which migrations have run; execute only new ones.
-- For any column with a non-trivial default (temporal timestamps, computed scores), add it as `TEXT DEFAULT NULL`, backfill existing rows immediately after `ALTER TABLE`, then set a NOT NULL check via application-level validation rather than schema constraint.
-- Group v5.0 schema changes into three migrations: (1) temporal columns, (2) decay/importance columns, (3) relationship strength columns. Run in order, idempotently.
+- Workflow rules should be stored as a distinct entity type (`type: "workflow_rule"`) with a structured schema: `{ trigger: string, action: string, scope: "global" | "project", active: boolean }`. Free-text rules stored as generic observations cannot be reliably filtered, prioritized, or disabled.
+- During `myco init` rule extraction, apply a validation heuristic: rules must contain an action verb + a specific artifact (file, command, tool). Rules that fail this heuristic are flagged as "vague" in the approval queue with a prompt to refine.
+- Rules surfaced at session start should include their scope and trigger: "Before committing: run `npm test`" is far more actionable than "run tests".
+- Add a `last_triggered_at` timestamp that records when the agent last acted on the rule. Rules not triggered in 90 days are flagged as potentially stale in the dashboard.
 
 **Warning signs:**
-- `applySchema()` takes more than 200ms on startup against a populated database — too many migration attempts.
-- A migration adds a NOT NULL column without a backfill step — all existing rows get NULL values that violate the intended constraint.
-- Two migrations add the same column name to the same table — the second silently fails without error (swallowed by `try/catch`), masking the mistake.
+- The session-start injection contains workflow rules that are complete English sentences with no verb + artifact structure — they are decoration, not instruction.
+- A `recall "workflow rules"` returns 15+ items — the user has accumulated vague meta-rules that shadow actionable ones.
+- The agent asks clarifying questions about a workflow rule's intent — the rule is too vague to execute.
 
-**Phase to address:** First v5.0 phase (any phase that touches the schema). The migration framework must be in place before any feature adds columns — or the `try/catch` pattern will grow to unmanageable size.
+**Phase to address:** Workflow Rules phase. The structured schema (`type: "workflow_rule"`, trigger/action fields) must be designed before the first rule is stored. Using generic observations for rules and adding structure later requires a data migration across all existing rule entities.
 
 ---
 
-### Pitfall 6: REST API — Adding HTTP Server Breaks the MCP Stdio Assumption
+### Pitfall 6: User Preference Drift Across Projects — Cross-Contamination
 
 **What goes wrong:**
-The MCP server communicates via stdio. Claude Code starts the process, writes JSON-RPC to stdin, and reads responses from stdout. Any output to stdout that is not MCP protocol JSON breaks the connection. The existing system already has a Hono REST API in a separate `packages/api-server` process — this is the correct architecture. The pitfall is when developers try to combine MCP and HTTP into one process (e.g., "add a REST endpoint to the MCP server package") because it seems simpler.
+The design goal is that user preferences inferred from any project attach to a global `User` entity, with the originating project as evidence. This is valuable when the preference is universal ("user prefers TypeScript over JavaScript"). It is harmful when the preference is project-local ("user prefers single-letter variable names" — inferred from a golf-score-optimized competitive coding project, then applied to a production codebase).
 
-The second pitfall: when the REST API and MCP server both write to the SQLite database, better-sqlite3's single-writer lock means the REST server's writes block the MCP server's synchronous operations, and vice versa. In WAL mode, reads can proceed concurrently with writes, but two writers on the same connection serialize. If the REST server handles a slow bulk import while an agent issues a `remember` call, the `remember` will wait for the lock — and MCP tool calls time out.
+Cross-project preference contamination is subtle because it is not obviously wrong — it is a plausible generalization that happens to be incorrect in context. The agent behaves strangely, the user is baffled, and tracing the cause requires understanding Myco's preference scoping model.
+
+Published research on preference drift in agent memory confirms: "contemporary LLMs struggle to infer implicit preferences accurately and apply them consistently across conversational turns, particularly when intervening dialogues introduce unrelated topics as contextual token noise."
 
 **Why it happens:**
-- The MCP server is already a Node.js process — it looks trivial to add `app.listen(3001)` to it.
-- WAL mode is often described as "concurrent reads and writes" which is misleading: it means reads and writes can proceed simultaneously (reads don't block writes), but writes still require an exclusive lock.
+- Preference inference is optimistic: a single observation of a behavior is treated as a preference signal.
+- The "global User entity with project evidence" model assumes the developer can easily distinguish global vs. local preferences at inference time. LLMs frequently cannot.
+- There is no review step between "preference inferred" and "preference applied globally." The inference goes directly to the global entity.
 
 **How to avoid:**
-- Keep MCP server and REST API as separate processes (the existing architecture). The `api-server` package already exists — do not merge it with `mcp-server`.
-- For operations that could be slow (bulk import, codebase ingestion, full graph export), run them exclusively in the REST API process, not the MCP server.
-- Set `db.pragma('busy_timeout = 5000')` in both processes so a locked write waits up to 5 seconds rather than failing immediately.
-- For the REST API's bulk import endpoint, wrap the entire import in a single transaction to minimize lock hold time. A 1000-entity import in one transaction holds the lock for ~50ms total vs. ~50ms per row in autocommit mode.
+- User preferences must be staged before globalization: new preferences start as `scope: "project"` on the originating project entity. They are only promoted to `scope: "global"` (attached to the User entity) after human confirmation or after the same preference is observed in 2+ distinct projects.
+- During session-start injection, display the source project for each injected preference: "Prefers verbose comments (from: myco, gsd-tools)". This makes cross-contamination visible rather than invisible.
+- Add a confidence decay for preferences inferred from a single observation: `confidence = 0.5`. Explicit user confirmation or multi-project corroboration raises confidence. This prevents low-signal inferences from being injected with full authority.
+- Global preferences should have a `conflicting_evidence` flag: if project A says "prefers tabs" and project B says "prefers spaces", this is a project-local preference masquerading as a global one. The conflict should be surfaced for user resolution, not silently resolved by recency.
 
 **Warning signs:**
-- `console.log()` or `process.stdout.write()` calls added to the MCP server package — any non-JSON output to stdout will corrupt the MCP transport stream.
-- An agent's `remember` call returns a "database is locked" error — the REST API holds the write lock for a long operation.
-- The MCP server's memory usage climbs during a REST API bulk import — the WAL file is growing because the checkpoint cannot run while a write transaction is open.
+- A preference from project A appears in session-start injection for project B — the scope promotion happened prematurely.
+- Two contradictory preferences exist for the same user ("prefers verbose" and "prefers terse") — neither has been resolved because the conflict detection is not running.
+- The approval queue shows a user preference with a single-project observation source and `confidence = 0.8` — the confidence is too high for a single-observation inference.
 
-**Phase to address:** REST API / Import-Export phase. The import endpoint is the highest-risk point for write contention — it must use single-transaction bulk writes and be tested against a concurrent MCP session.
+**Phase to address:** User Preference Accumulation phase. The `scope: "project" → "global"` promotion logic and the 2-project corroboration rule must be built into the first version of preference storage. Retrofitting scope constraints onto already-global preferences requires re-reviewing all previously stored preferences.
 
 ---
 
-### Pitfall 7: Codebase Ingestion — Scope Explosion and Graph Pollution
+### Pitfall 7: The "Helpful Assistant Who Won't Shut Up" Anti-Pattern
 
 **What goes wrong:**
-The `codify` tool is intended to turn project structure and conventions into graph knowledge. The temptation is to ingest everything: every file path, every function signature, every import statement. A typical TypeScript project with 200 files produces 2,000+ entities if files, modules, functions, and classes are all ingested. This overwhelms the graph explorer UI (which starts to struggle at ~1,500 nodes), pollutes semantic search results with implementation details, and makes consolidation runs much more expensive.
+Proactive recall that fires at session start is valuable once. It becomes noise the second time and actively annoying by the fifth session on the same project. If every session for the same project injects the same 20 workflow rules and 15 preferences, the user learns to ignore the injected block entirely. At that point, the feature provides zero value while consuming tokens on every session.
 
-The second problem: stale codebase facts. After ingestion, the developer renames a function. The graph still contains the old function entity. There is no re-ingestion mechanism, so stale entities accumulate. At the next consolidation, the LLM may infer contradictory facts: "function X calls Y" (from episode memory) while the graph says "function X was renamed to Z."
+The same problem applies to correction suggestions: if Myco notices a potential conflict between what the agent just did and a stored rule, it should surface this once — not on every subsequent action. A "helpful" system that surfaces the same observation repeatedly is an intrusive system.
+
+Research on proactive AI assistants found that effective systems "adapt suggestions and timing as they interact with the user" and "the user should be able to accept and reject suggestions, and the decision to accept or reject should influence future decisions." Early versions of consumer apps (Uber notifications) had to reduce proactive pings significantly after user complaints about repetition.
 
 **Why it happens:**
-- AST traversal naturally produces a node per symbol. Developers don't filter aggressively enough because "more data = better recall" feels true.
-- Re-ingestion is not designed from the start because initial ingestion seems like a one-time operation.
+- Session-start injection is stateless: each session queries the graph fresh and injects the same high-priority items regardless of how many times they've been injected.
+- There is no feedback loop between "injected this session" and "should inject next session."
+- "More context is better" thinking ignores the user's cognitive load and familiarity with their own project.
 
 **How to avoid:**
-- Limit ingestion to three abstraction levels: project, package/module, and public API surface (exported symbols only). Skip private functions, local variables, and internal implementation details.
-- Tag all ingested entities with `source_type: 'codebase'` and `project: '<project-name>'`. This enables project-scoped filtering and bulk deletion when re-ingesting.
-- Re-ingestion must delete all `source_type: 'codebase'` entities for the target project before inserting fresh ones — a clean-slate update, not an additive one.
-- Implement a file-level hash cache: skip re-ingesting files whose content hash has not changed since last ingestion.
+- Track injection frequency per entity: add `injected_count` and `last_injected_at` to workflow rules and preferences. Items injected in the last 3 sessions on the same project should be deprioritized in favor of new/recently-changed items.
+- Design the session-start injection to surface **changes since last session**, not the full corpus every time. "New since last session: 1 workflow rule" is far more valuable than re-injecting 15 known rules.
+- Provide an explicit opt-out: `MYCO_QUIET=1` environment variable suppresses session-start injection entirely for users who have internalized their rules and prefer to call `myco recall` on demand.
+- Conflict detection for workflow rules should fire once per conflict, not on every related action. Mark conflicts as `surfaced_at` and do not re-surface for 7 days unless the underlying rule changes.
 
 **Warning signs:**
-- The graph explorer shows >1,000 nodes after a single `codify` run on a medium-sized project.
-- `recall` results for a concept return function signatures and internal variable names alongside higher-level architectural facts — ingestion granularity is too fine.
-- The `project` filter on `recall` returns results from a project the agent is no longer working on — stale codebase entities were not cleaned up.
+- The user sets up a SessionStart hook that ignores the Myco block — they have learned to skip it.
+- Session-start injection content is identical across 5 consecutive sessions — no novelty or recency filtering is applied.
+- A user reports "it keeps reminding me of the same thing" — the `surfaced_at` tracking is not working.
 
-**Phase to address:** Codebase Ingestion phase. Scope constraints (abstraction level, clean-slate re-ingestion, file hashing) must be in the design spec before any ingestion code is written. They cannot be retrofitted easily once entities are in production graphs.
+**Phase to address:** Automatic Session-Start Recall phase. Novelty filtering and the `injected_count` / `last_injected_at` tracking must be in the initial injection implementation. Adding novelty filtering after the fact requires changing the injection query and the session-start hook output format simultaneously — a multi-component change.
 
 ---
 
-### Pitfall 8: Memory Importance Decay — Decaying the Wrong Things
+### Pitfall 8: The Approval Queue Becomes the Onboarding Bottleneck
 
 **What goes wrong:**
-A naive decay implementation runs a nightly job that applies `importance_score *= decay_factor` to all observations. This will eventually decay architectural decisions, user preferences, and project constraints that have not been "reinforced" recently — exactly the facts that should be most durable. In a single-user knowledge graph, "unreinforced" does not mean "unimportant." A fact about how a project's test runner is configured was set once and never needs to be revisited — but it is critical context.
+The `myco init` onboarding walkthrough is designed to produce a human-reviewed summary before committing anything to the graph. If the scan produces 60 candidate entities and preferences, and each requires an individual approval in the queue, the onboarding flow is dead on arrival. A user who spends 15 minutes reviewing individual approval items for a project they understand perfectly will not run `myco init` again, and will not recommend Myco to others.
 
-The secondary problem: decay scores stored as REAL values in SQLite accumulate floating-point drift over thousands of decay cycles. After 365 daily decays with a factor of 0.99, `1.0 * 0.99^365 ≈ 0.025`. At that point, the recall system may exclude still-important facts because they fall below a display threshold.
+The existing approval queue (v4.0) is designed for nightly consolidation outputs — low-volume, high-consequence items (entity merges, conflicting facts). Onboarding produces a fundamentally different pattern: high-volume, lower-consequence items where most should be approved and a few should be rejected or edited.
 
 **Why it happens:**
-- Ebbinghaus forgetting curve models were designed for individual human memory of arbitrary facts, not for curated, structured knowledge graphs.
-- Developers apply uniform decay because it is simple to implement. Context-aware decay (exempt certain entity types, exempt high-confidence facts above 0.95) requires more schema work.
+- The approval queue is the existing human review mechanism. It is natural to route onboarding outputs through it.
+- "Human review before committing" is correct in principle. The implementation assumes one-at-a-time review, which is wrong for batch onboarding.
 
 **How to avoid:**
-- Decay should be opt-in per entity type. Entities of type `preference`, `constraint`, `decision`, and `architecture` should have `decay_exempt: true` by default.
-- Apply decay only to `source_type: 'auto_extracted'` observations in the first version. Explicitly-remembered facts (`source_type: 'agent_session'`) should not decay.
-- Do not decay below a floor of `importance_score = 0.1`. Facts at the floor are "dormant" not "deleted." A reinforcing event (recall, reference, related entity added) resets the score to 1.0.
-- Store `last_accessed_at` on entities and observations (updated on every `recall` that returns the item). Use this to compute "days since last access" as the decay input rather than an absolute clock.
+- Onboarding outputs must use a separate batch approval UX, not the existing approval queue. The `myco init` summary should present all inferred knowledge grouped by category (workflow rules, preferences, project facts) in a single interactive view with "approve all" / "reject all" / "edit individual" actions.
+- Implement `myco init --auto-approve` for CI or advanced users who trust the inference. Never make this the default, but provide the escape hatch.
+- The existing approval queue should only receive onboarding items that the system genuinely cannot categorize with reasonable confidence — items that fall below `confidence = 0.5`. Everything above that threshold should appear in the batch onboarding summary, not the queue.
+- Add a "snooze" action to the batch summary: "skip for now, ask me again next session." This is better than forcing a decision at onboarding time.
 
 **Warning signs:**
-- A `recall` for a well-known project convention returns no results — the entity's importance has decayed below the recall filter threshold.
-- `importance_score` columns contain values like `2.77e-17` — unchecked exponential decay has driven scores to floating-point underflow.
-- The graph explorer shows fewer and fewer nodes over time without any explicit deletions — decayed entities are being excluded from the default filtered view.
+- The approval queue shows 60+ items immediately after `myco init` completes — the batch summary flow is not working.
+- Users abandon the approval queue after the first `myco init` run — queue volume is too high.
+- `myco init` reports "18 items added to your approval queue" — the UX is treating onboarding outputs as nightly-consolidation-style items.
 
-**Phase to address:** Memory Importance Decay phase. Implement decay on `auto_extracted` entities only first. Expand to other source types only after validating that the floor and exemption logic are working correctly.
+**Phase to address:** Project Onboarding phase. The batch approval UX must be designed before `myco init` produces any output. Building `myco init` to feed the existing approval queue and then replacing it with a batch UX later means changing the output contract of the scan midway — a disruptive refactor.
 
 ---
 
-### Pitfall 9: Relationship Strength Scoring — Write Amplification on Every Recall
+### Pitfall 9: MCP Server Process Lifetime vs. Session Hook CWD Mismatch
 
 **What goes wrong:**
-Relationship strength increases when a relationship is reinforced (a `recall` that traverses the relationship, or a `remember` that re-asserts it). If `strength` and `last_reinforced_at` are updated in the database on every such event, every `recall` becomes a write operation. The existing `recall` tool in `tools.ts` is currently a read-only operation (no writes after embedding lookup). Converting it to a read-write operation means:
+The MCP server is a long-running process (started once, shared across many Claude Code sessions via stdio). The SessionStart hook runs as a separate subprocess with the current session's CWD. These two processes have different execution contexts:
 
-1. The `recall` tool must acquire a write lock on the database.
-2. If multiple agent sessions call `recall` concurrently (parallel agents), writes serialize and slow down all queries.
-3. The prepared statement cache (`statements.ts`) has a prepared `UPDATE` statement that runs on every `recall` — this multiplies by the number of relationship hops returned.
+- The MCP server has no knowledge of the Claude Code session's current directory.
+- The hook subprocess has no persistent database connection — it must open and close a database connection on every hook invocation.
+- Changes made to the graph by the MCP server (remember, forget) are not automatically reflected in the hook's injected context for the current session — the injection already happened.
 
-**Why it happens:**
-- Reinforcement scoring feels like it should happen in real-time. Batch updating after the fact seems wrong.
-- Developers underestimate how frequently `recall` is called in an active agent session (often every few messages).
-
-**How to avoid:**
-- Do not update relationship strength synchronously on `recall`. Instead, write to a `reinforcement_events` table (entity_id, relationship_id, event_type, created_at) with a simple INSERT — much cheaper than an UPDATE with a read-modify-write cycle.
-- Run a `processReinforcementEvents` step in the nightly consolidation that aggregates the events table and updates `strength` and `reinforcement_count` in bulk.
-- For the initial implementation, update strength only on `remember` calls (when a relationship is explicitly re-asserted), not on `recall`. This is a simpler trigger that does not affect query performance.
-
-**Warning signs:**
-- `recall` latency increases from ~5ms to ~50ms after enabling relationship strength tracking — the write amplification is measurable.
-- The `reinforcement_events` table grows without bound — the batch processor is not running or not clearing processed events.
-- The WAL file size grows steadily during an active agent session — strength updates from `recall` are accumulating in the WAL faster than checkpoints clear them.
-
-**Phase to address:** Relationship Strength Scoring phase. Defer the real-time reinforcement approach entirely. The nightly-batch approach is simpler, doesn't affect hot-path performance, and can be validated against the same consolidation pipeline already in use.
-
----
-
-### Pitfall 10: Import / Export — Destructive Import Without Dry-Run
-
-**What goes wrong:**
-Import from an external format (Mem0 JSON, Anthropic reference server JSONL) adds entities and observations to the existing graph. Without a conflict resolution strategy, an import can:
-- Create duplicate entities that bypass the dedup logic (different IDs, same name)
-- Overwrite existing observations with lower-quality imported versions
-- Destroy the `project` namespace isolation by importing entities without a `project` tag
-
-The most dangerous scenario is a re-import: the user exports their graph, modifies it externally, and imports it back. If the import does not check for existing IDs, every entity appears twice.
+This creates a coherence problem: if the user calls `myco remember "new convention"` early in a session, the session-start injection for the next session correctly includes it. But mid-session, the agent has no way to "refresh" its injected context without starting a new session.
 
 **Why it happens:**
-- Import APIs often default to "INSERT or IGNORE" which silently drops conflicts, or "INSERT or REPLACE" which silently destroys existing data.
-- Users expect import to be idempotent without understanding the deduplication cost.
+- The SessionStart hook is a one-shot injection mechanism — it fires once and is done. Developers design it as if it were a continuous memory connection.
+- MCP server state and hook output are conflated. They are independent systems that share a database but not execution context.
 
 **How to avoid:**
-- Implement import as a two-phase operation: (1) dry-run that returns a preview of what would be added, updated, or skipped; (2) execute that performs the actual writes. Never skip the dry-run in the UI.
-- On import, check for existing entities by ID first. If an entity with the same ID exists, compare `updated_at` and keep the newer one.
-- Import must assign a `project` tag to all imported entities (defaulting to the import filename or a user-specified project name) to prevent namespace pollution.
-- Provide a `--merge` flag (update existing) and a `--skip-existing` flag (additive only) — never silently choose one behavior.
+- Design the session-start injection as a "starting state" only. Mid-session context updates happen via explicit `myco recall` tool calls, not via hook re-injection.
+- Document this limitation explicitly in `myco init` and in the CLAUDE.md template that `myco init` generates for projects: "Myco injects context at session start. For mid-session context, call `myco recall <topic>`."
+- The hook must open a database connection, execute a single prepared query, and close the connection cleanly — no connection pooling, no shared state with the MCP server process. Use `better-sqlite3` in read-only mode from the hook subprocess to avoid write contention.
+- Add a session-start TTL: if the hook cannot query the database within 200ms (e.g., the MCP server holds a write lock during consolidation), inject a fallback message "Myco context temporarily unavailable — call `myco recall` for project context" rather than hanging.
 
 **Warning signs:**
-- Entity count doubles after a re-import — duplicate detection is not checking by ID.
-- A `recall` returns observations in two languages or two writing styles for the same entity — two versions coexist after a partial import.
-- The `project` filter on `recall` returns imported entities that should be scoped to a different project.
+- The hook subprocess times out during a nightly consolidation window — the MCP server holds the write lock while consolidation runs.
+- The user expects mid-session context updates to appear "automatically" — they do not understand the one-shot injection model.
+- The hook opens a database connection and never closes it — resource leak across many hook invocations.
 
-**Phase to address:** Import/Export phase. Export must come first (to validate the schema is correct and complete) before import is attempted. Test with a full export-clear-import cycle before releasing.
+**Phase to address:** Automatic Session-Start Recall phase. The hook architecture (separate process, read-only connection, TTL fallback) must be designed before the first line of hook code is written. The temptation to share connection state between the hook and the MCP server is strong — it must be explicitly ruled out in the design spec.
 
 ---
 
@@ -281,42 +277,69 @@ Shortcuts that seem reasonable but create long-term problems.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| `try/catch ALTER TABLE` for all migrations | Zero migration framework overhead | Startup runs all migrations on every boot; breaks on non-constant defaults; masks failed migrations | Never for v5.0 — introduce a migrations table before adding more columns |
-| Levenshtein-only entity dedup | Simple to implement, no embedding overhead | False positive merges on short technical names (`Go`, `npm`, `git`) | Never in production — always pair with embedding similarity |
-| Auto-approving auto-extracted entities at confidence ≥ 0.85 | Fewer items in approval queue | Ghost entities enter the graph permanently without human review | Never — auto-extracted facts should always require human approval |
-| Updating relationship strength synchronously on `recall` | Real-time strength accuracy | Converts read-only `recall` into a write operation; degrades query performance at scale | Never — batch-update in nightly consolidation instead |
-| Ingesting all symbols from codebase AST | Comprehensive graph coverage | Graph pollution; 1000+ low-value entities per project; slow semantic search | Never — limit to public API surface and project-level facts |
-| Uniform decay applied to all entity types | Simple implementation | Decays architectural constraints and preferences that should never fade | Acceptable only for `auto_extracted` entities in v5.0 |
+| Store workflow rules as generic observations (no structured type) | No schema change needed | Cannot filter, disable, or prioritize rules independently; cannot add `last_triggered_at` without schema migration | Never — rules need a distinct entity type from day one |
+| Inject full entity observation text in session-start hook | Complete context without summary generation | Context window bloat; tokens wasted on boilerplate that the agent does not act on | Never — inject entity summaries only |
+| Auto-promote single-project preferences to global scope | Richer global user entity | Cross-project preference contamination; trust collapse when agent acts on wrong preference | Never — require 2+ project corroboration or explicit user confirmation |
+| Route all onboarding output through the existing approval queue | Reuses existing UI | Queue becomes unusable; users abandon the review flow | Acceptable only during development/testing; must be replaced with batch UX before user-facing release |
+| Use `process.cwd()` inside the MCP server to determine current project | Simple implementation | MCP server CWD is fixed at launch time; wrong project context injected | Never — pass CWD explicitly from the hook script |
+| Skip novelty filtering in session-start injection | Simpler query | Same content injected every session; users learn to ignore the block | Acceptable in MVP for first session only; must be added before second-session UX is evaluated |
 
 ---
 
 ## Integration Gotchas
 
-Common mistakes when connecting the new v5.0 features to the existing system.
+Common mistakes when connecting v6.0 proactive features to the existing system.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Temporal versioning + existing observations | Adding `valid_from`/`valid_to` columns without backfilling existing rows | `ALTER TABLE observations ADD COLUMN valid_from TEXT` followed immediately by `UPDATE observations SET valid_from = created_at WHERE valid_from IS NULL` |
-| Auto-extraction + approval queue | Flooding the queue with hundreds of low-confidence items, making it unusable | Set extraction batch size to max 5 entities per episode; require `confidence >= 0.6` to even enter the queue |
-| Incremental consolidation + nightly cron | Nightly and incremental runs racing on the same unconsolidated episodes | Add an exclusive consolidation lock row checked atomically before any consolidation run starts |
-| Memory decay + recall filters | Decayed entities vanishing from `recall` results with no warning | Set a decay floor (e.g., 0.1) below which entities are "dormant" not deleted; add `include_dormant` filter parameter to `recall` |
-| Codebase ingestion + project namespaces | Ingested entities not tagged with a `project` value, polluting the global namespace | `codify` tool must require a `project` argument; never ingest without project scoping |
-| REST API bulk import + MCP `remember` | Write lock contention: import holds the lock, `remember` times out | Import must use a single transaction; set `busy_timeout = 5000` on both database connections |
-| Relationship strength + sqlite-vec embeddings | Embedding vectors not updated when an entity is merged or its name changes | On entity merge, re-embed the surviving entity's observations; add a `needs_embedding = 1` trigger on any merge event |
+| SessionStart hook + MCP server process | Assuming the hook can call MCP tools — it cannot, hooks are shell subprocesses | Hook must use direct SQLite reads via the `myco` CLI binary, same pattern as the existing GSD hook |
+| Onboarding scan + approval queue | Sending 60+ items to the existing queue | Separate batch approval flow for onboarding; only `confidence < 0.5` items go to the standard queue |
+| Workflow rules + entity/observation schema | Storing rules as generic `type: "concept"` observations | Add `type: "workflow_rule"` as a distinct entity type with `active`, `trigger`, `scope` fields from the start |
+| Preference globalization + project namespaces | Adding a preference to the global User entity when it should stay project-scoped | Stage preferences at project scope; promote to global only after 2+ project corroboration |
+| Knowledge correction + temporal versioning | Deleting old observations instead of soft-retiring them | Use `valid_until = now` on superseded observations (same pattern as v5.0 temporal versioning) |
+| Hook subprocess + SQLite WAL mode | Hook opens a write connection, blocks MCP server | Hook must use read-only mode: `new Database(path, { readonly: true })`; hook should never write |
+| Session-start injection + MCP Resources protocol | Trying to use MCP Resources to serve context (adds complexity, not supported by Claude Code hooks) | Keep injection in the SessionStart hook stdout; MCP Resources are for on-demand reads, not session initialization |
 
 ---
 
 ## Performance Traps
 
-Patterns that work at small scale but fail as the graph grows.
+Patterns that work in development but fail with a populated graph.
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Computing `importance_score` decay in a row-by-row UPDATE loop | Consolidation takes minutes instead of seconds | Use `UPDATE observations SET importance_score = importance_score * ? WHERE source_type = 'auto_extracted' AND decay_exempt = 0` — a single statement | At ~10,000 observations |
-| Querying temporal history without a compound index on `(entity_id, valid_from, valid_to)` | "What was true at time X" queries take >1 second | Add the compound index at migration time | At ~5,000 versioned facts |
-| Re-embedding all observations after an entity merge | Embedding queue grows unbounded during bulk operations | Only re-embed observations whose `content` changed; mark with `needs_embedding = 1` and process asynchronously | At ~1,000 merged entities |
-| Storing full AST dump in entity `metadata` JSON | Graph export file is 50MB+ for a medium project | Store only summary facts (module name, exports list, doc comment) in the graph; keep AST data in a separate file if needed | At first medium-sized project ingestion |
-| Running `discoverRelationships()` after every `remember` call with incremental consolidation enabled | Relationship discovery is O(entities²) for name matching; becomes slow | Batch relationship discovery; run only during consolidation, not on every `remember` | At ~500 entities |
+| Embedding-based recall inside SessionStart hook | Hook takes 2-5 seconds; user sees delay at every session start | Session-start injection must use indexed SQL queries only (entity type, project, recency) — no embedding lookup | From the first production session; embedding calls block the hook |
+| Scanning all source files during `myco init` | `myco init` takes 3+ minutes; user abandons | Limit scan to README, CLAUDE.md, package manifests; skip source code in v6.0 | At first medium-sized project (100+ files) |
+| Re-querying the graph on every agent message to check workflow rules | `recall` latency adds up across a 50-message session | Session-start injection handles rules once; trust the agent to apply injected rules without per-message checks | At 20+ messages per session |
+| Storing `injected_count` as a column update on every session start | Every session causes a write on all injected entities | Batch the update into the consolidation cycle; or use a separate `injection_log` append-only table | At 10+ sessions per day |
+| CWD-to-project matching using fuzzy string search over all entity names | Matching is slow and ambiguous for deeply nested paths | Index project entities by `canonical_path` and use exact prefix matching | At 20+ projects in the graph |
+
+---
+
+## Security Mistakes
+
+Domain-specific security issues for proactive knowledge injection.
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Injecting session-start context that includes user credentials or API keys remembered accidentally | Keys injected into every session context, potentially logged or leaked in transcripts | Scan injected observations for credential patterns before outputting; reject observations that match `sk-`, `ghp_`, `Bearer `, etc. |
+| Allowing `myco init` to read `.env` files during onboarding scan | Secrets enter the knowledge graph as observations | Explicitly exclude `.env`, `.envrc`, `*.pem`, `*.key`, `*secret*`, `*credential*` from all scanning paths |
+| MCP server prompt injection via stored observations | A malicious observation stored in the graph could inject instructions when surfaced at session start | Observations injected at session start should be rendered as data (quoted, labeled), not as raw text that could be mistaken for system instructions |
+| Hook script accepts arbitrary project names without validation | Path traversal or injection in the `myco hook` command | Validate that `project` parameter matches `[a-zA-Z0-9_-]` before using in any file path or query |
+
+---
+
+## UX Pitfalls
+
+Common user experience mistakes specific to proactive memory features.
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| Proactive injection with no visible source | Agent follows a rule the user doesn't know exists; user is confused | Every injected item must include its source entity name and age: "Rule: run tests before commit (workflow_rule, 14d old)" |
+| No way to see what was injected this session | User cannot audit what context the agent has; debugging is impossible | Add `myco session` command that shows exactly what was injected at the start of the current session |
+| Knowledge correction requires knowing graph IDs | Users cannot fix wrong facts without technical knowledge of entity IDs | `myco update "old statement"` must do semantic search and present matching facts with plain-language confirmation, never require IDs |
+| All preferences treated as equally important | High-confidence, multi-project preferences compete with single-observation guesses | Show confidence level and source count for each preference in the session-start summary |
+| `myco init` produces no output until complete | User does not know if it is running, stuck, or complete | Stream progress: "Scanning README... found 3 workflow rules. Scanning CLAUDE.md... found 5 preferences." |
 
 ---
 
@@ -324,14 +347,14 @@ Patterns that work at small scale but fail as the graph grows.
 
 Things that appear complete but are missing critical pieces.
 
-- [ ] **Temporal versioning:** The `valid_from` column exists — but verify that `recall` actually filters by temporal range when a `as_of` parameter is passed, and that all existing observations were backfilled with `valid_from = created_at`.
-- [ ] **Auto-entity extraction:** The extraction runs and produces entities — but verify that (a) all auto-extracted items route to the approval queue, (b) `evidence_quote` verification is active, and (c) the `source_type: 'auto_extracted'` tag appears on every created entity.
-- [ ] **Incremental consolidation:** The trigger fires on `remember` — but verify the consolidation lock prevents double-processing and that the nightly run still processes incremental-staged items.
-- [ ] **Codebase ingestion:** The `codify` tool creates entities — but verify that (a) re-running `codify` for the same project deletes stale entities before inserting fresh ones, (b) all ingested entities carry `source_type: 'codebase'` and the correct `project` tag.
-- [ ] **Memory decay:** Decay runs nightly — but verify that (a) `decay_exempt` entities are never updated, (b) the floor of 0.1 is enforced, and (c) `last_accessed_at` is updated on every `recall` that returns the entity.
-- [ ] **Import/Export:** Export produces a valid JSON file — but verify that re-importing the same file is idempotent (no duplicate entities created on second import).
-- [ ] **Relationship strength scoring:** Strength values appear in the graph — but verify they are not being updated synchronously on `recall`, and that the nightly batch processor clears the `reinforcement_events` table after processing.
-- [ ] **REST API import:** The import endpoint accepts JSON — but verify it uses a single transaction, sets `busy_timeout`, and returns a meaningful dry-run preview before executing.
+- [ ] **Session-start injection:** The hook outputs context — but verify (a) the output is under 1,500 tokens for a graph with 200+ entities, (b) items are sorted by priority (rules first, then preferences, then facts), and (c) the output includes "last verified" age for each item.
+- [ ] **CWD-to-project mapping:** The hook detects the project — but verify it works when Claude is launched from a project subdirectory, not the root, and when the MCP server was started from a different directory.
+- [ ] **Workflow rules:** Rules are stored and injected — but verify (a) they use `type: "workflow_rule"` (not generic observations), (b) they have an `active` flag, and (c) `myco disable-rule` works without deleting the rule.
+- [ ] **User preferences:** Preferences are inferred — but verify they start as project-scoped and require 2+ project evidence OR explicit user confirmation before appearing in the global User entity.
+- [ ] **Knowledge correction:** `myco update` finds the old fact — but verify that the old observation is soft-retired (temporal `valid_until`) rather than deleted, and the new version is linked to the old one via `supersedes` relationship.
+- [ ] **Onboarding scan:** `myco init` produces output — but verify that (a) it completes in under 30 seconds on a 100-file project, (b) all output is routed to the batch approval UX (not the standard queue), and (c) re-running `myco init` on the same project does not duplicate entities.
+- [ ] **Novelty filtering:** Session-start injection fires — but verify that after 3 consecutive sessions with no graph changes, the injection summary shows "No changes since last session" rather than re-injecting the same items.
+- [ ] **Hook read-only mode:** The hook subprocess runs — but verify it opens the database in read-only mode and that a hook invocation during active consolidation degrades gracefully (fallback message within 200ms) rather than timing out.
 
 ---
 
@@ -341,13 +364,13 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Ghost entities from auto-extraction | LOW | `DELETE FROM entities WHERE source_type = 'auto_extracted' AND confidence < 0.5` — targeted cleanup without touching explicitly-remembered facts |
-| Wrong entity merge | MEDIUM | If `merged_into` soft-delete column was implemented: restore the soft-deleted entity and re-point its relationships. If hard-deleted: restore from the nightly SQLite backup (implement backup before enabling auto-dedup). |
-| Schema migration applied incorrectly | MEDIUM | SQLite allows copying to a new database with correct schema. Use `.dump` to export data, apply fresh schema, reimport. The migration table prevents re-applying. |
-| Stale codebase entities after project rename | LOW | `DELETE FROM entities WHERE source_type = 'codebase' AND project = '<old-name>'` then re-run `codify` with the new project name. |
-| Importance decay floor not enforced — values near zero | LOW | `UPDATE observations SET importance_score = 0.1 WHERE importance_score < 0.1` — a one-time correction, then fix the decay query. |
-| Import created duplicate entities | MEDIUM | Identify duplicates: `SELECT name, COUNT(*) FROM entities GROUP BY name HAVING COUNT(*) > 1`. For each pair, merge manually via the approval queue's merge flow. |
-| Write lock contention from REST import | LOW | The `busy_timeout` will eventually resolve it. If the import is stuck: restart the REST API server. The import transaction rolls back cleanly; retry with a smaller batch. |
+| Session-start injection bloat — context window exhausted | LOW | Edit the hook config to reduce injected entity count; run `myco trim-session-context --max-tokens 1500` to enforce the cap going forward |
+| Wrong project context injected — cross-project rules applied | LOW | `myco project set <correct-project>` override; add `MYCO_PROJECT=<name>` to project's `.envrc` file |
+| Onboarding flooded the approval queue (60+ items) | MEDIUM | `myco queue clear --source onboarding` to bulk-reject all onboarding queue items; re-run `myco init` after the batch approval UX is fixed |
+| Wrong preference globalized — applied across all projects | LOW | `myco update "old preference"` correction flow; move observation back to project scope via `myco scope-preference <id> --project <name>` |
+| Stale workflow rule causing bad agent behavior | LOW | `myco disable-rule <name>` (immediate); then `myco update "rule description"` to supersede with the correct version |
+| Cross-contamination of project-local preferences into global User entity | MEDIUM | Query `SELECT * FROM observations WHERE entity_id = (SELECT id FROM entities WHERE type = 'User') AND source_project = '<specific-project>'`; soft-retire incorrectly-globalized observations; re-review the globalization criteria |
+| Onboarding extracted secrets into the graph | HIGH | `myco forget --pattern "sk-*"` to bulk-remove credential-matching observations; audit the onboarding scan exclude list; rotate any secrets that appeared in the graph |
 
 ---
 
@@ -357,36 +380,38 @@ How roadmap phases should address these pitfalls.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| SQLite has no stable transaction time | Temporal Versioning phase | Test: two facts inserted in the same transaction have identical `valid_from` values |
-| LLM hallucination creates ghost entities | Auto-Entity Extraction phase | Test: extraction with a deliberately sparse episode produces ≤ 2 entities; `evidence_quote` verification rejects 100% of quotes not found in source text |
-| Duplicate processing in incremental consolidation | Incremental Consolidation phase | Test: run `runConsolidation` twice concurrently; verify only one execution proceeds; no duplicate entities created |
-| Wrong entity merges | Auto-Dedup phase | Test: merge candidates include `"Go"` and `"Io"` — verify they are NOT proposed as a merge (embedding similarity check rejects them) |
-| Schema migration accumulation | First phase touching the schema | Test: `applySchema()` completes in <50ms on a database with 50k rows; run migrations twice, verify second run is a no-op |
-| REST API breaks MCP stdio | REST API phase | Test: start MCP server and REST API simultaneously; verify MCP stdout contains only valid JSON-RPC; verify `remember` succeeds during an active REST import |
-| Codebase ingestion scope explosion | Codebase Ingestion phase | Test: `codify` on the Myco repo itself produces <200 entities; re-running `codify` produces the same count (idempotent) |
-| Decaying important architectural facts | Memory Decay phase | Test: an entity with `source_type: 'agent_session'` and `decay_exempt: true` has unchanged `importance_score` after 30 simulated decay cycles |
-| Write amplification on `recall` | Relationship Strength phase | Test: measure `recall` latency before and after enabling relationship strength; latency increase must be <5ms |
-| Destructive import without dry-run | Import/Export phase | Test: import a file twice; entity count is identical after both imports (idempotent) |
+| Context window bloat from injection | Automatic Session-Start Recall | Test: graph with 300 entities produces hook output under 6,000 characters (≈1,500 tokens) |
+| Wrong working directory kills scoping | Smart Context Scoping | Test: hook invoked from project subdirectory injects correct project context; invoked from unrelated dir injects global-only |
+| Slow/noisy onboarding scan | Project Onboarding | Test: `myco init` on a 150-file TypeScript project completes in under 30 seconds and produces fewer than 30 candidate items |
+| Stale knowledge harder to fix than missing | Knowledge Correction & Evolution | Test: `myco update "old fact"` semantic search finds the matching observation; soft-retires it; the old observation no longer appears in `myco recall` results |
+| Vague/rigid workflow rules | Workflow Rules phase | Test: a rule stored without trigger + action verb is flagged as "vague" and routed for human refinement before storage |
+| Preference cross-project contamination | User Preference Accumulation | Test: a preference inferred from project A does not appear in session-start injection for project B until confirmed or corroborated by a second project |
+| "Helpful assistant won't shut up" | Automatic Session-Start Recall | Test: after 3 sessions with no graph changes, injection shows "No changes since last session" not the full corpus |
+| Approval queue bottleneck for onboarding | Project Onboarding | Test: `myco init` output appears in batch summary UI, not the standard approval queue |
+| MCP process lifetime vs. hook CWD mismatch | Automatic Session-Start Recall | Test: hook subprocess opens and closes database connection in under 50ms with no shared state with MCP server process |
 
 ---
 
 ## Sources
 
-- [SQLite Write-Ahead Logging — SQLite official documentation](https://www.sqlite.org/wal.html)
-- [SQLite concurrent writes and "database is locked" errors — Ten Thousand Meters](https://tenthousandmeters.com/blog/sqlite-concurrent-writes-and-database-is-locked-errors/)
-- [Improving concurrency — better-sqlite3 docs](https://wchargin.com/better-sqlite3/performance.html)
-- [SQLite and Temporal Tables: Managing Historical Data — SQLite Forum](https://www.sqliteforum.com/p/sqlite-and-temporal-tables)
-- [Simple declarative schema migration for SQLite — David Rothlis](https://david.rothlis.net/declarative-schema-migration-for-sqlite/)
-- [Knowledge Graphs, Large Language Models, and Hallucinations: An NLP Perspective — arXiv 2411.14258](https://arxiv.org/abs/2411.14258)
-- [Knowledge Graph Extraction and Challenges — Neo4j Developer Blog](https://neo4j.com/blog/developer/knowledge-graph-extraction-challenges/)
-- [iText2KG: Incremental Knowledge Graphs Construction Using LLMs — arXiv 2409.03284](https://arxiv.org/html/2409.03284v1)
-- [LLMs and Semi-Automated KG Enrichment: Tackling Entity Disambiguation — Inbound Found](https://inboundfound.com/llms-and-knowledge-graphs-tackling-entity-disambiguation/)
-- [From LLMs to Knowledge Graphs: Building Production-Ready Graph Systems in 2025 — Medium](https://medium.com/@claudiubranzan/from-llms-to-knowledge-graphs-building-production-ready-graph-systems-in-2025-2b4aff1ec99a)
-- [Building a Graph-Based Code Analysis Engine — rustic-ai/codeprism](https://rustic-ai.github.io/codeprism/blog/graph-based-code-analysis-engine/)
-- [Serving MCP and REST from the same TypeScript process — DEV Community](https://dev.to/schrepa/serving-mcp-and-rest-from-the-same-typescript-process-1n41)
-- [GitHub — gannonh/memento-mcp: knowledge graph with decay and reinforcement](https://github.com/gannonh/memento-mcp)
-- Existing Myco codebase: `packages/core/src/schema.ts`, `packages/mcp-server/src/consolidator.ts`, `packages/mcp-server/src/tools.ts`
+- [Claude Code Hooks Reference — official Anthropic documentation](https://code.claude.com/docs/en/hooks) — SessionStart hook behavior, stdout injection, performance warning
+- [SessionStart Hook Verification (Classmethod, 2025)](https://dev.classmethod.jp/en/articles/claude-code-session-start-hook-verification/) — Confirmed stdout added as system-reminder context; no size limit documented
+- [SessionStart hook stdout silently dropped — Claude Code GitHub Issue #13650](https://github.com/anthropics/claude-code/issues/13650) — Known fragility of hook stdout parsing
+- [How to access CWD when MCP server launched via uvx — modelcontextprotocol/python-sdk #1520](https://github.com/modelcontextprotocol/python-sdk/issues/1520) — CWD unavailable inside MCP server subprocess
+- [MCP server uses wrong working directory in multi-module projects — aws-toolkit-jetbrains #6173](https://github.com/aws/aws-toolkit-jetbrains/issues/6173) — Confirmed real-world CWD mismatch pattern
+- [Feature Request: Auto-activate project based on MCP client CWD — serena #895](https://github.com/oraios/serena/issues/895) — Confirmation that project auto-detection via CWD is a common request with known failure modes
+- [Understanding LLM performance degradation — Context Window limits (Demiliani, 2025)](https://demiliani.com/2025/11/02/understanding-llm-performance-degradation-a-deep-dive-into-context-window-limits/) — "Context rot" research; performance degrades with very long injected contexts
+- [Memori: A Persistent Memory Layer for Efficient, Context-Aware LLM Agents (arXiv 2603.19935)](https://arxiv.org/html/2603.19935) — Naively injecting all past interactions leads to growing context windows and instability
+- [The Problem with AI Agent Memory — Dan Giannone, Medium](https://medium.com/@DanGiannone/the-problem-with-ai-agent-memory-9d47924e7975) — Stale knowledge creates confidence-reliability inversion
+- [When AI Remembers Too Much — Unit 42 / Palo Alto Networks](https://unit42.paloaltonetworks.com/indirect-prompt-injection-poisons-ai-longterm-memory/) — Security risk of proactive memory injection; context poisoning pattern
+- [Need Help? Designing Proactive AI Assistants for Programming — CHI 2025 (ACM)](https://dl.acm.org/doi/10.1145/3706598.3714002) — Proactive assistants must adapt timing, allow rejection, influence future suggestions based on user feedback
+- [Why users ignore notifications — LogRocket UX Blog](https://blog.logrocket.com/ux-design/notification-blindness-ux-strategies/) — Notification fatigue pattern; over-injection causes users to ignore the entire channel
+- [PERMA: Benchmarking Personalized Memory Agents (arXiv 2603.23231)](https://arxiv.org/html/2603.23231) — Preference drift and temporal drift challenges in personalized agent memory
+- [Preference-Aware Memory Update for Long-Term LLM Agents (arXiv 2510.09720)](https://arxiv.org/pdf/2510.09720) — Models struggle with cross-context preference inference consistency
+- [Codebase Memory MCP — DeusData](https://deusdata.github.io/codebase-memory-mcp/) — Real-world codebase scanning performance; startup timeout as primary concern; RAM-first processing required for large repos
+- Existing Myco codebase: `packages/mcp-server/src/index.ts`, `packages/mcp-server/src/tools.ts`, `packages/core/src/schema.ts` — GSD hook pattern (direct SQLite write from shell, not via MCP tools) confirmed as the correct hook architecture
+- Myco v5.0 PITFALLS.md — Ghost entity / auto-extraction pitfalls apply equally to onboarding scanning; temporal versioning patterns apply to knowledge correction
 
 ---
-*Pitfalls research for: Myco v5.0 — adding temporal versioning, auto-extraction, incremental consolidation, codebase ingestion, import/export, memory decay, relationship scoring, and REST API to an existing SQLite + MCP memory server*
+*Pitfalls research for: Myco v6.0 — adding project onboarding, automatic session-start recall, workflow rules, smart context scoping, user preference accumulation, and knowledge correction to an existing MCP memory server*
 *Researched: 2026-03-27*

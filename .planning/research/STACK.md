@@ -1,15 +1,15 @@
-# Technology Stack — v5.0 Feature Parity & Differentiation
+# Technology Stack — v6.0 Proactive Knowledge & Onboarding
 
 **Project:** Myco
-**Milestone:** v5.0 — Import/Export, Temporal Versioning, Auto-Extraction, Dedup, Incremental Consolidation, Codebase Ingestion, Memory Decay, Relationship Strength
+**Milestone:** v6.0 — Proactive Knowledge & Onboarding
 **Researched:** 2026-03-27
-**Overall Confidence:** HIGH for core additions; MEDIUM for entity extraction library choice (alternatives exist with different tradeoffs)
+**Overall Confidence:** HIGH for session-start injection and workflow rules (verified against official Claude Code docs); HIGH for codebase scanning (verified against npm package docs); MEDIUM for knowledge correction UX patterns (derived from prior art in memory-graph MCP community)
 
 ---
 
 ## Context: What's Already Validated
 
-The following stack is in production across all 4 packages — do NOT re-research:
+The following stack is in production — do NOT re-research:
 
 | Technology | Installed Version | Role |
 |------------|------------------|------|
@@ -17,293 +17,326 @@ The following stack is in production across all 4 packages — do NOT re-researc
 | TypeScript | 5.9 | Language |
 | better-sqlite3 | 12.8.0 | SQLite database |
 | sqlite-vec | 0.1.7 | Vector similarity search |
+| FTS5 (SQLite built-in) | — | `fts_observations` virtual table (already in schema) |
 | ollama (npm) | 0.6.3 | Embedding client |
-| Vercel AI SDK | 4.3.19 | LLM consolidation (ai + ollama-ai-provider 1.2.0) |
-| Hono | 4.x | REST API server |
-| MCP SDK | 1.27.1 | MCP protocol |
+| Vercel AI SDK | 4.3.19 | LLM calls (`ai` + `ollama-ai-provider@1.2.0`) |
+| Hono | 4.x | REST API on port 3001 |
+| MCP SDK | 1.27.1 | MCP protocol (`registerTool()` with Zod v4) |
 | Zod | 4.3.6 | Schema validation |
 | croner | 10.0.1 | Cron scheduler |
 | nanoid | 5.x | ID generation |
+| fast-glob | 3.3.3 | File discovery (added in v5.0) |
+| p-queue | 8.1.0 | Async job throttling (added in v5.0) |
 | React 19 / Vite 8 / Tailwind v4 / shadcn/ui | current | Dashboard PWA |
-| graphology + louvain | 0.26.0 | Graph algorithms (dashboard) |
 
-This research covers **only what must be added** for v5.0 new capabilities.
+This research covers **only what must be added** for v6.0 new capabilities.
 
 ---
 
-## Feature 1: Temporal Fact Versioning
+## Feature 1: Automatic Session-Start Recall (Context Injection into Claude Code)
 
-**What's needed:** Store when facts changed, support "what was true at time X" queries.
+**What's needed:** When a Claude Code session starts in a directory mapped to a known project, Myco proactively surfaces relevant project context, user preferences, and workflow rules into the session — without the user having to ask.
 
-### Recommendation: Pure SQLite schema design — no new library
+### Recommendation: Claude Code `SessionStart` hook + direct SQLite read — no new library
 
-**Rationale:** Temporal versioning in SQLite is a schema pattern, not a library problem. The standard approach is an `observation_history` table (or `valid_from` / `valid_to` columns on observations) with a partial index on current records:
+**How it works — verified against official Claude Code docs (2026-03-27):**
 
-```sql
--- Migration: add temporal columns to observations
-ALTER TABLE observations ADD COLUMN valid_from TEXT NOT NULL DEFAULT (datetime('now'));
-ALTER TABLE observations ADD COLUMN valid_to TEXT;  -- NULL = currently valid
-CREATE INDEX idx_observations_valid_from ON observations(valid_from);
-CREATE INDEX idx_observations_current ON observations(entity_id) WHERE valid_to IS NULL;
+Claude Code's `SessionStart` hook fires on every session start (and on `resume`, `/clear`, `compact`). The hook receives a JSON payload via stdin that includes `cwd` — the current working directory. The hook writes a JSON response to stdout with an `additionalContext` field that Claude Code injects directly into the session context window.
+
+```json
+// Input to hook (stdin)
+{
+  "session_id": "abc123",
+  "cwd": "/Users/olive/Documents/GitHub/myco",
+  "hook_event_name": "SessionStart",
+  "source": "startup",
+  "model": "claude-sonnet-4-6"
+}
+
+// Output from hook (stdout)
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "Project: Myco\nWorkflow rules:\n- Update docs before committing\n...\nRecent context:\n..."
+  }
+}
 ```
 
-**Query pattern:** Point-in-time queries use `WHERE valid_from <= ? AND (valid_to IS NULL OR valid_to > ?)`. No external library handles this better than raw SQL on the existing better-sqlite3 connection. Adding a separate temporal DB library (Datomic-style, XTDB) would violate the local-SQLite constraint.
+**Implementation:** A new binary `myco-session-hook` (or extend `myco-cli`) that:
+1. Reads `cwd` from stdin JSON
+2. Opens the SQLite DB directly (same as existing `myco-cli` pattern — `openDatabase()` + `prepareStatements()`)
+3. Resolves `cwd` to a `project` entity (exact match or parent-dir walk)
+4. Queries for: workflow rules (`entity_type = 'workflow_rule'`), project observations, user preferences (globally scoped)
+5. Formats as compact markdown and writes the `hookSpecificOutput` JSON to stdout
+6. Must complete in under 2 seconds (hook timeout)
 
-**Migration strategy:** On observation update, mark old row `valid_to = now()`, insert new row with `valid_from = now()`. The current "latest" query adds `WHERE valid_to IS NULL`.
+**Configuration in `.claude/settings.json` (user-level, not project-level):**
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "startup",
+      "hooks": [{
+        "type": "command",
+        "command": "node /path/to/myco/packages/mcp-server/dist/session-hook.js",
+        "timeout": 5000
+      }]
+    }]
+  }
+}
+```
 
-**No new npm dependency needed.**
+**Why not use MCP sampling:** MCP sampling (server calling back to client's LLM) is a different protocol flow — it sends a `sampling/createMessage` request requiring client-side support. Claude Code's `SessionStart` hook is simpler, more direct, and purpose-built for this use case. Sampling adds security surface area without benefit here.
+
+**Why not use MCP Resources:** MCP resources require the user to explicitly pull them with `@` mentions. They are not automatically injected at session start. The `SessionStart` hook is the only mechanism that automatically injects text into Claude's context window without user action.
+
+**No new npm dependency needed.** The hook binary reuses `@myco/core`'s `openDatabase()` and `prepareStatements()` — the same direct SQLite write pattern already validated in the existing GSD hook.
 
 ---
 
-## Feature 2: Auto-Entity Extraction (Passive Knowledge Capture)
+## Feature 2: Project Onboarding (`myco init`) — Codebase Scanning
 
-**What's needed:** Parse agent conversation text to extract entities (people, places, tech, concepts) without explicit `remember` calls.
+**What's needed:** A `myco init` command that scans the current working directory, infers project knowledge (tech stack, conventions, key files), presents a summary for user approval, then commits approved inferences to the graph.
 
-### Recommendation: Use existing Vercel AI SDK `generateObject` with Ollama — no new library
+### Recommendation: `fast-glob` (already installed) + TypeScript Compiler API (already available) + Vercel AI SDK `generateObject` (already installed) — no new library
 
-**Rationale:** The codebase already uses `ai` + `ollama-ai-provider` for consolidation LLM calls. The extraction problem maps directly onto `generateObject` with a Zod schema:
+**Rationale by sub-problem:**
+
+#### File Discovery
+`fast-glob` (v3.3.3) is already a dependency of `@myco/mcp-server` from v5.0. Use it for codebase traversal with standard exclusion patterns:
+
+```typescript
+import fg from 'fast-glob';
+
+const files = await fg([
+  'package.json', 'tsconfig*.json', 'pyproject.toml', 'Cargo.toml',
+  'CLAUDE.md', 'README.md', '.env.example',
+  '**/*.ts', '**/*.tsx', '**/*.js',
+  '!**/node_modules/**', '!**/dist/**', '!**/.git/**',
+  '!**/*.min.js', '!**/coverage/**'
+], { cwd: projectRoot, dot: false });
+```
+
+**Why not `globby`:** Globby wraps fast-glob and is slightly slower. Myco already has fast-glob installed. No need for the wrapper.
+
+**Why not Node.js `fs.glob`:** Still experimental in Node 22 (added in 22.13). Production code should not depend on experimental APIs.
+
+#### Gitignore Respect
+`fast-glob` supports `ignore` patterns but does not natively read `.gitignore`. For the onboarding scan, add the `ignore` package (2.3M weekly downloads, used by ESLint and Prettier, node-ignore):
+
+```bash
+# packages/mcp-server
+npm install ignore
+```
+
+```typescript
+import ignore from 'ignore';
+import { readFileSync } from 'fs';
+
+const ig = ignore();
+try {
+  ig.add(readFileSync(path.join(projectRoot, '.gitignore'), 'utf8'));
+} catch { /* no .gitignore, that's fine */ }
+
+const files = await fg(['**/*'], { cwd: projectRoot });
+const filteredFiles = files.filter(f => !ig.ignores(f));
+```
+
+**Why `ignore` over `parse-gitignore`:** `ignore` is a full gitignore filter (used by ESLint, Prettier, hundreds of major packages). `parse-gitignore` only parses the file to an array of patterns — you still need to filter. `ignore` does both.
+
+#### Convention Inference
+**Do not add a rule-based NLP library.** The Vercel AI SDK `generateObject` (already installed at `ai@4.3.19`) handles convention inference correctly with domain-aware LLM reasoning. Pass file listings, `package.json` contents, `tsconfig.json`, and sample file headers to the LLM with a structured Zod schema:
 
 ```typescript
 import { generateObject } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
-const ExtractionSchema = z.object({
-  entities: z.array(z.object({
-    name: z.string(),
-    type: z.enum(['person', 'technology', 'project', 'concept', 'organization', 'place']),
-    observations: z.array(z.string()),
+const OnboardingSchema = z.object({
+  project_name: z.string(),
+  tech_stack: z.array(z.string()),
+  conventions: z.array(z.object({
+    rule: z.string(),
+    evidence: z.string(),
   })),
-  relationships: z.array(z.object({
-    from: z.string(),
-    to: z.string(),
-    type: z.string(),
-  })),
-});
-
-const { object } = await generateObject({
-  model: ollamaProvider(config.consolidationModel),
-  schema: ExtractionSchema,
-  prompt: `Extract entities and relationships from: "${text}"`,
+  workflow_rules: z.array(z.string()),
+  user_preferences: z.array(z.string()),
 });
 ```
 
-**Why not a dedicated NLP library:**
-- `compromise` (v14.15.0) is English-only, rule-based, no custom entity types, misses tech-specific entities ("Hono", "sqlite-vec", "React Server Components"). LOW accuracy for technical conversations.
-- `wink-nlp` is faster but same problem — no domain knowledge about software, frameworks, or agent-specific concepts.
-- `natural` is unmaintained for NER.
-- LLM extraction via `generateObject` handles domain-specific entities correctly, understands context, and uses the same local Ollama instance already running. The model knows what "better-sqlite3" is; a rule-based NER system does not.
+**Do not use `@typescript-eslint/typescript-estree` or tree-sitter for convention inference.** AST parsing tells you *what* the code does, not *what conventions* it follows. The LLM understands conventions from documentation, config files, and code samples — the same way a human engineer onboards. The v5.0 STACK.md already ruled out tree-sitter due to native binding friction; that reasoning holds here.
 
-**Performance note:** Extraction is async and can be queued. Use `p-limit` (already a transitive dependency) to cap concurrent LLM calls to 2-3. Do NOT block the MCP tool call waiting for extraction — run it as a fire-and-forget async job with error isolation.
+#### LLM Call Size Management
+Onboarding scans may involve reading many files. Cap LLM context to the most informative files:
+1. Always include: `package.json`, `tsconfig.json`, `CLAUDE.md`, `README.md` (first 100 lines each)
+2. Sample 3-5 TypeScript files from each major directory (smallest files by line count)
+3. Hard cap: 8,000 tokens of input text to the inference call
 
-**No new npm dependency needed.** The extraction pipeline is a new `AutoExtractor` class in `@myco/mcp-server`, not a new package.
+No new library for tokenization — character count approximation (`chars / 4`) is sufficient for a cap:
 
----
-
-## Feature 3: Codebase-to-Graph Ingestion (`codify` tool)
-
-**What's needed:** Parse project files (TypeScript/JS primarily) to extract file structure, exports, imports, function signatures, class hierarchies into graph knowledge.
-
-### Recommendation: TypeScript Compiler API (built-in `typescript` package) + `fast-glob`
-
-**Rationale:**
-
-The TypeScript compiler API (`ts.createProgram`, `ts.createSourceFile`) is the most accurate TypeScript AST parser available — it is the TypeScript compiler itself. It handles generics, decorators, type aliases, and all TypeScript-specific syntax correctly. It is already a dev dependency in the monorepo (`typescript: ~5.9.0`).
-
-For non-TypeScript files (Python, Go, Markdown, config files), a lightweight fallback using regex-based extraction is sufficient — the goal is graph nodes for file relationships, not deep semantic analysis.
-
-`fast-glob` (v3.3.3, 10K+ projects using it) handles file discovery efficiently with `.gitignore` pattern support.
-
-```bash
-# In packages/mcp-server
-npm install fast-glob
-```
-
-**Why not tree-sitter:**
-- `tree-sitter` npm package (v0.25.x) requires native Node.js bindings compiled against a specific Node ABI. In an MCP server context, native addons complicate distribution and increase install friction for end users.
-- The npm package is at v0.25 while tree-sitter core is at v0.26.5 — there is a tracked version gap issue (#5334 on GitHub) and v0.26 requires Node 24 for native bindings.
-- `web-tree-sitter` (v0.26.6, WASM-based) avoids the native binding issue but adds a 5-10MB WASM payload and async initialization complexity for what is essentially a background batch job.
-- For TypeScript/JavaScript — the dominant languages in this project's use case — the TypeScript Compiler API is strictly better than tree-sitter because it has full semantic understanding, not just syntax trees.
-
-**Why `fast-glob` over Node's built-in `fs.glob`:** Node 22's `fs.glob` is still experimental (added in Node 22.13). `fast-glob` v3.3.3 is stable, has `.gitignore` integration via `fast-glob`'s cwd option, and is already a transitive dependency via Vite.
-
-**Integration pattern:**
 ```typescript
-import fg from 'fast-glob';
-import ts from 'typescript';
-
-// Discover files
-const files = await fg(['**/*.ts', '**/*.tsx', '!**/node_modules/**', '!**/dist/**'], { cwd: projectRoot });
-
-// Parse each file
-for (const file of files) {
-  const src = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
-  // Visit nodes: ts.SyntaxKind.ImportDeclaration, ClassDeclaration, FunctionDeclaration, etc.
+const MAX_CHARS = 32000; // ~8k tokens
+let charCount = 0;
+const contextParts: string[] = [];
+for (const [path, content] of fileContents) {
+  if (charCount + content.length > MAX_CHARS) break;
+  contextParts.push(`--- ${path} ---\n${content}`);
+  charCount += content.length;
 }
 ```
 
-**New dependencies:**
-```bash
-# packages/mcp-server
-npm install fast-glob
-```
+**New dependency for v6.0 onboarding: `ignore` (v5.3.x)**
 
-`typescript` is already a devDependency — import it as a dependency for the runtime codify tool.
+```bash
+npm install ignore
+```
 
 ---
 
-## Feature 4: Auto-Dedup / Conflict Resolution
+## Feature 3: Workflow Rules as First-Class Entities
 
-**What's needed:** When new memories arrive, detect if they conflict with or duplicate existing entities/observations, then decide ADD/UPDATE/DELETE/NOOP.
+**What's needed:** Rules like "update docs before committing" stored in the graph, reliably retrieved at session-start, surfaced distinctly from passive memories.
 
-### Recommendation: Existing `sqlite-vec` cosine similarity + Vercel AI SDK `generateObject` — no new library
+### Recommendation: Existing entity/observation schema with `entity_type = 'workflow_rule'` + existing FTS5 + new `priority` metadata field — no new library
 
-**Rationale:** This is already partially implemented in the consolidation pipeline. The full dedup flow is:
+**Rationale:** The existing schema already supports this. Workflow rules are entities with `entity_type = 'workflow_rule'` and observations containing the rule text. The existing `project` column (migration 4) scopes rules to a project or `NULL` for global rules.
 
-1. **Embedding similarity** (existing sqlite-vec): Find candidate duplicates where cosine similarity > 0.92 threshold.
-2. **LLM resolution** (existing Vercel AI SDK): Pass candidate pairs to `generateObject` with a conflict resolution schema to decide ADD/UPDATE/DELETE/NOOP + rationale.
-3. **Confidence routing** (existing approval queue): High-confidence resolutions auto-apply; low-confidence go to approval queue.
+**What needs to be built (new TypeScript, not new libraries):**
 
-The existing `ConsolidationPipeline` in `@myco/mcp-server` already implements a version of this. The v5.0 work is extending it to run incrementally (see Feature 5), not adding new libraries.
+1. A `WorkflowRuleStore` helper in `@myco/core` that provides typed CRUD for `entity_type = 'workflow_rule'` entities
+2. A `myco_set_rule` MCP tool and `myco_list_rules` MCP tool (new tools in `@myco/mcp-server`)
+3. A `priority` field in the observation `metadata` JSON column: `{ "priority": "high" | "medium" | "low", "trigger": "always" | "on_commit" | "on_deploy" }`
+
+**Retrieval at session-start:** The session hook queries:
+```sql
+SELECT e.name, o.content, o.metadata
+FROM entities e
+JOIN observations o ON o.entity_id = e.id
+WHERE e.type = 'workflow_rule'
+  AND (e.project = ? OR e.project IS NULL)
+  AND o.valid_until IS NULL
+ORDER BY json_extract(o.metadata, '$.priority') DESC, e.created_at ASC
+LIMIT 20
+```
+
+This uses the existing `project` index and `valid_until` temporal column from v5.0 migration 5. No new index or table needed.
+
+**Why not a separate `rules` table:** Keeping rules in the entity/observation schema means they participate in vector search, dedup detection, approval flows, and the knowledge graph explorer without any special-casing. The entity graph is the right abstraction.
+
+**Why not a dedicated rule engine library (json-rules-engine, nools, etc.):** These libraries evaluate rules against runtime facts (data conditions trigger actions). Myco's workflow rules are textual instructions surfaced to Claude, not programmatic conditions triggering automated actions. A rule engine is the wrong abstraction — it would evaluate rules against data, not surface them to a human-facing agent.
 
 **No new npm dependency needed.**
 
 ---
 
-## Feature 5: Incremental Consolidation
+## Feature 4: Smart Context Scoping (Working Directory → Project Entity)
 
-**What's needed:** Run consolidation on-the-fly as memories are added, not just nightly. The nightly cycle handles deep analysis; incremental handles immediate dedup/conflict.
+**What's needed:** Given a `cwd` at session-start, resolve it to the correct project entity in the knowledge graph.
 
-### Recommendation: `p-queue` for job throttling — one new dependency
+### Recommendation: Path normalization using Node.js built-ins — no new library
 
-**Rationale:** Incremental consolidation means every `remember` call potentially triggers an async LLM check. Without throttling, concurrent LLM calls stack up and overwhelm Ollama. `p-queue` (by Sindresorhus, 10M+ weekly downloads) provides a promise queue with concurrency control:
+**Resolution algorithm:**
 
 ```typescript
-import PQueue from 'p-queue';
-const consolidationQueue = new PQueue({ concurrency: 1, timeout: 30000 });
-consolidationQueue.add(() => runIncrementalConsolidation(entityId));
+import path from 'path';
+
+function resolveProjectFromCwd(cwd: string, db: Database.Database): string | null {
+  // 1. Try exact match on entity name or metadata path
+  // 2. Try git root (walk up to find .git directory)
+  // 3. Try longest prefix match against known project paths
+  // 4. Fall back to NULL (global scope)
+}
 ```
 
-**Why not `p-limit`:** `p-limit` caps concurrent promises but has no queue. When the MCP server receives rapid-fire `remember` calls, `p-limit` drops excess; `p-queue` serializes them. Serialization is correct for incremental consolidation where order matters (entity A must be processed before checking if entity B is a duplicate).
-
-**Version:** p-queue v8.1.0 (latest, ESM-only, compatible with Node.js 22 and the monorepo's `"type": "module"` setting).
-
-```bash
-# packages/mcp-server
-npm install p-queue
+**Git root detection without a library:**
+```typescript
+function findGitRoot(startDir: string): string | null {
+  let dir = startDir;
+  while (dir !== path.dirname(dir)) {
+    if (existsSync(path.join(dir, '.git'))) return dir;
+    dir = path.dirname(dir);
+  }
+  return null;
+}
 ```
 
----
+Node's `path`, `fs.existsSync`, and `os.homedir()` handle everything needed. The `simple-git` library is unnecessary overhead for a one-time git root detection.
 
-## Feature 6: Import / Export
-
-**What's needed:** JSON export of the entire knowledge graph; import from Mem0 and reference server formats.
-
-### Recommendation: Custom serialization using existing better-sqlite3 — no new library
-
-**Rationale:** The export format should be Myco's own JSON schema (simple and documented), with adapters for Mem0's format. This is straightforward data transformation:
-
-**Myco export format (v1):**
+**Project path stored in entity metadata:** When `myco init` runs, the project entity stores its root path in `metadata`:
 ```json
-{
-  "version": "1",
-  "exported_at": "ISO8601",
-  "entities": [...],
-  "observations": [...],
-  "relationships": [...],
-  "episodes": [...]
-}
+{ "root_path": "/Users/olive/Documents/GitHub/myco", "git_remote": "..." }
 ```
-
-**Mem0 import adapter:** Mem0's export format uses a `"memories"` array with `{ id, content, metadata, created_at }` properties. Map each memory to a Myco entity + observation. This is ~50 lines of TypeScript, not a library.
-
-**Reference server import adapter:** The Anthropic reference memory server stores data as JSONL with `{ type: "entity"|"relation", ... }` lines. Parse with Node's readline stream.
-
-**Why not a formal serialization library (protobuf, avro, etc.):** The knowledge graph is a few thousand records at most for a single-user local tool. JSON + SQLite transactions handle the full export/import cycle in seconds. Formal serialization formats add complexity without benefit at this scale.
-
-**New REST endpoints on existing Hono server:** `GET /export` and `POST /import` — no new routing library needed.
 
 **No new npm dependency needed.**
 
 ---
 
-## Feature 7: Memory Importance Decay
+## Feature 5: Knowledge Correction & Evolution
 
-**What's needed:** Unreinforced facts fade over time; importance score decreases if an entity/observation is never recalled.
+**What's needed:** A user-facing flow to find, display, and supersede stale or incorrect knowledge. Triggered by "I changed my mind about X" or "update this rule."
 
-### Recommendation: Pure SQL via scheduled job — no new library
+### Recommendation: New `myco_correct` MCP tool + existing `valid_until` temporal column + existing approval queue — no new library
 
-**Rationale:** The Ebbinghaus forgetting curve formula is well-understood and implementable as a SQL UPDATE:
+**The correction flow:**
 
-```sql
--- Run during nightly consolidation cycle (already scheduled via croner)
-UPDATE observations
-SET importance = importance * exp(-0.16 * (1 - importance * 0.8) * julianday('now') - julianday(created_at))
-WHERE julianday('now') - julianday(last_accessed_at) > 7
-  AND importance > 0.1;  -- floor to avoid full decay
-```
+1. Agent calls `myco_recall` to surface the current observation(s) about X
+2. Agent calls `myco_correct` with the observation ID and new content
+3. `myco_correct` sets `valid_until = now()` on the old observation (using the v5.0 temporal column) and creates a new observation with `valid_from = now()`
+4. Creates a `SUPERSEDED_BY` relationship between old and new entity observations for audit trail
+5. High-confidence corrections auto-apply; low-confidence go to the approval queue (existing pattern)
 
-**Schema addition needed:** `importance REAL DEFAULT 1.0` and `last_accessed_at TEXT` columns on observations. The existing recall path updates `last_accessed_at` on retrieval, resetting the decay clock.
-
-The `YourMemory` MCP server confirmed this exact formula pattern works well for MCP memory servers (DEV Community article, 2025).
-
-**Why not a specialized decay/spaced-repetition library:** Libraries like `ts-fsrs` (FSRS algorithm) are designed for flashcard scheduling with explicit user feedback signals. Myco's decay is passive and automated — no user feedback loop. A pure SQL exponential decay with a recency floor is the right level of complexity.
-
-**No new npm dependency needed.**
-
----
-
-## Feature 8: Relationship Strength Scoring
-
-**What's needed:** Edges in the knowledge graph weighted by reinforcement frequency (how often a relationship is observed) and recency (recent observations count more).
-
-### Recommendation: Pure SQL + existing sqlite schema — no new library
-
-**Rationale:** Relationship strength is a derived metric updated on the existing `relationships` table:
-
-```sql
-ALTER TABLE relationships ADD COLUMN strength REAL NOT NULL DEFAULT 1.0;
-ALTER TABLE relationships ADD COLUMN observation_count INTEGER NOT NULL DEFAULT 1;
-ALTER TABLE relationships ADD COLUMN last_reinforced_at TEXT;
-```
-
-**Strength formula on reinforcement:**
+**The `myco_correct` tool schema:**
 ```typescript
-// Called when a duplicate/confirming relationship is found during consolidation
-const daysSince = (Date.now() - new Date(relationship.last_reinforced_at).getTime()) / 86400000;
-const recencyWeight = Math.exp(-0.1 * daysSince);  // Decay factor for time since last reinforcement
-const newStrength = Math.min(1.0, (relationship.strength * 0.9) + (0.1 * recencyWeight));
+const CorrectSchema = z.object({
+  entity_name: z.string(),
+  observation_id: z.string().optional(),   // specific observation, or...
+  search_query: z.string().optional(),      // ...find by text
+  new_content: z.string(),
+  reason: z.string().optional(),
+  project: z.string().optional(),
+});
 ```
 
-This combines frequency (each reinforcement increments `observation_count`) with recency (exponential decay on the gap since last reinforcement). The formula is a standard weighted moving average with a time discount — no library needed.
+**Dashboard UX for corrections:** The existing approval queue UI in `@myco/dashboard` handles the human-in-the-loop confirmation. No new UI pattern needed — a correction that requires review simply creates an `approval_queue` entry with `item_type = 'correction'`.
 
-**Dashboard integration:** `react-force-graph-2d` already supports `link.value` as edge weight for rendering thickness. Pass `relationship.strength` as `link.value`.
-
-**No new npm dependency needed.**
-
----
-
-## REST API for Non-MCP Access
-
-**What's needed:** HTTP API for LangGraph, CrewAI, and other non-Claude clients to access memory operations.
-
-### Recommendation: Extend existing Hono server — no new library
-
-The `@myco/api-server` package already runs Hono on port 3001 with 5 route groups. New endpoints (`POST /memories`, `GET /memories/search`, `POST /extract`, `GET /graph`) extend the existing Hono router. The MCP tools and the REST API should share the same underlying service layer in `@myco/core`.
+**Why not a separate audit/history table:** The `valid_from` / `valid_until` pattern on `observations` (already in migration 5) provides a complete history of what was true when. Querying `WHERE valid_until IS NOT NULL ORDER BY valid_until DESC` gives the full correction history for any entity.
 
 **No new npm dependency needed.**
 
 ---
 
-## Complete New Dependencies for v5.0
+## Feature 6: User Preference Accumulation
+
+**What's needed:** Preferences inferred in any project attach to a global `user` entity, with the project as evidence in the observation metadata.
+
+### Recommendation: Existing entity schema with `entity_type = 'user_preference'` + `project` as `NULL` for global scope — no new library
+
+**Pattern:** During `myco init` and during the consolidation pipeline, inferred user preferences create/update observations on a canonical `user` entity:
+
+```typescript
+await rememberEntity(db, {
+  entity_name: 'User',
+  entity_type: 'user',
+  content: 'Prefers dark color themes in UI',
+  project: null,   // NULL = global, not project-scoped
+  metadata: { evidence_project: 'myco', evidence_source: 'observed_in_codebase' },
+});
+```
+
+The session hook surfaces global user preferences (where `project IS NULL`) alongside project-specific workflow rules, giving Claude a full picture in every session.
+
+**No new npm dependency needed.**
+
+---
+
+## Complete New Dependencies for v6.0
 
 | Library | Version | Purpose | Package | Justification |
 |---------|---------|---------|---------|---------------|
-| `fast-glob` | 3.3.3 | File discovery for `codify` tool | `@myco/mcp-server` | No native bindings, stable, .gitignore aware |
-| `p-queue` | 8.1.0 | Incremental consolidation job queue | `@myco/mcp-server` | Serializes async LLM jobs; p-limit insufficient |
+| `ignore` | 5.3.x | Gitignore-aware file filtering during `myco init` scan | `@myco/mcp-server` | Used by ESLint/Prettier; 2.3M weekly downloads; full `.gitignore` spec compliance; no native deps |
 
-**That's it. Two new dependencies for all 8 features.**
+**That's it. One new dependency for all v6.0 features.**
 
-Everything else is schema migrations, new TypeScript classes/functions using the existing stack, and SQL patterns.
+Everything else is new TypeScript classes, MCP tools, SQL queries, and a new CLI binary — all built on the existing stack.
 
 ---
 
@@ -311,32 +344,60 @@ Everything else is schema migrations, new TypeScript classes/functions using the
 
 | Library | Why Not | What to Use Instead |
 |---------|---------|-------------------|
-| `tree-sitter` (native npm) | Native Node.js bindings required; v0.25 ≠ v0.26 core; v0.26 requires Node 24; distribution friction for MCP server | TypeScript Compiler API (`typescript` package already present) |
-| `web-tree-sitter` | 5-10MB WASM payload + async initialization; overkill for TypeScript AST parsing | TypeScript Compiler API |
-| `compromise` (NLP) | English-only, rule-based, no awareness of tech-specific entities; LOW accuracy for software/agent conversations | LLM `generateObject` via existing Vercel AI SDK |
-| `wink-nlp` | Same rule-based limitations as compromise; adds ~8MB model download | LLM `generateObject` |
-| `natural` | Effectively unmaintained for NER use cases | LLM `generateObject` |
-| `ts-fsrs` / spaced-repetition libraries | Designed for explicit user feedback (flashcard review); Myco decay is passive/automated | SQL exponential decay formula |
-| XTDB / Datomic patterns (bitemporal DB) | Full separate process or library dependency; violates local-SQLite constraint | SQLite schema with `valid_from`/`valid_to` columns |
-| `p-limit` (for consolidation queue) | Drops excess work rather than serializing it; incorrect behavior for ordered consolidation jobs | `p-queue` (serializes, doesn't drop) |
-| `drizzle-orm` | Adds query builder complexity; raw SQL prepared statements already validated in production | Raw SQL via better-sqlite3 + prepared statement factory |
-| Any cloud vector DB (Pinecone, Weaviate) | Violates local-only constraint | sqlite-vec (already in use) |
-| `ai-sdk-ollama` v3.x | Requires Vercel AI SDK v6; project is locked to v4.3.19 due to `ollama-ai-provider` v1.x compatibility | Continue using `ollama-ai-provider` v1.2.0 with `ai` v4.3.19 |
+| `simple-git` / `isomorphic-git` | Git root detection requires only `fs.existsSync` + `path.dirname` loop; full git library is 200KB+ for a 5-line algorithm | Node.js `path` + `fs` built-ins |
+| `globby` | Wraps fast-glob with slight performance penalty; Myco already has fast-glob installed | `fast-glob` (already in `@myco/mcp-server`) |
+| `parse-gitignore` | Only parses `.gitignore` to an array; doesn't filter — you need `ignore` anyway | `ignore` (does both parse and filter) |
+| `json-rules-engine` / `nools` | Rule engines evaluate data conditions to trigger actions; Myco rules are textual instructions for agents, not programmatic if-then logic | `entity_type = 'workflow_rule'` in existing graph |
+| `tiktoken` / `gpt-tokenizer` | Tokenization library for LLM context budgeting; character-count approximation (`chars / 4`) is sufficient for a soft cap in onboarding scan | Plain character count |
+| `@typescript-eslint/typescript-estree` | AST parsing tells you code structure, not coding conventions; LLM-based inference via `generateObject` is more accurate for convention detection | Existing `ai@4.3.19` + `generateObject` |
+| `chokidar` | File watcher for live re-indexing; v6.0 onboarding is a one-time scan, not a live watcher; `myco init` is imperative, not reactive | Not needed in v6.0; revisit if live codebase indexing is added later |
+| `@huggingface/transformers` (in-process NLP) | 500MB+ model weight, slow cold start, requires ONNX runtime; used by some competing MCP memory servers but violates Myco's local-lightweight constraint | Existing Ollama via `ollama@0.6.3` npm |
+| MCP Sampling (`sampling/createMessage`) | Server-to-client LLM callbacks; requires client-side sampling support; adds security surface; not the right tool for session context injection | Claude Code `SessionStart` hook with `additionalContext` |
+| MCP Resources for auto-context | Resources require user `@` invocation; not automatically injected at session start | Claude Code `SessionStart` hook (automatically fired, no user action needed) |
+| `lancedb` / Chroma / Qdrant | External vector DB; violates local-only constraint; used by `codebase-context` MCP but Myco already has sqlite-vec in the same SQLite file | `sqlite-vec@0.1.7` (already installed) |
 
 ---
 
 ## Schema Migrations Required (No New Libraries)
 
-These are SQLite `ALTER TABLE` migrations, not library additions. List here for completeness:
+| Migration ID | Table | New Columns / Changes | Feature |
+|-------------|-------|----------------------|---------|
+| 9 | `entities` | `root_path TEXT DEFAULT NULL` (or store in existing `metadata` JSON) | Project path → CWD resolution |
 
-| Table | New Columns | Feature |
-|-------|-------------|---------|
-| `observations` | `valid_from TEXT`, `valid_to TEXT`, `importance REAL DEFAULT 1.0`, `last_accessed_at TEXT` | Temporal versioning + decay |
-| `relationships` | `strength REAL DEFAULT 1.0`, `observation_count INTEGER DEFAULT 1`, `last_reinforced_at TEXT` | Relationship strength |
-| `entities` | No new columns needed | — |
-| New table: `observation_history` (optional) | Full row snapshots for audit trail | Temporal versioning (alternative to valid_from/valid_to) |
+**Recommendation:** Store `root_path` in the existing `metadata` JSON column on entities rather than adding a new column. Query via `json_extract(e.metadata, '$.root_path')`. This avoids another `ALTER TABLE` for a rarely-queried field.
 
-**Migration delivery pattern:** Continue using the existing startup `try/catch ALTER TABLE` pattern in `schema.ts`. No migration runner library needed at this scale.
+**No new tables needed.** Workflow rules are entities, user preferences are entity observations, corrections use the existing `valid_until` column.
+
+---
+
+## New Binaries / Entry Points
+
+| Binary | Package | Purpose | Implementation |
+|--------|---------|---------|----------------|
+| `myco-session-hook` | `@myco/mcp-server` | Claude Code `SessionStart` hook binary | Reads `cwd` from stdin JSON, queries SQLite, writes `additionalContext` to stdout. Extend existing `cli.ts` with a new `session-hook` subcommand or a separate entry point. Must be fast (< 2s). |
+
+**Hook output format** (verified against Claude Code hooks docs):
+```typescript
+interface SessionHookOutput {
+  hookSpecificOutput: {
+    hookEventName: 'SessionStart';
+    additionalContext: string; // Markdown text injected into Claude's context
+  };
+}
+```
+
+---
+
+## Integration Points With Existing Stack
+
+| New Capability | Integration Point | Notes |
+|----------------|-------------------|-------|
+| Session-start recall | Claude Code `SessionStart` hook → direct SQLite read via `@myco/core` `openDatabase()` | Same pattern as existing GSD hook which does direct SQLite writes |
+| `myco init` scan | `fast-glob` (existing) + `ignore` (new) + `generateObject` (existing) | New `InitScanner` class in `@myco/mcp-server` |
+| Workflow rules CRUD | New MCP tools (`myco_set_rule`, `myco_list_rules`) registered in `tools.ts` | `entity_type = 'workflow_rule'` uses existing entity schema |
+| Knowledge correction | New MCP tool (`myco_correct`) using existing `valid_until` column (migration 5) | Routes through existing approval queue if confidence < 0.85 |
+| User preferences | `entity_type = 'user_preference'`, `project = NULL` in existing entity table | Global scope via existing nullable `project` column |
+| Dashboard corrections UI | Existing approval queue UI in `@myco/dashboard` | New `item_type = 'correction'` in approval_queue, no new UI components |
 
 ---
 
@@ -344,43 +405,37 @@ These are SQLite `ALTER TABLE` migrations, not library additions. List here for 
 
 | Package | Compatible With | Notes |
 |---------|----------------|-------|
-| `fast-glob@3.3.3` | Node.js 18+, ESM | Stable; last release Jan 2025; 10K+ dependents; no breaking changes expected |
-| `p-queue@8.1.0` | Node.js 18+, ESM-only | Uses ESM; compatible with `"type": "module"` in all 4 packages |
-| TypeScript Compiler API (via `typescript@5.9`) | Already installed | `ts.createSourceFile` is stable public API; no version risk |
-| Vercel AI SDK `generateObject` | Existing `ai@4.3.19` + `ollama-ai-provider@1.2.0` | Entity extraction reuses existing LLM call infrastructure; no upgrade needed |
-| `p-queue@8.x` vs `p-limit` (transitive) | Both can coexist | Different packages; no conflict |
+| `ignore@5.3.x` | Node.js 6+, CJS + ESM | Pure JS, no native bindings; v5 is stable and long-running |
+| `ignore@5.x` vs `fast-glob@3.3.3` | Fully compatible | Used together: fast-glob discovers, ignore filters |
+| Claude Code `SessionStart` hook | Claude Code v2.1+ | Hook `additionalContext` field confirmed in current docs; `cwd` field available in hook input |
+| `myco-session-hook` binary | `@myco/core` `openDatabase()` | Must use same `MYCO_DB_PATH` env var config as MCP server to find the correct SQLite file |
 
 ---
 
 ## Architectural Notes
 
-**Where new code lives:**
+**Session hook performance constraint:** The `SessionStart` hook must respond in under 5 seconds (configurable timeout). Direct SQLite reads via better-sqlite3 are synchronous and sub-millisecond for the queries involved (indexed lookups on `entity_type` and `project`). The hook should never trigger Ollama calls (no embedding needed for retrieval-by-type queries).
 
-- `@myco/core` — Schema migrations, new column types, `ObservationHistory` table helpers, decay/strength SQL queries as prepared statements
-- `@myco/mcp-server` — `AutoExtractor` class (LLM-based extraction), `IncrementalConsolidator` class (p-queue + existing consolidation pipeline), `CodebaseIngester` class (TypeScript compiler API + fast-glob), new `codify` MCP tool
-- `@myco/api-server` — `/export`, `/import`, extended `/memories` endpoints on existing Hono router
-- `@myco/dashboard` — Relationship strength as `link.value` in force graph (existing react-force-graph-2d prop), temporal timeline filter in graph explorer (existing slider UI)
+**Context injection size limit:** Claude Code loads `MEMORY.md` at 200 lines / 25KB. The `additionalContext` from hooks also contributes to the context window. Keep session hook output under 2,000 characters (~400 tokens). Prioritize: workflow rules first, then user preferences, then recent project context.
 
-**Critical integration constraint:** Incremental consolidation must NOT block MCP tool responses. The `remember` tool should return immediately, then fire-and-forget into the `p-queue`. Use `setImmediate` or `process.nextTick` to ensure the MCP response returns before consolidation work begins.
+**`myco init` approval flow:** The onboarding scan result should present to the user for review before committing to the graph. Use the existing approval queue (`approval_queue` table with `item_type = 'onboarding_batch'`) rather than auto-approving all inferences. High-confidence stack detection (package.json parse) can auto-approve; LLM-inferred conventions go to the queue.
 
-**Vercel AI SDK version lock:** Do NOT upgrade `ai` or `ollama-ai-provider` in v5.0. The `ai@4.3.19` + `ollama-ai-provider@1.2.0` combination is validated. `ai-sdk-ollama@3.x` requires AI SDK v6, which dropped `LanguageModelV1` — the interface `ollama-ai-provider` v1.x returns. This constraint was explicitly documented in PROJECT.md.
+**Vercel AI SDK version lock continues:** Do NOT upgrade `ai` or `ollama-ai-provider` for v6.0. The `ai@4.3.19` + `ollama-ai-provider@1.2.0` combination is validated. The `generateObject` call for onboarding reuses the same LLM infrastructure as consolidation.
 
 ---
 
 ## Sources
 
-- TypeScript wiki: https://github.com/microsoft/TypeScript/wiki/Using-the-Compiler-API — `createProgram`, `createSourceFile` API confirmed stable
-- GitHub: tree-sitter/tree-sitter issue #5334 — npm package v0.25 gap vs v0.26 core; Node 24 requirement for v0.26 native bindings (MEDIUM confidence — GitHub issue thread, March 2026)
-- npm: fast-glob — v3.3.3, last published January 5, 2025, confirmed stable
-- npm: p-queue — v8.1.0, ESM-only, sindresorhus, 10M+ weekly downloads
-- Vercel AI SDK docs: https://ai-sdk.dev/docs/ai-sdk-core/generating-structured-data — `generateObject` with Zod schema confirmed
-- DEV Community: "I built memory decay for AI agents using the Ebbinghaus forgetting curve" (2025) — confirms decay formula pattern for MCP memory servers
-- GitHub: sgomez/ollama-ai-provider — v1.2.0 confirmed; ai-sdk-ollama v3.x requires AI SDK v6 (incompatible with current stack)
-- WebSearch: Mem0 export format — `{ memories: [{ id, content, metadata, created_at }] }` JSON schema confirmed
-- SQLite documentation: `julianday()` function for date arithmetic — confirmed for decay calculations
-- npm: compromise — v14.15.0 current; English-only limitation confirmed; LOW confidence for technical entity extraction
+- Claude Code hooks documentation: https://code.claude.com/docs/en/hooks — `SessionStart` hook, `cwd` field, `additionalContext` output format confirmed (HIGH confidence — official docs, current)
+- Claude Code memory documentation: https://code.claude.com/docs/en/memory — MEMORY.md 200-line / 25KB limit confirmed; auto memory scoped per working tree / git root (HIGH confidence)
+- MCP Prompts specification: https://modelcontextprotocol.io/specification/2025-06-18/server/prompts — Prompts are user-initiated via slash commands, NOT auto-injected at session start (HIGH confidence — confirmed they are wrong tool for auto-context)
+- npm: `ignore` — v5.3.2 current stable; used by ESLint, Prettier; 2.3M weekly downloads; full gitignore spec compliance (HIGH confidence)
+- npm: `fast-glob` v3.3.3 — already installed; no gitignore native support confirmed (HIGH confidence)
+- GitHub: PatrickSys/codebase-context — reference implementation analysis: uses `@typescript-eslint/typescript-estree` + `@huggingface/transformers` + `lancedb`; explicitly NOT the approach for Myco (too heavyweight, violates local constraints) (MEDIUM confidence — GitHub README)
+- memory-graph MCP community: `SUPERSEDED_BY` relationship pattern + `valid_from`/`valid_until` for correction tracking (MEDIUM confidence — multiple community implementations agree)
+- WebSearch: Claude Code SessionStart hook injects context via `additionalContext` stdout field; `cwd` available in hook input JSON (HIGH confidence — multiple sources, consistent with official docs)
 
 ---
 
-*Stack research for: Myco v5.0 Feature Parity & Differentiation*
+*Stack research for: Myco v6.0 Proactive Knowledge & Onboarding*
 *Researched: 2026-03-27*

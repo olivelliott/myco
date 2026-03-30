@@ -12,13 +12,17 @@ Open source under Apache 2.0. Everything runs locally — SQLite, Ollama, no clo
 
 Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
 
+## Current Milestone: Planning next
+
+v6.0 shipped. No active milestone — run `/gsd:new-milestone` to start the next one.
+
 ## Current State
 
-**Shipped:** v5.0 — 2026-03-29
-**Codebase:** ~7,500 LOC TypeScript across 4 packages
+**Shipped:** v6.0 — 2026-03-29
+**Codebase:** ~7,500 LOC TypeScript + JavaScript across 4 packages + hooks
 **Tech Stack:** Node.js 22, TypeScript 5.9, better-sqlite3, sqlite-vec, Ollama, Hono + OpenAPIHono, React 19, Vite 8, Tailwind v4, shadcn/ui, Vercel AI SDK
 **License:** Apache 2.0
-**147 tests** passing across 10 test files
+**207 tests** passing across 12 test files
 
 ### Architecture
 - `packages/core` — shared DB, schema, types, provenance, prepared statements, **memory-ops** (remember, recall, query, forget, logEpisode), embed-client, dedup classification, decay computation, relationship discovery, import/export with format adapters
@@ -66,6 +70,12 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - [x] Knowledge graph import/export with Mem0 and Anthropic JSONL format adapters — *v5.0 Phase 22*
 - [x] Auto-entity extraction from log_episode via LLM (fire-and-forget, non-blocking) — *v5.0 Phase 23*
 - [x] Incremental micro-consolidation with consolidation_lock mutex table — *v5.0 Phase 23*
+- [x] Working directory to project entity mapping via project_paths table with walk-up resolution — *v6.0 Phase 24*
+- [x] Automatic session-start recall injecting workflow rules, project facts, and user preferences via SessionStart hook — *v6.0 Phase 25*
+- [x] Project onboarding via `myco init` CLI and `init_project` MCP tool with LLM inference and batch approval — *v6.0 Phase 26*
+- [x] Workflow rules as first-class `workflow_rule` entities with `remember_rule` tool, always surfaced at session start — *v6.0 Phase 27*
+- [x] Knowledge correction via `update_knowledge` tool with search-confirm-retire atomic flow — *v6.0 Phase 27*
+- [x] User preferences accumulate globally across projects with source attribution and 2-project corroboration promotion — *v6.0 Phase 28*
 
 ### Active
 
@@ -94,6 +104,7 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - **v3.0** (2026-03-26) — Performance & architecture: config, prepared statements, query filters, error handling, namespace isolation
 - **v4.0** (2026-03-27) — Dashboard & graph experience: bioluminescent theme, graph core features, timeline, approvals refresh
 - **v5.0** (2026-03-29) — Feature parity & differentiation: temporal versioning, dedup classification, relationship strength, memory decay, REST write API with OpenAPI, import/export with format adapters, auto-extraction + incremental consolidation
+- **v6.0** (2026-03-29) — Proactive knowledge & onboarding: session-start recall, myco init, workflow rules, knowledge correction, user preferences
 
 ### Out of Scope
 
@@ -109,7 +120,8 @@ Agents never lose what they've learned — knowledge accumulates across sessions
 - v3.0 shipped 2026-03-26 — 20 requirements validated across 4 phases (config, prepared statements, query filters, error handling, namespace isolation)
 - v4.0 shipped 2026-03-27 — dashboard & graph experience overhaul
 - v5.0 shipped 2026-03-29 — feature parity & differentiation: 6 phases, 12 plans, 28 requirements satisfied
-- 147 tests passing across 10 test files
+- v6.0 shipped 2026-03-29 — proactive knowledge & onboarding: session-start recall, myco init, workflow rules, knowledge correction, user preferences
+- 207 tests passing (176 vitest + 31 hook tests) across 12 test files
 - Design direction: bioluminescent deep-sea aesthetic — dark void, rich glows, organic depth, mycorrhizal metaphor
 - Vercel AI SDK v4.3.19 used for consolidation (v6 incompatible with ollama-ai-provider)
 - MCP SDK uses `registerTool()` with Zod v4
@@ -173,4 +185,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after v5.0 milestone start*
+*Last updated: 2026-03-29 after v6.0 milestone*

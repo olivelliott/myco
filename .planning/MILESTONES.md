@@ -1,5 +1,20 @@
 # Milestones
 
+## v6.0 Proactive Knowledge & Onboarding (Shipped: 2026-03-29)
+
+**Phases completed:** 5 phases, 8 plans across 47 commits
+
+**Key accomplishments:**
+
+- `project_paths` table with walk-up directory resolution maps any working directory to a registered project entity (migration 9)
+- SessionStart hook upgraded from static reminder to real knowledge injection — queries DB for workflow rules, project facts, and user preferences with priority-ordered 1,500-token cap, SHA-256 novelty filtering, and 500ms hard timeout
+- `myco init` CLI + `init_project` MCP tool scan project files (package.json, tsconfig, README, CLAUDE.md, git config), infer conventions via LLM, and present batch summary for cherry-pick approval
+- `remember_rule` MCP tool stores actionable workflow instructions as `workflow_rule` entities with `decay_exempt=1` — always surfaced at session start, never similarity-ranked out
+- `update_knowledge` MCP tool finds stale observations by semantic/FTS search, presents candidates, and atomically retires old + inserts replacement
+- User preferences accumulate globally across projects with `promotePreference()` triggering on 2+ project corroboration, source attribution shown in session-start injection
+
+---
+
 ## v5.0 Feature Parity & Differentiation (Shipped: 2026-03-29)
 
 **Phases completed:** 6 phases, 12 plans, 11 tasks
@@ -8,16 +23,13 @@
 
 - Versioned SQLite migration framework (9 migrations, schema_migrations table) replacing try/catch ALTER TABLE, with v5.0 columns for temporal versioning, decay, entity merges, and relationship strength
 - Dedup classification pipeline (ADD/UPDATE/NOOP) wired into rememberEntity write path with valid_from timestamps on all new observations
-- One-liner:
 - Temporal as_of and history query filtering added to recall and query tools with valid_until IS NULL on all default query paths
 - ON CONFLICT upsert for atomic relationship reinforcement with strength-based edge width (1-5px linear clamp) and hover tooltip in the force-graph canvas renderer
 - Pure `computeEffectiveConfidence` function with exponential decay (LAMBDA=0.03, FLOOR=0.1), reinforcement boost, and 10-test suite — exported from @myco/core
-- Task 1 — Prepared statements extended (packages/core/src/statements.ts):
-- New core modules:
+- New core modules: memory-ops, embed-client, dedup, decay, relationship-discovery, import-export, format-adapters
 - Four POST memory write endpoints (remember/recall/forget/query) on OpenAPIHono, with Swagger UI at /api/docs, Bearer token auth middleware, all calling @myco/core functions
-- `exportGraph(db)`
-- One-liner:
-- Task 1 — registerEpisodeCallback + fire-and-forget in logEpisode:
+- `exportGraph(db)` and `importGraph(db)` with Mem0 and Anthropic JSONL format adapters
+- `registerEpisodeCallback` + fire-and-forget auto-extraction in logEpisode with consolidation_lock mutex
 
 ---
 

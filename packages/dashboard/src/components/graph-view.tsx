@@ -9,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
-import { computeGraphDataKey } from '../lib/graph-types'
 import { computeClusterHull } from '../lib/graph-clusters'
 import type { ClusterInfo } from '../lib/graph-clusters'
 
@@ -163,23 +162,15 @@ export function GraphView({
   const activeNodes = neighborhoodData ? neighborhoodData.nodes : decoratedNodes
   const activeLinks = neighborhoodData ? neighborhoodData.links : filteredLinks
 
-  // Stable graphData: only changes when node/link ID set changes (Pitfall 1 fix)
-  const graphDataKey = useMemo(() => {
-    const nodeIds = activeNodes.map((n: GraphNode) => n.id)
-    const linkPairs = activeLinks.map((l: GraphLink) => ({
-      source: typeof l.source === 'string' ? l.source : (l.source as GraphNode).id,
-      target: typeof l.target === 'string' ? l.target : (l.target as GraphNode).id,
-    }))
-    return computeGraphDataKey(nodeIds, linkPairs)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeNodes, activeLinks])
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const stableGraphData = useMemo(() => ({
+  // Pass activeNodes/activeLinks directly to ForceGraph2D.
+  // The library internally tracks node objects by ID and mutates their x/y positions.
+  // Visual-only changes (opacity, color) on the same node set won't cause reheat
+  // because the library compares by node ID, not reference equality.
+  // Structural changes (add/remove nodes) will naturally trigger relayout.
+  const graphData = useMemo(() => ({
     nodes: activeNodes as GraphNode[],
     links: activeLinks as GraphLink[],
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [graphDataKey])
+  }), [activeNodes, activeLinks])
 
   // Build neighbor set for hover illumination (uses activeLinks for neighborhood mode correctness)
   const neighborMap = useMemo(() => {
@@ -220,17 +211,18 @@ export function GraphView({
     [hoveredNodeId, highlightedPath],
   )
 
-  // Zoom to fit after engine stabilizes, then freeze simulation (GRPH-01)
+  // Zoom to fit after engine stabilizes (GRPH-01)
+  // NOTE: We do NOT call cooldownTicks(0) here. That permanently prevents the
+  // simulation from running when new data arrives (neighborhood mode, type filter,
+  // TanStack Query refetch). Instead, we rely on the high d3VelocityDecay (0.4) and
+  // d3AlphaDecay (0.03) to naturally settle the simulation quickly. The sim stops
+  // on its own — no need to force-freeze it.
   const handleEngineStop = useCallback(() => {
     if (!hasZoomedRef.current && fgRef.current && !mini) {
       hasZoomedRef.current = true
       setTimeout(() => {
         fgRef.current?.zoomToFit(400, 80)
       }, 100)
-    }
-    // Freeze simulation after initial layout — prevents hover drift (GRPH-01)
-    if (fgRef.current) {
-      fgRef.current.cooldownTicks(0)
     }
   }, [mini])
 
@@ -239,10 +231,22 @@ export function GraphView({
     hasZoomedRef.current = false
   }, [nodes.length])
 
-  // Reset zoom flag when entering/exiting neighborhood mode so view re-zooms to fit subgraph
+  // When entering/exiting neighborhood mode, re-zoom to fit the new data set.
+  // We reset the flag AND proactively trigger zoom-to-fit after a delay to
+  // allow the simulation to position nodes. Without the proactive call, the
+  // full graph wouldn't zoom-to-fit if the sim settles very quickly.
   useEffect(() => {
     hasZoomedRef.current = false
-  }, [neighborhoodData != null]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!mini && fgRef.current) {
+      // Give simulation time to start positioning, then zoom to fit
+      setTimeout(() => {
+        if (!hasZoomedRef.current && fgRef.current) {
+          hasZoomedRef.current = true
+          fgRef.current.zoomToFit(400, 80)
+        }
+      }, 500)
+    }
+  }, [neighborhoodData != null, mini]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Configure forces after mount
   useEffect(() => {
@@ -389,7 +393,7 @@ export function GraphView({
 
       <ForceGraph2D
         ref={fgRef}
-        graphData={stableGraphData}
+        graphData={graphData}
         nodeId="id"
         nodeVal="val"
         nodeLabel=""
@@ -795,7 +799,7 @@ export function GraphView({
 
           // Build position map from current node positions (only visible nodes)
           const posMap = new Map<string, { x: number; y: number }>()
-          for (const node of stableGraphData.nodes) {
+          for (const node of graphData.nodes) {
             const n = node as GraphNode
             if (n.x !== undefined && n.y !== undefined) {
               // Skip nodes hidden by timeline cutoff
@@ -839,6 +843,8 @@ export function GraphView({
         width={undefined}
         height={undefined}
         enablePointerInteraction={!mini}
+        // @ts-expect-error — prop exists in runtime (PropTypes.bool) but missing from type definitions
+        enableNavigationControls={!mini}
         minZoom={0.3}
         maxZoom={12}
       />

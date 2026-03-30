@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { runMigrations } from './migrations.js';
 
 export function applySchema(db: Database.Database): void {
   db.exec(`
@@ -83,53 +84,4 @@ export function applySchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_episodes_agent_id ON episodes(agent_id);
     CREATE INDEX IF NOT EXISTS idx_approval_queue_status ON approval_queue(status);
   `);
-
-  // Migration: add needs_embedding column to observations (safe to run on startup)
-  try {
-    db.exec(`ALTER TABLE observations ADD COLUMN needs_embedding INTEGER NOT NULL DEFAULT 0`);
-  } catch {
-    // Column already exists — expected on databases created after this migration shipped
-  }
-
-  // Index for efficient re-embedding queue queries
-  try {
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_observations_needs_embedding ON observations(needs_embedding) WHERE needs_embedding = 1`);
-  } catch {
-    // Index may already exist
-  }
-
-  // Migration: add consolidated_at column to episodes (NULL = unconsolidated)
-  try {
-    db.exec(`ALTER TABLE episodes ADD COLUMN consolidated_at TEXT`);
-  } catch {
-    // Column already exists
-  }
-
-  // Index for efficient unconsolidated episode queries
-  try {
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_episodes_unconsolidated ON episodes(consolidated_at) WHERE consolidated_at IS NULL`);
-  } catch {
-    // Index may already exist
-  }
-
-  // Migration: add metadata column to approval_queue for storing proposed fact payloads as JSON
-  try {
-    db.exec(`ALTER TABLE approval_queue ADD COLUMN metadata TEXT`);
-  } catch {
-    // Column already exists
-  }
-
-  // Migration: add project column for namespace isolation (Phase 12)
-  try {
-    db.exec(`ALTER TABLE entities ADD COLUMN project TEXT DEFAULT NULL`);
-  } catch {
-    // Column already exists
-  }
-
-  // Index for project-scoped queries
-  try {
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_entities_project ON entities(project)`);
-  } catch {
-    // Index may already exist
-  }
 }

@@ -23,6 +23,16 @@ export interface MycoStatements {
   selectAllObservationsByEntityId: Statement;
   updateObservationEntityId: Statement;
 
+  // ── Dedup / temporal statements (Phase 19) ──────────────────────────────
+  selectObservationsByEntityForDedup: Statement;
+  retireObservation: Statement;
+  insertObservationTemporal: Statement;
+  insertObservationTemporalWithEmbeddingFlag: Statement;
+
+  // ── Entity merge statements (Phase 19) ──────────────────────────────────
+  setEntityMergedInto: Statement;
+  selectEntitiesByName: Statement;
+
   // ── Relationship statements ──────────────────────────────────────────────
   insertRelationship: Statement;
   selectRelationshipExists: Statement;
@@ -78,6 +88,13 @@ export interface MycoStatements {
   deleteVecEmbeddingByItemId: Statement;
   deleteFtsObservationByObsId: Statement;
 
+  // ── User preference promotion statements (Phase 28) ─────────────────────
+  selectPreferencesByNameAcrossProjects: Statement;
+  updateEntityProject: Statement;
+  updateEntityMetadata: Statement;
+  updateObservationMetadata: Statement;
+  updateObservationEntityId2: Statement;
+
   // ── API route statements ──────────────────────────────────────────────────
   selectAllPendingApprovals: Statement;
   selectEntitiesPaginated: Statement;
@@ -87,6 +104,12 @@ export interface MycoStatements {
   selectGraphNodes: Statement;
   selectGraphRelationships: Statement;
   selectEpisodesPaginated: Statement;
+
+  // -- Context scoping statements (Phase 24) ----------------------------------
+  insertProjectPath: Statement;
+  deleteProjectPath: Statement;
+  selectProjectForPath: Statement;
+  selectAllProjectPaths: Statement;
 }
 
 /**
@@ -112,7 +135,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     ),
 
     selectAllEntityNames: db.prepare(
-      `SELECT id, name FROM entities`
+      `SELECT id, name FROM entities WHERE merged_into IS NULL`
     ),
 
     deleteEntityById: db.prepare(
@@ -158,6 +181,39 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     updateObservationEntityId: db.prepare(
       `UPDATE observations SET entity_id = ? WHERE entity_id = ?`
+    ),
+
+    // ── Dedup / temporal statements (Phase 19) ─────────────────────────────
+    selectObservationsByEntityForDedup: db.prepare(
+      `SELECT id, content, confidence, valid_from, valid_until
+       FROM observations
+       WHERE entity_id = ? AND valid_until IS NULL
+       ORDER BY created_at DESC`
+    ),
+
+    retireObservation: db.prepare(
+      `UPDATE observations SET valid_until = ? WHERE id = ?`
+    ),
+
+    insertObservationTemporal: db.prepare(
+      `INSERT INTO observations (id, entity_id, content, metadata, session_id, agent_id, source_type, confidence, created_at, valid_from)
+       VALUES (?, ?, ?, '{}', ?, ?, ?, ?, ?, ?)`
+    ),
+
+    insertObservationTemporalWithEmbeddingFlag: db.prepare(
+      `INSERT INTO observations (id, entity_id, content, metadata, session_id, agent_id, source_type, confidence, created_at, valid_from, needs_embedding)
+       VALUES (?, ?, ?, '{}', ?, ?, ?, ?, ?, ?, 1)`
+    ),
+
+    // ── Entity merge statements (Phase 19) ──────────────────────────────────
+    setEntityMergedInto: db.prepare(
+      `UPDATE entities SET merged_into = ? WHERE id = ?`
+    ),
+
+    // Note: intentionally does NOT filter merged_into IS NULL — used for merge candidate detection,
+    // where we want to find even already-merged entities to prevent double-merge.
+    selectEntitiesByName: db.prepare(
+      `SELECT id, name, type FROM entities WHERE name = ? COLLATE NOCASE AND merged_into IS NULL`
     ),
 
     // ── Relationship statements ────────────────────────────────────────────
@@ -314,7 +370,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     ),
 
     countEntities: db.prepare(
-      `SELECT COUNT(*) as n FROM entities`
+      `SELECT COUNT(*) as n FROM entities WHERE merged_into IS NULL`
     ),
 
     countRelationships: db.prepare(
@@ -333,12 +389,13 @@ export function prepareStatements(db: Database.Database): MycoStatements {
       `SELECT e.id, e.name, e.type,
          (SELECT COUNT(*) FROM relationships r WHERE r.from_id = e.id OR r.to_id = e.id) AS connection_count
        FROM entities e
+       WHERE e.merged_into IS NULL
        ORDER BY connection_count DESC
        LIMIT 5`
     ),
 
     selectTypeBreakdown: db.prepare(
-      `SELECT type, COUNT(*) as count FROM entities GROUP BY type ORDER BY count DESC`
+      `SELECT type, COUNT(*) as count FROM entities WHERE merged_into IS NULL GROUP BY type ORDER BY count DESC`
     ),
 
     countEntitiesAfter: db.prepare(
@@ -377,7 +434,8 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     countOrphanedEntities: db.prepare(
       `SELECT COUNT(*) as n FROM entities e
-       WHERE NOT EXISTS (SELECT 1 FROM relationships r WHERE r.from_id = e.id OR r.to_id = e.id)`
+       WHERE e.merged_into IS NULL
+         AND NOT EXISTS (SELECT 1 FROM relationships r WHERE r.from_id = e.id OR r.to_id = e.id)`
     ),
 
     selectConfidenceDistribution: db.prepare(
@@ -389,6 +447,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
          END as bucket,
          COUNT(*) as count
        FROM entities
+       WHERE merged_into IS NULL
        GROUP BY bucket`
     ),
 
@@ -399,6 +458,7 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     selectRecentActivity: db.prepare(
       `SELECT e.id, e.name, e.type, e.confidence, e.created_at, 'created' as event
        FROM entities e
+       WHERE e.merged_into IS NULL
        ORDER BY e.created_at DESC
        LIMIT 20`
     ),
@@ -436,13 +496,40 @@ export function prepareStatements(db: Database.Database): MycoStatements {
       `DELETE FROM fts_observations WHERE observation_id = ?`
     ),
 
+    // ── User preference promotion statements (Phase 28) ──────────────────────
+    selectPreferencesByNameAcrossProjects: db.prepare(
+      `SELECT e.id, e.name, e.project, e.metadata,
+              GROUP_CONCAT(o.id, '|') as obs_ids
+       FROM entities e
+       LEFT JOIN observations o ON o.entity_id = e.id
+       WHERE e.name = ? AND e.type = 'user_preference'
+         AND e.merged_into IS NULL
+       GROUP BY e.id`
+    ),
+
+    updateEntityProject: db.prepare(
+      `UPDATE entities SET project = ?, updated_at = ? WHERE id = ?`
+    ),
+
+    updateEntityMetadata: db.prepare(
+      `UPDATE entities SET metadata = ?, updated_at = ? WHERE id = ?`
+    ),
+
+    updateObservationMetadata: db.prepare(
+      `UPDATE observations SET metadata = ? WHERE id = ?`
+    ),
+
+    updateObservationEntityId2: db.prepare(
+      `UPDATE observations SET entity_id = ? WHERE entity_id = ?`
+    ),
+
     // ── API route statements ─────────────────────────────────────────────────
     selectAllPendingApprovals: db.prepare(
       `SELECT * FROM approval_queue WHERE status = 'pending' ORDER BY created_at DESC LIMIT 50`
     ),
 
     selectEntitiesPaginated: db.prepare(
-      `SELECT id, name, type, confidence, created_at FROM entities ORDER BY updated_at DESC LIMIT ? OFFSET ?`
+      `SELECT id, name, type, confidence, created_at FROM entities WHERE merged_into IS NULL ORDER BY updated_at DESC LIMIT ? OFFSET ?`
     ),
 
     selectEntityById: db.prepare(
@@ -466,7 +553,8 @@ export function prepareStatements(db: Database.Database): MycoStatements {
     selectGraphNodes: db.prepare(
       `SELECT id, name, type, confidence, summary, created_at,
          (SELECT COUNT(*) FROM observations WHERE entity_id = e.id) AS obs_count
-       FROM entities e`
+       FROM entities e
+       WHERE e.merged_into IS NULL`
     ),
 
     selectGraphRelationships: db.prepare(
@@ -475,6 +563,30 @@ export function prepareStatements(db: Database.Database): MycoStatements {
 
     selectEpisodesPaginated: db.prepare(
       `SELECT id, session_id, agent_id, event_type, payload, created_at FROM episodes ORDER BY created_at DESC LIMIT ?`
+    ),
+
+    // -- Context scoping statements (Phase 24) --------------------------------
+    insertProjectPath: db.prepare(
+      `INSERT INTO project_paths (id, project_name, directory_path, created_at)
+       VALUES (?, ?, ?, ?)`
+    ),
+
+    deleteProjectPath: db.prepare(
+      `DELETE FROM project_paths WHERE directory_path = ?`
+    ),
+
+    selectProjectForPath: db.prepare(
+      `SELECT id, project_name, directory_path, created_at
+       FROM project_paths
+       WHERE ($path = directory_path OR $path LIKE directory_path || '/%')
+       ORDER BY LENGTH(directory_path) DESC
+       LIMIT 1`
+    ),
+
+    selectAllProjectPaths: db.prepare(
+      `SELECT id, project_name, directory_path, created_at
+       FROM project_paths
+       ORDER BY directory_path`
     ),
   };
 }

@@ -20,6 +20,14 @@ export function registerEpisodeCallback(fn: (episodeId: string) => Promise<void>
   onEpisodeLogged = fn;
 }
 
+// Post-remember callback — for preference promotion, etc.
+type PostRememberFn = (db: Database.Database, stmts: MycoStatements, entityName: string, project: string | null) => void;
+let onAfterRemember: PostRememberFn | null = null;
+
+export function registerPostRememberCallback(fn: PostRememberFn): void {
+  onAfterRemember = fn;
+}
+
 export interface RememberParams {
   content: string;
   entity_name: string;
@@ -203,6 +211,11 @@ export async function rememberEntity(
   // If this is a new entity, create back-links from existing observations
   if (!existingEntity) {
     createBackLinks(db, entityId, entity_name, stmts);
+  }
+
+  // Post-remember callback (e.g., preference promotion)
+  if (onAfterRemember) {
+    try { onAfterRemember(db, stmts, entity_name, project ?? null); } catch { /* best-effort */ }
   }
 
   return {

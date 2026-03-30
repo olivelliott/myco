@@ -3,6 +3,7 @@ import * as sqliteVec from 'sqlite-vec';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { applySchema } from './schema.js';
 import { runMigrations } from './migrations.js';
 
 function getDefaultDbPath(): string {
@@ -27,7 +28,10 @@ export function openDatabase(dbPath?: string): Database.Database {
   db.pragma('busy_timeout = 5000');  // connection-lifetime only
   db.pragma('synchronous = NORMAL'); // safe with WAL, better perf
 
-  // 3. Run schema migrations
+  // 3. Apply base schema (CREATE TABLE IF NOT EXISTS)
+  applySchema(db);
+
+  // 4. Run versioned migrations (idempotent, tracked in schema_migrations)
   runMigrations(db);
 
   return db;

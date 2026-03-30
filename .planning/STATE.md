@@ -1,36 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Feature Parity & Differentiation
-status: v5.0 milestone complete
-stopped_at: Completed 23-02-PLAN.md — wire callback system and lock-wrap nightly
-last_updated: "2026-03-29T16:22:01.499Z"
+milestone: v6.0
+milestone_name: Proactive Knowledge & Onboarding
+status: v6.0 milestone complete
+stopped_at: Completed 28-02-PLAN.md — source attribution in session-start preference injection
+last_updated: "2026-03-29T17:12:11.127Z"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 12
-  completed_plans: 12
+  total_phases: 11
+  completed_phases: 11
+  total_plans: 20
+  completed_plans: 20
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-27)
+See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Agents never lose what they've learned — knowledge accumulates across sessions, and the human stays in control of what becomes permanent.
-**Current focus:** Phase 23 — auto-extraction-incremental-consolidation
+**Current focus:** Merge complete — v5.0 + v6.0 consolidated
 
 ## Current Position
 
-Phase: 23
+Phase: 28
 Plan: Not started
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0 (v5.0)
+- Total plans completed: 20 (v5.0 + v6.0)
 - Average duration: —
 - Total execution time: —
 
@@ -53,6 +53,14 @@ Plan: Not started
 | Phase 22-core-refactor-rest-write-routes-import-export P03 | 4 | 2 tasks | 6 files |
 | Phase 23-auto-extraction-incremental-consolidation P01 | 98 | 2 tasks | 3 files |
 | Phase 23-auto-extraction-incremental-consolidation P02 | 144 | 2 tasks | 4 files |
+| Phase 24 P01 | 2 | 2 tasks | 6 files |
+| Phase 25-session-start-recall P01 | 250s | 1 tasks | 3 files |
+| Phase 26-project-onboarding P01 | 325 | 2 tasks | 2 files |
+| Phase 26-project-onboarding P02 | 300 | 2 tasks | 2 files |
+| Phase 27-workflow-rules-and-knowledge-correction P01 | 480 | 2 tasks | 1 files |
+| Phase 27-workflow-rules-and-knowledge-correction P02 | 480 | 2 tasks | 3 files |
+| Phase 28-user-preferences P01 | 344 | 1 tasks | 4 files |
+| Phase 28-user-preferences P02 | 124 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -99,6 +107,28 @@ Recent decisions affecting current work:
 - [Phase 23]: setImmediate used in logEpisode (not setTimeout/nextTick) — fires after current I/O cycle, never blocks MCP response
 - [Phase 23]: registerEpisodeCallback: dependency inversion — core exports slot, mcp-server fills it at startup — avoids circular import between packages
 - [Phase 23]: Nightly cron skips with warning if micro holds lock (no retry) — next 2am run catches remaining episodes
+- [v6.0 research]: SessionStart hook with `additionalContext` is the only correct injection mechanism — MCP Resources require explicit user invocation, not automatic
+- [v6.0 research]: Hook binary must open SQLite in read-only mode, FTS5-only, complete under 500ms — never call Ollama from hook
+- [v6.0 research]: Token cap is 1,500 tokens enforced at query layer (priority ordering), not end-truncation
+- [v6.0 research]: Preferences start project-scoped, promote to global user entity only after 2+ project corroboration or explicit confirmation
+- [v6.0 research]: `myco init` scans README, CLAUDE.md, package manifests only — no source files (anchoring bias research)
+- [v6.0 research]: One new npm dependency: `ignore@5.3.x` for gitignore-aware file filtering during `myco init`
+- [v6.0 research]: Novelty filter tracking needs design decision — `injection_log` table vs deferred consolidation update
+- [Phase 24]: Migration framework (migrations.ts + schema_migrations table) added alongside existing try/catch ALTER TABLE pattern — new tables use migration tracking, legacy column additions keep try/catch
+- [Phase 24]: selectProjectForPath uses named $path parameter with slash-boundary LIKE (directory_path || '/%') to prevent false prefix matches like /a/bx matching /a/b
+- [Phase 25-session-start-recall]: hooks/package.json with type:commonjs required to fix ESM/CJS conflict from root monorepo type:module
+- [Phase 25-session-start-recall]: Session-start hook opens DB readonly:true, uses file-based hash cache at ~/.local/share/myco/last-injection-hash for novelty tracking (no DB write)
+- [Phase 26-project-onboarding]: source_type 'onboarding' not in SourceType union — use 'agent_session' for myco init writes as closest semantic match for human-guided initial population
+- [Phase 26-project-onboarding]: myco init scanner reads README/CLAUDE.md truncated to 2000 chars, .eslintrc* (first found), package.json, tsconfig.json, git config — no source files per anchoring bias research
+- [Phase 26-project-onboarding]: init_project omits relations from MCP response to keep agent output clean — agent passes relations when calling remember()
+- [Phase 26-project-onboarding]: Top-level await import for onboarding-scanner in tests ensures vi.mock('ai') is applied before scanner module loads
+- [Phase 27]: Entity name for workflow rules uses rule:{sha256-8} — stable, collision-resistant, auto-generated from instruction text
+- [Phase 27]: updateKnowledge Phase 2 uses db.transaction() for retire+insert+FTS atomicity; embedding attempted post-transaction due to async constraint
+- [Phase 27]: decay_exempt column must live on entities table (not just observations) — added migration 10
+- [Phase 27]: updateKnowledge confirm phase must pass 'unknown' agent_id (NOT NULL constraint on observations)
+- [Phase 28-user-preferences]: promotePreference triggers when allProjects.size >= 2 (entity.project + source_projects + incomingProject) — handles the case where selectEntityByNameType is project-agnostic so multiple projects share one entity row
+- [Phase 28-user-preferences]: merged_into nullable FK on entities table added via try/catch migration (consistent with existing schema.ts migration pattern)
+- [Phase 28-user-preferences]: obs_metadata in GROUP BY picks one observation's metadata per entity; acceptable because Plan 01 ensures all active observations on a promoted preference share the same source_projects value
 
 ### Pending Todos
 
@@ -106,12 +136,13 @@ None.
 
 ### Blockers/Concerns
 
-- [Phase 19]: SQLite `CURRENT_TIMESTAMP` instability — all `valid_from` values must be generated in application code before transactions open (audit every `insertObservation` call site)
-- [Phase 19]: Wrong entity merges are hard to undo — merge candidates require BOTH Levenshtein ≤ 2 AND cosine similarity > 0.92; all merge proposals must route through approval queue
-- [Phase 23]: Consolidation lock design (`consolidation_lock` table row structure, expiry logic, atomic check-and-lock SQL) must be fully specified before implementation begins
+- [Phase 25]: Token cap enforcement strategy — SQLite has no native "stop at N tokens"; must be enforced at app layer with priority-ordered queries; design needed in planning
+- [Phase 25]: Novelty filter write strategy — hook is read-only, but tracking `last_injected_at` requires a write; decide between `injection_log` table (separate write) or deferred update
+- [Phase 26]: Batch approval UX pattern — distinct from existing per-item queue; needs design decision (new dashboard route vs terminal-interactive flow)
+- [Phase 26]: `myco init` idempotency — re-run must not duplicate entities; dedup classifier handles single observations but batch flow may need separate "already seen" check
 
 ## Session Continuity
 
-Last session: 2026-03-29T15:23:51.413Z
-Stopped at: Completed 23-02-PLAN.md — wire callback system and lock-wrap nightly
+Last session: 2026-03-29T17:12:11.127Z
+Stopped at: Completed 28-02-PLAN.md — source attribution in session-start preference injection
 Resume file: None

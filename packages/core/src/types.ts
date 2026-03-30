@@ -13,7 +13,7 @@ export interface Entity {
   created_at: string; // ISO 8601 UTC
   updated_at: string; // ISO 8601 UTC
   project?: string | null; // NULL = global (visible to all queries)
-  merged_into?: string | null; // Points to entity this was merged into (soft-delete)
+  merged_into?: string | null; // ID of entity this was merged into (soft-delete)
 }
 
 export interface Observation {
@@ -26,13 +26,13 @@ export interface Observation {
   source_type: SourceType;
   confidence: number;
   created_at: string;
-  needs_embedding?: number; // 0 or 1 — 1 means Ollama was unavailable at insert time
-  valid_from?: string | null;       // ISO 8601 — when this fact became true
-  valid_until?: string | null;      // ISO 8601 — when this fact was superseded (null = current)
-  last_accessed_at?: string | null; // ISO 8601 — last recall/query access time
-  decay_exempt: number;             // 0 or 1 — 1 means importance never decays
-  strength: number;                 // Base importance score, default 1.0
-  reinforcement_count: number;      // Times this observation was reinforced
+  needs_embedding?: number;           // 0 or 1 — 1 means Ollama was unavailable at insert time
+  valid_from?: string | null;         // ISO 8601 — when this fact became true
+  valid_until?: string | null;        // ISO 8601 — when this fact was superseded (NULL = current)
+  last_accessed_at?: string | null;   // ISO 8601 — last time this observation was returned by recall
+  decay_exempt: number;               // 0 or 1 — 1 means confidence never decays
+  strength: number;                   // Base importance score, default 1.0
+  reinforcement_count: number;        // Times this observation was reinforced
 }
 
 export interface Relationship {
@@ -46,8 +46,8 @@ export interface Relationship {
   source_type: SourceType;
   confidence: number;
   created_at: string;
-  strength: number;              // Edge weight, increases on reinforcement, default 1.0
-  reinforcement_count: number;   // Times this relationship was re-asserted
+  strength: number;                    // Edge weight, increases on reinforcement, default 1.0
+  reinforcement_count: number;        // Times this relationship was re-asserted
 }
 
 export interface Episode {
@@ -98,4 +98,29 @@ export interface ConsolidationSummary {
   totalAutoApproved: number;
   totalQueued: number;
   errors: number;
+}
+
+// ── Dedup / temporal versioning types (Phase 19) ──────────────────────────────
+
+/**
+ * Classification result for an incoming observation against existing facts.
+ * - ADD: Observation is new — no semantic overlap with existing observations
+ * - UPDATE: Observation supersedes an existing observation (conflicting/updated fact)
+ * - NOOP: Observation is a near-duplicate — ignore to avoid noise
+ */
+export type DedupClassification = 'ADD' | 'UPDATE' | 'NOOP';
+
+export interface ClassificationResult {
+  classification: DedupClassification;
+  superseded_observation_id?: string; // Set when UPDATE — the observation to retire
+  reason: string;                     // Human-readable explanation
+}
+
+// -- Context scoping types (Phase 24) ----------------------------------------
+
+export interface ProjectPath {
+  id: string;
+  project_name: string;
+  directory_path: string;  // Absolute filesystem path, no trailing slash
+  created_at: string;      // ISO 8601 UTC
 }
